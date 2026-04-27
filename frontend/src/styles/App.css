@@ -113,8 +113,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Push content below iPhone status bar / notch */
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 14px;
+  padding: 14px 20px;
   background: rgba(255,255,255,.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -143,7 +142,7 @@ body {
 .app-pages {
   flex: 1;
   overflow-y: auto;
-  padding-top: calc(62px + env(safe-area-inset-top, 0px));
+  padding-top: 62px;
   padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
   /* Smooth momentum scroll on iOS */
   -webkit-overflow-scrolling: touch;

@@ -36,7 +36,8 @@ export default defineConfig({
         categories: ["health", "food"],
       },
       workbox: {
-        // Cache the backend API responses for offline fallback
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\/ingredients\/.*/i,
