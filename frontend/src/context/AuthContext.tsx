@@ -4,7 +4,10 @@
  * Strategy:
  *  • Access token  → kept in memory (never in localStorage/sessionStorage)
  *  • Refresh token → httpOnly cookie set by the backend (JS can't read it)
- *  • On app load   → attempt a silent /auth/refresh to restore session
+ *  • User info     → cached in localStorage so the app opens instantly
+ *  • On app load   → restore user from localStorage immediately (no spinner),
+ *                    then silently validate with /auth/refresh in the background.
+ *                    Only log out if the server explicitly returns 401.
  */
 import {
   createContext,
@@ -24,9 +27,30 @@ import {
   setAccessToken,
 } from "../services/api";
 
+const USER_CACHE_KEY = "auth:cachedUser";
+
+function loadCachedUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedUser(user: AuthUser | null): void {
+  try {
+    if (user) {
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_CACHE_KEY);
+    }
+  } catch { /* ignore */ }
+}
+
 interface AuthState {
   user: AuthUser | null;
-  loading: boolean;   // true while checking existing session on mount
+  loading: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -38,33 +62,42 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ user: null, loading: true });
+  const cached = loadCachedUser();
 
-  // On mount: try to restore session via refresh cookie (8s timeout to handle Render cold start)
+  // If we have a cached user, start with loading=false so the app opens instantly.
+  // Otherwise show the loading screen while we contact the backend.
+  const [state, setState] = useState<AuthState>({
+    user: cached,
+    loading: !cached,
+  });
+
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setAccessToken(null);
-      setState({ user: null, loading: false });
-    }, 8000);
-
+    // Always validate session in background
     apiRefresh()
       .then(({ access_token, user }) => {
-        clearTimeout(timeout);
         setAccessToken(access_token);
+        saveCachedUser(user);
         setState({ user, loading: false });
       })
-      .catch(() => {
-        clearTimeout(timeout);
-        setAccessToken(null);
-        setState({ user: null, loading: false });
+      .catch((err) => {
+        const status = err?.response?.status;
+        if (status === 401) {
+          // Server explicitly rejected — clear cached user and log out
+          setAccessToken(null);
+          saveCachedUser(null);
+          setState({ user: null, loading: false });
+        } else {
+          // Network error, timeout, server cold start — keep the cached session
+          setAccessToken(null);
+          setState((prev) => ({ ...prev, loading: false }));
+        }
       });
-
-    return () => clearTimeout(timeout);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const { access_token, user } = await apiLogin(email, password);
     setAccessToken(access_token);
+    saveCachedUser(user);
     setState({ user, loading: false });
   }, []);
 
@@ -72,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, username: string, password: string) => {
       const { access_token, user } = await apiRegister(email, username, password);
       setAccessToken(access_token);
+      saveCachedUser(user);
       setState({ user, loading: false });
     },
     []
@@ -80,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try { await apiLogout(); } catch { /* ignore */ }
     setAccessToken(null);
+    saveCachedUser(null);
     setState({ user: null, loading: false });
   }, []);
 
