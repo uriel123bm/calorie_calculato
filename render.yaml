@@ -14,11 +14,18 @@ services:
       - key: JWT_ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: "30"
+        value: "43200"
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: "30"
+      # Cross-origin cookie flags. Frontend (Vercel) and backend (Render) live
+      # on different domains, so the refresh cookie MUST be SameSite=None+Secure
+      # for browsers to send it on /auth/refresh requests.
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "none"
       - key: CORS_ORIGINS
-        sync: false          # set to your Vercel URL after deploy
+        sync: false          # set to your Vercel URL after deploy (e.g. https://calorie-calculato.vercel.app)
       - key: OPENAI_API_KEY
         sync: false          # optional
       - key: PYTHON_VERSION

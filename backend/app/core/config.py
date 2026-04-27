@@ -24,10 +24,22 @@ class Settings:
     jwt_algorithm: str
     access_token_expire_minutes: int
     refresh_token_expire_days: int
+    # Refresh-token cookie security (cross-origin needs Secure + SameSite=None)
+    cookie_secure: bool
+    cookie_samesite: str
 
 
 def _parse_origins(raw: str) -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def _parse_bool(raw: str, default: bool = False) -> bool:
+    return raw.strip().lower() in {"1", "true", "yes", "on"} if raw else default
+
+
+def _parse_samesite(raw: str) -> str:
+    v = (raw or "").strip().lower()
+    return v if v in {"lax", "strict", "none"} else "lax"
 
 
 def get_settings() -> Settings:
@@ -46,8 +58,10 @@ def get_settings() -> Settings:
         data_dir=_BACKEND_ROOT / "app" / "data",
         jwt_secret=os.getenv("JWT_SECRET", default_secret).strip(),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256").strip(),
-        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")),
+        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200")),
         refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
+        cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE", ""), default=False),
+        cookie_samesite=_parse_samesite(os.getenv("COOKIE_SAMESITE", "lax")),
     )
 
 
