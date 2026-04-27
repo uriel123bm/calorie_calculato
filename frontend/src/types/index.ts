@@ -105,3 +105,19 @@ export interface DailyTrackerState {
   targetCalories: number;
   entries: DailyEntry[];
 }
+
+export interface DayLog {
+  date: string;          // YYYY-MM-DD
+  targetCalories: number;
+  entries: DailyEntry[];
+}
+
+/** A user-saved recipe stored in the personal recipe library */
+export interface SavedRecipe {
+  id: string;
+  name: string;
+  savedAt: number;          // Date.now()
+  totalWeightG: number;     // total weight of the recipe in grams
+  per100g: NutritionPer100g;
+  servings: number;
+}

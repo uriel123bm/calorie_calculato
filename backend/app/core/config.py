@@ -19,6 +19,11 @@ class Settings:
     openai_model: str
     cors_origins: list[str]
     data_dir: Path
+    # JWT
+    jwt_secret: str
+    jwt_algorithm: str
+    access_token_expire_minutes: int
+    refresh_token_expire_days: int
 
 
 def _parse_origins(raw: str) -> list[str]:
@@ -26,6 +31,9 @@ def _parse_origins(raw: str) -> list[str]:
 
 
 def get_settings() -> Settings:
+    # Generate a random fallback secret for dev; MUST be set in production via .env
+    import secrets as _s
+    default_secret = _s.token_hex(32)
     return Settings(
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini",
@@ -36,6 +44,10 @@ def get_settings() -> Settings:
             )
         ),
         data_dir=_BACKEND_ROOT / "app" / "data",
+        jwt_secret=os.getenv("JWT_SECRET", default_secret).strip(),
+        jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256").strip(),
+        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")),
+        refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
     )
 
 

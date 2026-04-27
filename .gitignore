@@ -5,6 +5,8 @@ __pycache__/
 .venv/
 venv/
 .env
+backend/data/app.db
+gen_icons.py
 
 # Node
 node_modules/
