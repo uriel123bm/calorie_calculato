@@ -61,12 +61,18 @@ export default function App() {
     recipe.reset(DEFAULT_ROW_COUNT);
   }, [isDirty, recipe]);
 
+  const [activeTab, setActiveTab] = useState<"recipe" | "daily" | "meals">("recipe");
+
   return (
     <div className="app-container">
+      {/* Fixed glass header */}
       <header className="app-header">
-        <h1>מחשבון קלוריות למתכונים</h1>
-        <p>הכניסו מצרכים – הערכים התזונתיים יזוהו וחושבו אוטומטית.</p>
+        <h1>
+          <span className="material-symbols-outlined">nutrition</span>
+          מחשבון קלוריות
+        </h1>
       </header>
+      <div className="header-spacer" />
 
       <div className="app-layout">
         <main className="app-main">
@@ -130,6 +136,31 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* Bottom navigation */}
+      <nav className="bottom-nav">
+        <button
+          className={activeTab === "recipe" ? "active" : ""}
+          onClick={() => setActiveTab("recipe")}
+        >
+          <span className="material-symbols-outlined">restaurant_menu</span>
+          מתכון
+        </button>
+        <button
+          className={activeTab === "meals" ? "active" : ""}
+          onClick={() => setActiveTab("meals")}
+        >
+          <span className="material-symbols-outlined">lunch_dining</span>
+          ארוחות
+        </button>
+        <button
+          className={activeTab === "daily" ? "active" : ""}
+          onClick={() => setActiveTab("daily")}
+        >
+          <span className="material-symbols-outlined">menu_book</span>
+          יומן
+        </button>
+      </nav>
     </div>
   );
 }

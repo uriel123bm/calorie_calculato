@@ -149,43 +149,68 @@ export function DailyTracker({
         />
       </div>
 
-      <div className="progress-block">
-        <div className="progress-numbers">
-          <span className="progress-current">
-            {totals.calories.toFixed(0)}
-          </span>
-          <span className="progress-divider">/</span>
-          <span className="progress-target">
-            {state.targetCalories} קק"ל
-          </span>
+      {/* ---- Circular progress ring ---- */}
+      <div className="tracker-ring-wrap">
+        {(() => {
+          const R = 42;
+          const CIRCUMFERENCE = 2 * Math.PI * R;
+          const offset = CIRCUMFERENCE * (1 - Math.min(progressPct / 100, 1));
+          return (
+            <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
+              <svg className="progress-ring-svg" viewBox="0 0 100 100">
+                <circle className="progress-ring-bg"   cx="50" cy="50" r={R} strokeWidth="7" />
+                <circle
+                  className={`progress-ring-fill${overshoot ? " over" : ""}`}
+                  cx="50" cy="50" r={R}
+                  strokeWidth="7"
+                  strokeDasharray={`${CIRCUMFERENCE}`}
+                  strokeDashoffset={`${offset}`}
+                />
+              </svg>
+              <div className="ring-inner">
+                <span className={`ring-calories${overshoot ? " over" : ""}`}>
+                  {Math.abs(Math.round(remaining))}
+                </span>
+                <span className="ring-label">
+                  {overshoot ? 'חרגת (קק"ל)' : 'נותרו (קק"ל)'}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
+        <div className="ring-stats">
+          <div style={{ textAlign: "center", padding: "0 8px" }}>
+            <div className="ring-stat-label">יעד</div>
+            <div className="ring-stat-value">{state.targetCalories.toLocaleString()}</div>
+          </div>
+          <div className="divider" />
+          <div style={{ textAlign: "center", padding: "0 8px" }}>
+            <div className="ring-stat-label">נצרך</div>
+            <div className="ring-stat-value primary">{Math.round(totals.calories).toLocaleString()}</div>
+          </div>
         </div>
-        <div className="progress-bar" aria-hidden="true">
-          <div
-            className={`progress-fill ${overshoot ? "over" : ""}`}
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <p className={`progress-note ${overshoot ? "over" : ""}`}>
-          {overshoot
-            ? `חרגת ב-${Math.abs(remaining).toFixed(0)} קק"ל`
-            : `נותרו ${remaining.toFixed(0)} קק"ל היום`}
-        </p>
       </div>
 
-      <div className="tracker-quick-stats">
-        <div>
-          <span className="qs-label">חלבון</span>
-          <span className="qs-value">{totals.protein.toFixed(1)} ג</span>
+      {/* ---- Macros bento ---- */}
+      <div className="macro-bento">
+        <div className="macro-tile protein">
+          <span className="material-symbols-outlined macro-icon">egg</span>
+          <span className="macro-label">חלבון</span>
+          <div className="progress-bar"><div className="progress-fill green" style={{ width: `${Math.min(100, (totals.protein / 120) * 100)}%` }} /></div>
+          <span className="macro-value">{totals.protein.toFixed(0)}ג</span>
         </div>
-        <div>
-          <span className="qs-label">פחמימות</span>
-          <span className="qs-value">
-            {totals.carbohydrates.toFixed(1)} ג
-          </span>
+        <div className="macro-tile carbs">
+          <span className="material-symbols-outlined macro-icon">bakery_dining</span>
+          <span className="macro-label">פחמימות</span>
+          <div className="progress-bar"><div className="progress-fill orange" style={{ width: `${Math.min(100, (totals.carbohydrates / 250) * 100)}%` }} /></div>
+          <span className="macro-value">{totals.carbohydrates.toFixed(0)}ג</span>
         </div>
-        <div>
-          <span className="qs-label">שומן</span>
-          <span className="qs-value">{totals.fat.toFixed(1)} ג</span>
+        <div className="macro-tile fat">
+          <span className="material-symbols-outlined macro-icon">opacity</span>
+          <span className="macro-label">שומן</span>
+          <div className="progress-bar"><div className="progress-fill teal" style={{ width: `${Math.min(100, (totals.fat / 70) * 100)}%` }} /></div>
+          <span className="macro-value">{totals.fat.toFixed(0)}ג</span>
         </div>
       </div>
 
