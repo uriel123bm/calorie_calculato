@@ -143,7 +143,7 @@ body {
   flex: 1;
   overflow-y: auto;
   padding-top: 62px;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 90px;
   /* Smooth momentum scroll on iOS */
   -webkit-overflow-scrolling: touch;
 }
@@ -356,8 +356,7 @@ button.pill {
   flex-direction: row-reverse;
   justify-content: space-around;
   align-items: center;
-  /* safe-area-inset for iPhone home indicator */
-  padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 16px 20px;
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
