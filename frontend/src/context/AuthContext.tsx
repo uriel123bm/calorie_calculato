@@ -21,6 +21,7 @@ import {
 import {
   apiLogin,
   apiLogout,
+  apiMe,
   apiRefresh,
   apiRegister,
   AuthUser,
@@ -36,6 +37,10 @@ function loadCachedUser(): AuthUser | null {
   } catch {
     return null;
   }
+}
+
+function _getStoredToken(): string | null {
+  try { return localStorage.getItem("auth:accessToken"); } catch { return null; }
 }
 
 function saveCachedUser(user: AuthUser | null): void {
@@ -72,23 +77,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Always validate session in background
-    apiRefresh()
-      .then(({ access_token, user }) => {
-        setAccessToken(access_token);
+    // If we have a stored access token, verify it with /auth/me (no cookie needed).
+    // Otherwise try cookie-based refresh as fallback.
+    const validate = cached
+      ? apiMe().then((user) => ({ user, access_token: _getStoredToken() }))
+      : apiRefresh();
+
+    validate
+      .then(({ user, access_token }) => {
+        if (access_token) setAccessToken(access_token);
         saveCachedUser(user);
         setState({ user, loading: false });
       })
       .catch((err) => {
         const status = err?.response?.status;
         if (status === 401) {
-          // Server explicitly rejected — clear cached user and log out
+          // Token explicitly rejected — must log in again
           setAccessToken(null);
           saveCachedUser(null);
           setState({ user: null, loading: false });
         } else {
-          // Network error, timeout, server cold start — keep the cached session
-          setAccessToken(null);
+          // Network error / server cold start — keep cached session, token stays in localStorage
           setState((prev) => ({ ...prev, loading: false }));
         }
       });

@@ -17,12 +17,19 @@ export const client = axios.create({
 });
 
 // ── Access-token injection ──────────────────────────────
-// The access token is stored in memory via AuthContext.
-// We expose a setter so AuthContext can register the current token.
-let _accessToken: string | null = null;
+// Stored in localStorage so it survives app close/reopen.
+const TOKEN_KEY = "auth:accessToken";
+
+let _accessToken: string | null = (() => {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+})();
 
 export function setAccessToken(token: string | null): void {
   _accessToken = token;
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else        localStorage.removeItem(TOKEN_KEY);
+  } catch { /* ignore */ }
 }
 
 client.interceptors.request.use((config) => {
