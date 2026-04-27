@@ -40,17 +40,26 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, loading: true });
 
-  // On mount: try to restore session via refresh cookie
+  // On mount: try to restore session via refresh cookie (8s timeout to handle Render cold start)
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      setAccessToken(null);
+      setState({ user: null, loading: false });
+    }, 8000);
+
     apiRefresh()
       .then(({ access_token, user }) => {
+        clearTimeout(timeout);
         setAccessToken(access_token);
         setState({ user, loading: false });
       })
       .catch(() => {
+        clearTimeout(timeout);
         setAccessToken(null);
         setState({ user: null, loading: false });
       });
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {

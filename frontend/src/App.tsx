@@ -31,11 +31,11 @@ const DEFAULT_ROW_COUNT = 4;
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
 
-  // While checking session on mount, show a minimal spinner
   if (authLoading) {
     return (
-      <div style={{ display: "flex", height: "100dvh", alignItems: "center", justifyContent: "center" }}>
-        <span className="auth-spinner" style={{ width: 40, height: 40 }} />
+      <div className="app-loading-screen">
+        <span className="app-loading-spinner" />
+        <p>טוען...</p>
       </div>
     );
   }
