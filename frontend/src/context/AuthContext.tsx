@@ -2,12 +2,11 @@
  * AuthContext — manages the authenticated user state.
  *
  * Strategy:
- *  • Access token  → kept in memory (never in localStorage/sessionStorage)
- *  • Refresh token → httpOnly cookie set by the backend (JS can't read it)
- *  • User info     → cached in localStorage so the app opens instantly
- *  • On app load   → restore user from localStorage immediately (no spinner),
- *                    then silently validate with /auth/refresh in the background.
- *                    Only log out if the server explicitly returns 401.
+ *  • Access token  → localStorage (survives app close; iOS PWA often drops cookies)
+ *  • Refresh token → httpOnly cookie (fallback when access token expires)
+ *  • User profile  → localStorage cache for instant first paint
+ *  • On app load   → if token exists, validate with /auth/me; on 401 try /auth/refresh.
+ *                    Only clear session on explicit 401/403 from the server.
  */
 import {
   createContext,
@@ -27,6 +26,7 @@ import {
   AuthUser,
   setAccessToken,
 } from "../services/api";
+import { pullSync, setSyncUserId } from "../services/sync";
 
 const USER_CACHE_KEY = "auth:cachedUser";
 
@@ -76,28 +76,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading: !cached,
   });
 
+  // Keep the sync layer aware of which user's buckets are active (for pull
+  // on tab focus + online).
   useEffect(() => {
-    // If we have a stored access token, verify it with /auth/me (no cookie needed).
-    // Otherwise try cookie-based refresh as fallback.
-    const validate = cached
-      ? apiMe().then((user) => ({ user, access_token: _getStoredToken() }))
-      : apiRefresh();
+    setSyncUserId(state.user?.id ?? null);
+  }, [state.user?.id]);
 
-    validate
+  // When the refresh token is gone/invalid, axios clears the session; sync UI to login.
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setAccessToken(null);
+      saveCachedUser(null);
+      setState({ user: null, loading: false });
+    };
+    window.addEventListener("auth:session-expired", onSessionExpired);
+    return () => window.removeEventListener("auth:session-expired", onSessionExpired);
+  }, []);
+
+  useEffect(() => {
+    // Restore session strategy:
+    //  1. If an access token exists, call /auth/me (works without cookies on iOS PWA).
+    //  2. On 401 from /auth/me, fall back to /auth/refresh (httpOnly cookie).
+    //  3. With no stored token, try /auth/refresh only (first visit after old builds).
+    const restore = async (): Promise<{ user: AuthUser; access_token: string | null }> => {
+      const token = _getStoredToken();
+      if (token) {
+        try {
+          const user = await apiMe();
+          return { user, access_token: token };
+        } catch (err: unknown) {
+          const st = (err as { response?: { status?: number } })?.response?.status;
+          if (st !== 401) throw err;
+        }
+      }
+      const { user, access_token } = await apiRefresh();
+      return { user, access_token };
+    };
+
+    restore()
       .then(({ user, access_token }) => {
         if (access_token) setAccessToken(access_token);
         saveCachedUser(user);
         setState({ user, loading: false });
+        void pullSync(user.id);
       })
       .catch((err) => {
         const status = err?.response?.status;
         if (status === 401) {
-          // Token explicitly rejected — must log in again
+          // Both /auth/me and /auth/refresh rejected — must log in again.
           setAccessToken(null);
           saveCachedUser(null);
           setState({ user: null, loading: false });
         } else {
-          // Network error / server cold start — keep cached session, token stays in localStorage
+          // Network error / server cold start — keep cached session.
           setState((prev) => ({ ...prev, loading: false }));
         }
       });
@@ -108,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(access_token);
     saveCachedUser(user);
     setState({ user, loading: false });
+    void pullSync(user.id);
   }, []);
 
   const register = useCallback(
@@ -116,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(access_token);
       saveCachedUser(user);
       setState({ user, loading: false });
+      void pullSync(user.id);
     },
     []
   );

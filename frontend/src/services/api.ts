@@ -13,7 +13,7 @@ const baseURL = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 export const client = axios.create({
   baseURL,
   timeout: 25000,
-  withCredentials: true,   // send httpOnly cookies (refresh_token)
+  withCredentials: true, // send httpOnly cookies (refresh_token)
 });
 
 // ── Access-token injection ──────────────────────────────
@@ -32,6 +32,11 @@ export function setAccessToken(token: string | null): void {
   } catch { /* ignore */ }
 }
 
+function dispatchSessionExpired(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("auth:session-expired"));
+}
+
 client.interceptors.request.use((config) => {
   if (_accessToken) {
     config.headers.Authorization = `Bearer ${_accessToken}`;
@@ -41,14 +46,26 @@ client.interceptors.request.use((config) => {
 
 // ── Silent refresh on 401 ───────────────────────────────
 let _isRefreshing = false;
-let _refreshSubscribers: Array<(token: string) => void> = [];
+type RefreshWaiter = (r: { ok: true; token: string } | { ok: false; error: unknown }) => void;
+const _refreshWaiters: RefreshWaiter[] = [];
 
-function subscribeTokenRefresh(cb: (token: string) => void) {
-  _refreshSubscribers.push(cb);
+function waitForRefresh() {
+  return new Promise<string>((resolve, reject) => {
+    _refreshWaiters.push((r) => {
+      if (r.ok) resolve(r.token);
+      else    reject(r.error);
+    });
+  });
 }
-function onTokenRefreshed(newToken: string) {
-  _refreshSubscribers.forEach((cb) => cb(newToken));
-  _refreshSubscribers = [];
+
+function flushRefreshSuccess(token: string): void {
+  const q = _refreshWaiters.splice(0, _refreshWaiters.length);
+  q.forEach((w) => w({ ok: true, token }));
+}
+
+function flushRefreshFailure(err: unknown): void {
+  const q = _refreshWaiters.splice(0, _refreshWaiters.length);
+  q.forEach((w) => w({ ok: false, error: err }));
 }
 
 client.interceptors.response.use(
@@ -58,29 +75,41 @@ client.interceptors.response.use(
     if (!original) return Promise.reject(error);
 
     // Never retry auth routes themselves — would create infinite loops
-    const isAuthRoute = original.url?.startsWith("/auth/");
+    const isAuthRoute = original.url?.includes("/auth/");
     if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
       if (_isRefreshing) {
-        return new Promise((resolve) => {
-          subscribeTokenRefresh((token) => {
-            original.headers = original.headers ?? {};
-            original.headers.Authorization = `Bearer ${token}`;
-            resolve(client(original));
-          });
-        });
+        try {
+          const token = await waitForRefresh();
+          original._retry = true;
+          original.headers = original.headers ?? {};
+          original.headers.Authorization = `Bearer ${token}`;
+          return client(original);
+        } catch (e) {
+          return Promise.reject(e);
+        }
       }
+
       original._retry = true;
       _isRefreshing = true;
       try {
         const { data } = await client.post<{ access_token: string }>("/auth/refresh");
-        _accessToken = data.access_token;
+        if (!data?.access_token) {
+          throw new Error("no access_token in refresh response");
+        }
         setAccessToken(data.access_token);
-        onTokenRefreshed(data.access_token);
+        flushRefreshSuccess(data.access_token);
         original.headers = original.headers ?? {};
         original.headers.Authorization = `Bearer ${data.access_token}`;
         return client(original);
-      } catch {
-        _accessToken = null;
+      } catch (e) {
+        // Only wipe the session when the server rejects the refresh token.
+        // Network / timeout / 5xx must NOT log the user out — token may still be valid.
+        const status = (e as AxiosError)?.response?.status;
+        if (status === 401 || status === 403) {
+          setAccessToken(null);
+          dispatchSessionExpired();
+        }
+        flushRefreshFailure(e);
         return Promise.reject(error);
       } finally {
         _isRefreshing = false;
