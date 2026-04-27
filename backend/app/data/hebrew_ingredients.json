@@ -2,7 +2,11 @@
   "ingredients": [
     {
       "name": "פתיבר",
-      "aliases": ["פתי בר", "פתיברים", "פתי-בר"],
+      "aliases": [
+        "פתי בר",
+        "פתיברים",
+        "פתי-בר"
+      ],
       "nutrition_per_100g": {
         "calories": 430,
         "protein": 7,
@@ -15,7 +19,10 @@
     },
     {
       "name": "ביצה",
-      "aliases": ["ביצים", "ביצה רגילה"],
+      "aliases": [
+        "ביצים",
+        "ביצה רגילה"
+      ],
       "nutrition_per_100g": {
         "calories": 125,
         "protein": 16.7,
@@ -28,7 +35,11 @@
     },
     {
       "name": "ביצה L",
-      "aliases": ["ביצה גדולה", "ביצים L", "ביצה l"],
+      "aliases": [
+        "ביצה גדולה",
+        "ביצים L",
+        "ביצה l"
+      ],
       "nutrition_per_100g": {
         "calories": 125,
         "protein": 16.7,
@@ -41,7 +52,11 @@
     },
     {
       "name": "ביצה XL",
-      "aliases": ["ביצה ענקית", "ביצים XL", "ביצה xl"],
+      "aliases": [
+        "ביצה ענקית",
+        "ביצים XL",
+        "ביצה xl"
+      ],
       "nutrition_per_100g": {
         "calories": 125,
         "protein": 16.7,
@@ -54,7 +69,11 @@
     },
     {
       "name": "ביצה M",
-      "aliases": ["ביצה בינונית", "ביצים M", "ביצה m"],
+      "aliases": [
+        "ביצה בינונית",
+        "ביצים M",
+        "ביצה m"
+      ],
       "nutrition_per_100g": {
         "calories": 125,
         "protein": 16.7,
@@ -67,7 +86,11 @@
     },
     {
       "name": "ביצה S",
-      "aliases": ["ביצה קטנה", "ביצים S", "ביצה s"],
+      "aliases": [
+        "ביצה קטנה",
+        "ביצים S",
+        "ביצה s"
+      ],
       "nutrition_per_100g": {
         "calories": 125,
         "protein": 16.7,
@@ -80,7 +103,10 @@
     },
     {
       "name": "קמח",
-      "aliases": ["קמח לבן", "קמח חיטה"],
+      "aliases": [
+        "קמח לבן",
+        "קמח חיטה"
+      ],
       "nutrition_per_100g": {
         "calories": 364,
         "protein": 10,
@@ -92,7 +118,9 @@
     },
     {
       "name": "קמח מלא",
-      "aliases": ["קמח חיטה מלא"],
+      "aliases": [
+        "קמח חיטה מלא"
+      ],
       "nutrition_per_100g": {
         "calories": 340,
         "protein": 13,
@@ -104,7 +132,9 @@
     },
     {
       "name": "סוכר",
-      "aliases": ["סוכר לבן"],
+      "aliases": [
+        "סוכר לבן"
+      ],
       "nutrition_per_100g": {
         "calories": 387,
         "protein": 0,
@@ -116,7 +146,9 @@
     },
     {
       "name": "סוכר חום",
-      "aliases": ["סוכר דמררה"],
+      "aliases": [
+        "סוכר דמררה"
+      ],
       "nutrition_per_100g": {
         "calories": 380,
         "protein": 0,
@@ -152,7 +184,11 @@
     },
     {
       "name": "שמן",
-      "aliases": ["שמן קנולה", "שמן צמחי", "שמן חמניות"],
+      "aliases": [
+        "שמן קנולה",
+        "שמן צמחי",
+        "שמן חמניות"
+      ],
       "nutrition_per_100g": {
         "calories": 884,
         "protein": 0,
@@ -164,7 +200,9 @@
     },
     {
       "name": "חלב",
-      "aliases": ["חלב 3%"],
+      "aliases": [
+        "חלב 3%"
+      ],
       "nutrition_per_100g": {
         "calories": 60,
         "protein": 3.2,
@@ -200,7 +238,10 @@
     },
     {
       "name": "שוקולד",
-      "aliases": ["שוקולד מריר", "שוקולד חלב"],
+      "aliases": [
+        "שוקולד מריר",
+        "שוקולד חלב"
+      ],
       "nutrition_per_100g": {
         "calories": 546,
         "protein": 4.9,
@@ -212,7 +253,9 @@
     },
     {
       "name": "אגוזים",
-      "aliases": ["אגוזי מלך"],
+      "aliases": [
+        "אגוזי מלך"
+      ],
       "nutrition_per_100g": {
         "calories": 654,
         "protein": 15,
@@ -236,7 +279,9 @@
     },
     {
       "name": "אורז",
-      "aliases": ["אורז לבן"],
+      "aliases": [
+        "אורז לבן"
+      ],
       "nutrition_per_100g": {
         "calories": 365,
         "protein": 7.1,
@@ -260,7 +305,10 @@
     },
     {
       "name": "פסטה",
-      "aliases": ["מקרוני", "ספגטי"],
+      "aliases": [
+        "מקרוני",
+        "ספגטי"
+      ],
       "nutrition_per_100g": {
         "calories": 371,
         "protein": 13,
@@ -272,7 +320,9 @@
     },
     {
       "name": "לחם",
-      "aliases": ["לחם לבן"],
+      "aliases": [
+        "לחם לבן"
+      ],
       "nutrition_per_100g": {
         "calories": 265,
         "protein": 9,
@@ -284,7 +334,10 @@
     },
     {
       "name": "גבינה צהובה",
-      "aliases": ["גבינה אמנטל", "גבינה צ'דר"],
+      "aliases": [
+        "גבינה אמנטל",
+        "גבינה צ'דר"
+      ],
       "nutrition_per_100g": {
         "calories": 380,
         "protein": 25,
@@ -296,7 +349,9 @@
     },
     {
       "name": "גבינה לבנה",
-      "aliases": ["גבינה 5%"],
+      "aliases": [
+        "גבינה 5%"
+      ],
       "nutrition_per_100g": {
         "calories": 98,
         "protein": 11,
@@ -308,7 +363,9 @@
     },
     {
       "name": "גבינת שמנת",
-      "aliases": ["שמנת לבישול"],
+      "aliases": [
+        "שמנת לבישול"
+      ],
       "nutrition_per_100g": {
         "calories": 342,
         "protein": 6,
@@ -320,7 +377,9 @@
     },
     {
       "name": "שמנת מתוקה",
-      "aliases": ["שמנת להקצפה"],
+      "aliases": [
+        "שמנת להקצפה"
+      ],
       "nutrition_per_100g": {
         "calories": 340,
         "protein": 2,
@@ -332,7 +391,10 @@
     },
     {
       "name": "עגבנייה",
-      "aliases": ["עגבנייה אדומה", "עגבניות"],
+      "aliases": [
+        "עגבנייה אדומה",
+        "עגבניות"
+      ],
       "nutrition_per_100g": {
         "calories": 18,
         "protein": 0.9,
@@ -345,7 +407,9 @@
     },
     {
       "name": "מלפפון",
-      "aliases": ["מלפפונים"],
+      "aliases": [
+        "מלפפונים"
+      ],
       "nutrition_per_100g": {
         "calories": 15,
         "protein": 0.7,
@@ -371,7 +435,9 @@
     },
     {
       "name": "שום",
-      "aliases": ["שיני שום"],
+      "aliases": [
+        "שיני שום"
+      ],
       "nutrition_per_100g": {
         "calories": 149,
         "protein": 6,
@@ -384,7 +450,9 @@
     },
     {
       "name": "גזר",
-      "aliases": ["גזרים"],
+      "aliases": [
+        "גזרים"
+      ],
       "nutrition_per_100g": {
         "calories": 41,
         "protein": 0.9,
@@ -397,7 +465,9 @@
     },
     {
       "name": "תפוח",
-      "aliases": ["תפוח עץ"],
+      "aliases": [
+        "תפוח עץ"
+      ],
       "nutrition_per_100g": {
         "calories": 52,
         "protein": 0.3,
@@ -410,7 +480,9 @@
     },
     {
       "name": "בננה",
-      "aliases": ["בננות"],
+      "aliases": [
+        "בננות"
+      ],
       "nutrition_per_100g": {
         "calories": 89,
         "protein": 1.1,
@@ -423,7 +495,10 @@
     },
     {
       "name": "תפוח אדמה",
-      "aliases": ["תפו\"א", "תפוחי אדמה"],
+      "aliases": [
+        "תפו\"א",
+        "תפוחי אדמה"
+      ],
       "nutrition_per_100g": {
         "calories": 77,
         "protein": 2,
@@ -436,7 +511,10 @@
     },
     {
       "name": "חזה עוף",
-      "aliases": ["עוף", "בשר עוף"],
+      "aliases": [
+        "עוף",
+        "בשר עוף"
+      ],
       "nutrition_per_100g": {
         "calories": 165,
         "protein": 31,
@@ -448,7 +526,10 @@
     },
     {
       "name": "בשר בקר",
-      "aliases": ["בקר טחון", "בשר טחון"],
+      "aliases": [
+        "בקר טחון",
+        "בשר טחון"
+      ],
       "nutrition_per_100g": {
         "calories": 250,
         "protein": 26,
@@ -460,7 +541,9 @@
     },
     {
       "name": "סלמון",
-      "aliases": ["דג סלמון"],
+      "aliases": [
+        "דג סלמון"
+      ],
       "nutrition_per_100g": {
         "calories": 208,
         "protein": 20,
@@ -472,7 +555,9 @@
     },
     {
       "name": "טונה",
-      "aliases": ["טונה במים"],
+      "aliases": [
+        "טונה במים"
+      ],
       "nutrition_per_100g": {
         "calories": 108,
         "protein": 21.7,
@@ -506,7 +591,9 @@
     },
     {
       "name": "קקאו",
-      "aliases": ["אבקת קקאו"],
+      "aliases": [
+        "אבקת קקאו"
+      ],
       "nutrition_per_100g": {
         "calories": 228,
         "protein": 19.6,
@@ -530,7 +617,9 @@
     },
     {
       "name": "שמרים",
-      "aliases": ["שמרים יבשים"],
+      "aliases": [
+        "שמרים יבשים"
+      ],
       "nutrition_per_100g": {
         "calories": 325,
         "protein": 40,
@@ -542,7 +631,10 @@
     },
     {
       "name": "וניל",
-      "aliases": ["תמצית וניל", "סוכר וניל"],
+      "aliases": [
+        "תמצית וניל",
+        "סוכר וניל"
+      ],
       "nutrition_per_100g": {
         "calories": 288,
         "protein": 0.1,
@@ -554,7 +646,9 @@
     },
     {
       "name": "מלח",
-      "aliases": ["מלח שולחן"],
+      "aliases": [
+        "מלח שולחן"
+      ],
       "nutrition_per_100g": {
         "calories": 0,
         "protein": 0,
@@ -578,7 +672,9 @@
     },
     {
       "name": "שיבולת שועל",
-      "aliases": ["קוואקר"],
+      "aliases": [
+        "קוואקר"
+      ],
       "nutrition_per_100g": {
         "calories": 389,
         "protein": 17,
@@ -626,7 +722,9 @@
     },
     {
       "name": "רוטב סויה",
-      "aliases": ["סויה"],
+      "aliases": [
+        "סויה"
+      ],
       "nutrition_per_100g": {
         "calories": 53,
         "protein": 8,
@@ -663,7 +761,9 @@
     },
     {
       "name": "חומוס",
-      "aliases": ["גרגירי חומוס"],
+      "aliases": [
+        "גרגירי חומוס"
+      ],
       "nutrition_per_100g": {
         "calories": 164,
         "protein": 9,
@@ -687,7 +787,10 @@
     },
     {
       "name": "פרוסת לחם",
-      "aliases": ["פרוסת לחם לבן", "פרוסת לחם פרוס"],
+      "aliases": [
+        "פרוסת לחם לבן",
+        "פרוסת לחם פרוס"
+      ],
       "nutrition_per_100g": {
         "calories": 265,
         "protein": 9,
@@ -700,7 +803,9 @@
     },
     {
       "name": "פרוסת לחם מלא",
-      "aliases": ["פרוסת לחם חיטה מלאה"],
+      "aliases": [
+        "פרוסת לחם חיטה מלאה"
+      ],
       "nutrition_per_100g": {
         "calories": 247,
         "protein": 13,
@@ -713,7 +818,10 @@
     },
     {
       "name": "גביע יוגורט",
-      "aliases": ["יוגורט בגביע", "גביע של יוגורט"],
+      "aliases": [
+        "יוגורט בגביע",
+        "גביע של יוגורט"
+      ],
       "nutrition_per_100g": {
         "calories": 61,
         "protein": 3.5,
@@ -726,7 +834,11 @@
     },
     {
       "name": "גביע קוטג'",
-      "aliases": ["גביע קוטג", "קופסת קוטג'", "קופסת קוטג"],
+      "aliases": [
+        "גביע קוטג",
+        "קופסת קוטג'",
+        "קופסת קוטג"
+      ],
       "nutrition_per_100g": {
         "calories": 98,
         "protein": 11,
@@ -739,7 +851,10 @@
     },
     {
       "name": "חבילת גבינה לבנה",
-      "aliases": ["קופסת גבינה לבנה", "חבילת גבינה לבנה 5%"],
+      "aliases": [
+        "קופסת גבינה לבנה",
+        "חבילת גבינה לבנה 5%"
+      ],
       "nutrition_per_100g": {
         "calories": 98,
         "protein": 11,
@@ -752,7 +867,10 @@
     },
     {
       "name": "חבילת חמאה",
-      "aliases": ["קופסת חמאה", "גוש חמאה"],
+      "aliases": [
+        "קופסת חמאה",
+        "גוש חמאה"
+      ],
       "nutrition_per_100g": {
         "calories": 717,
         "protein": 0.9,
@@ -765,7 +883,11 @@
     },
     {
       "name": "פרוסת גבינה צהובה",
-      "aliases": ["פרוסת אמנטל", "פרוסת צ'דר", "פרוסת גבינה"],
+      "aliases": [
+        "פרוסת אמנטל",
+        "פרוסת צ'דר",
+        "פרוסת גבינה"
+      ],
       "nutrition_per_100g": {
         "calories": 380,
         "protein": 25,
@@ -778,7 +900,13 @@
     },
     {
       "name": "פרכיות אורז",
-      "aliases": ["פרכיות", "פריכיות", "פריכיות אורז", "פרכית אורז", "פרכית"],
+      "aliases": [
+        "פרכיות",
+        "פריכיות",
+        "פריכיות אורז",
+        "פרכית אורז",
+        "פרכית"
+      ],
       "nutrition_per_100g": {
         "calories": 387,
         "protein": 8,
@@ -791,7 +919,11 @@
     },
     {
       "name": "בורגול",
-      "aliases": ["בורגל", "בורגול גס", "בורגול דק"],
+      "aliases": [
+        "בורגל",
+        "בורגול גס",
+        "בורגול דק"
+      ],
       "nutrition_per_100g": {
         "calories": 342,
         "protein": 12,
@@ -803,7 +935,9 @@
     },
     {
       "name": "בורגול מבושל",
-      "aliases": ["בורגול מוכן"],
+      "aliases": [
+        "בורגול מוכן"
+      ],
       "nutrition_per_100g": {
         "calories": 83,
         "protein": 3.1,
@@ -851,6 +985,1116 @@
         "sodium": 80
       },
       "unit_weight_g": 250
+    },
+    {
+      "name": "אצבעות שניצל שומשום",
+      "aliases": [
+        "שניצל עוף"
+      ],
+      "nutrition_per_100g": {
+        "calories": 218.0,
+        "protein": 15.0,
+        "carbohydrates": 17.0,
+        "sugar": 0.0,
+        "fat": 10.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "לחם מלא פרוס",
+      "aliases": [
+        "לחם מלא"
+      ],
+      "nutrition_per_100g": {
+        "calories": 225.0,
+        "protein": 13.33,
+        "carbohydrates": 29.33,
+        "sugar": 1.33,
+        "fat": 6.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "לחם שיפון וחיטה מלאה אנג’ל",
+      "aliases": [
+        "לחם שיפון"
+      ],
+      "nutrition_per_100g": {
+        "calories": 228.0,
+        "protein": 12.5,
+        "carbohydrates": 34.5,
+        "sugar": 1.4,
+        "fat": 2.8,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "משקה שיבולת שועל",
+      "aliases": [
+        "שיבולת שועל"
+      ],
+      "nutrition_per_100g": {
+        "calories": 54.0,
+        "protein": 1.1,
+        "carbohydrates": 5.0,
+        "sugar": 3.0,
+        "fat": 3.0,
+        "sodium": 40.0
+      }
+    },
+    {
+      "name": "קישוא ממולא באורז",
+      "aliases": [
+        "קישוא"
+      ],
+      "nutrition_per_100g": {
+        "calories": 110.0,
+        "protein": 2.2,
+        "carbohydrates": 14.7,
+        "sugar": 2.5,
+        "fat": 4.9,
+        "sodium": 360.0
+      }
+    },
+    {
+      "name": "צ׳יפס בטטה",
+      "aliases": [
+        "בטטה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 160.0,
+        "protein": 2.0,
+        "carbohydrates": 21.0,
+        "sugar": 8.0,
+        "fat": 7.0,
+        "sodium": 160.0
+      }
+    },
+    {
+      "name": "La fruta תות שדה",
+      "aliases": [
+        "תות שדה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 106.67,
+        "protein": 0.0,
+        "carbohydrates": 25.5,
+        "sugar": 17.5,
+        "fat": 0.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "משקה אגס, מלון, לימון",
+      "aliases": [
+        "אגס"
+      ],
+      "nutrition_per_100g": {
+        "calories": 42.0,
+        "protein": 0.0,
+        "carbohydrates": 10.3,
+        "sugar": 9.7,
+        "fat": 0.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "חומוס גרגירים שלם מוכן לאכילה",
+      "aliases": [
+        "חומוס מוכן"
+      ],
+      "nutrition_per_100g": {
+        "calories": 113.0,
+        "protein": 7.0,
+        "carbohydrates": 12.1,
+        "sugar": 0.0,
+        "fat": 1.7,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "ממרח שקדים",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 640.0,
+        "protein": 27.0,
+        "carbohydrates": 13.4,
+        "sugar": 4.1,
+        "fat": 55.0,
+        "sodium": 20.0
+      }
+    },
+    {
+      "name": "ביסלי גריל",
+      "aliases": [
+        "ביסלי"
+      ],
+      "nutrition_per_100g": {
+        "calories": 507.0,
+        "protein": 10.0,
+        "carbohydrates": 65.0,
+        "sugar": 1.2,
+        "fat": 23.0,
+        "sodium": 390.0
+      }
+    },
+    {
+      "name": "פרגית",
+      "aliases": [
+        "ירך עוף ללא עצם",
+        "ירך עוף"
+      ],
+      "nutrition_per_100g": {
+        "calories": 177,
+        "protein": 18,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 11,
+        "sodium": 80
+      }
+    },
+    {
+      "name": "בשר טחון עוף",
+      "aliases": [
+        "טחון עוף",
+        "עוף טחון"
+      ],
+      "nutrition_per_100g": {
+        "calories": 143,
+        "protein": 17,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 8,
+        "sodium": 70
+      }
+    },
+    {
+      "name": "הודו טחון",
+      "aliases": [
+        "טחון הודו",
+        "בשר הודו טחון"
+      ],
+      "nutrition_per_100g": {
+        "calories": 155,
+        "protein": 20,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 8,
+        "sodium": 65
+      }
+    },
+    {
+      "name": "חזה הודו",
+      "aliases": [
+        "הודו",
+        "פרוסות הודו"
+      ],
+      "nutrition_per_100g": {
+        "calories": 135,
+        "protein": 30,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 1,
+        "sodium": 57
+      }
+    },
+    {
+      "name": "בשר בקר טחון",
+      "aliases": [
+        "טחון בקר",
+        "קציצות בקר"
+      ],
+      "nutrition_per_100g": {
+        "calories": 254,
+        "protein": 26,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 17,
+        "sodium": 72
+      }
+    },
+    {
+      "name": "כבד עוף",
+      "aliases": [
+        "כבד"
+      ],
+      "nutrition_per_100g": {
+        "calories": 167,
+        "protein": 24,
+        "carbohydrates": 0.9,
+        "sugar": 0,
+        "fat": 7,
+        "sodium": 71
+      }
+    },
+    {
+      "name": "דג לברק",
+      "aliases": [
+        "לברק"
+      ],
+      "nutrition_per_100g": {
+        "calories": 124,
+        "protein": 23,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 3.5,
+        "sodium": 60
+      },
+      "unit_weight_g": 300
+    },
+    {
+      "name": "דג מוסר",
+      "aliases": [
+        "מוסר ים"
+      ],
+      "nutrition_per_100g": {
+        "calories": 130,
+        "protein": 24,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 3.8,
+        "sodium": 65
+      },
+      "unit_weight_g": 250
+    },
+    {
+      "name": "פילה בקלה",
+      "aliases": [
+        "בקלה",
+        "קוד"
+      ],
+      "nutrition_per_100g": {
+        "calories": 82,
+        "protein": 18,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 0.7,
+        "sodium": 54
+      }
+    },
+    {
+      "name": "סרדינים",
+      "aliases": [
+        "סרדין"
+      ],
+      "nutrition_per_100g": {
+        "calories": 208,
+        "protein": 25,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 11,
+        "sodium": 307
+      }
+    },
+    {
+      "name": "חלבון ביצה",
+      "aliases": [
+        "לבן ביצה",
+        "חלבוני ביצה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 52,
+        "protein": 11,
+        "carbohydrates": 0.7,
+        "sugar": 0.7,
+        "fat": 0.2,
+        "sodium": 166
+      }
+    },
+    {
+      "name": "יוגורט יווני",
+      "aliases": [
+        "יוגורט 0%",
+        "יוגורט לייט"
+      ],
+      "nutrition_per_100g": {
+        "calories": 59,
+        "protein": 10,
+        "carbohydrates": 3.6,
+        "sugar": 3.6,
+        "fat": 0.4,
+        "sodium": 36
+      }
+    },
+    {
+      "name": "גבינה בולגרית",
+      "aliases": [
+        "גבינה בולגרית 5%"
+      ],
+      "nutrition_per_100g": {
+        "calories": 264,
+        "protein": 14,
+        "carbohydrates": 1,
+        "sugar": 1,
+        "fat": 23,
+        "sodium": 800
+      }
+    },
+    {
+      "name": "גבינת פטה",
+      "aliases": [
+        "פטה",
+        "גבינת פטה יוונית"
+      ],
+      "nutrition_per_100g": {
+        "calories": 264,
+        "protein": 14,
+        "carbohydrates": 1,
+        "sugar": 1,
+        "fat": 23,
+        "sodium": 800
+      }
+    },
+    {
+      "name": "ריקוטה",
+      "aliases": [
+        "גבינת ריקוטה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 174,
+        "protein": 11,
+        "carbohydrates": 3,
+        "sugar": 0.3,
+        "fat": 13,
+        "sodium": 84
+      }
+    },
+    {
+      "name": "לאבנה",
+      "aliases": [
+        "גבינת לאבנה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 180,
+        "protein": 7,
+        "carbohydrates": 5,
+        "sugar": 5,
+        "fat": 14,
+        "sodium": 430
+      }
+    },
+    {
+      "name": "חלב 1%",
+      "aliases": [
+        "חלב דל שומן"
+      ],
+      "nutrition_per_100g": {
+        "calories": 42,
+        "protein": 3.4,
+        "carbohydrates": 5,
+        "sugar": 5,
+        "fat": 1,
+        "sodium": 44
+      }
+    },
+    {
+      "name": "חלב 0%",
+      "aliases": [
+        "חלב רזה",
+        "חלב גמלים"
+      ],
+      "nutrition_per_100g": {
+        "calories": 33,
+        "protein": 3.3,
+        "carbohydrates": 4.8,
+        "sugar": 4.8,
+        "fat": 0.1,
+        "sodium": 44
+      }
+    },
+    {
+      "name": "שמנת חמוצה",
+      "aliases": [
+        "שמנת"
+      ],
+      "nutrition_per_100g": {
+        "calories": 193,
+        "protein": 2.4,
+        "carbohydrates": 4,
+        "sugar": 4,
+        "fat": 19,
+        "sodium": 41
+      }
+    },
+    {
+      "name": "גבינת מוצרלה",
+      "aliases": [
+        "מוצרלה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 280,
+        "protein": 22,
+        "carbohydrates": 2.2,
+        "sugar": 1,
+        "fat": 20,
+        "sodium": 430
+      }
+    },
+    {
+      "name": "חלב שקדים",
+      "aliases": [
+        "חלב שקדים לא ממותק"
+      ],
+      "nutrition_per_100g": {
+        "calories": 15,
+        "protein": 0.6,
+        "carbohydrates": 0.6,
+        "sugar": 0.1,
+        "fat": 1.1,
+        "sodium": 65
+      }
+    },
+    {
+      "name": "חלב סויה",
+      "aliases": [
+        "חלב סויה לא ממותק"
+      ],
+      "nutrition_per_100g": {
+        "calories": 33,
+        "protein": 3.3,
+        "carbohydrates": 1.8,
+        "sugar": 1,
+        "fat": 1.8,
+        "sodium": 40
+      }
+    },
+    {
+      "name": "חלב שיבולת שועל",
+      "aliases": [
+        "אוט מילק"
+      ],
+      "nutrition_per_100g": {
+        "calories": 47,
+        "protein": 1,
+        "carbohydrates": 6.6,
+        "sugar": 4,
+        "fat": 1.5,
+        "sodium": 60
+      }
+    },
+    {
+      "name": "אורז בסמטי",
+      "aliases": [
+        "אורז בסמטי לבן"
+      ],
+      "nutrition_per_100g": {
+        "calories": 356,
+        "protein": 7,
+        "carbohydrates": 79,
+        "sugar": 0,
+        "fat": 0.6,
+        "sodium": 5
+      }
+    },
+    {
+      "name": "אורז מלא",
+      "aliases": [
+        "אורז חום"
+      ],
+      "nutrition_per_100g": {
+        "calories": 370,
+        "protein": 8,
+        "carbohydrates": 77,
+        "sugar": 0.7,
+        "fat": 2.7,
+        "sodium": 7
+      }
+    },
+    {
+      "name": "פסטה מלאה",
+      "aliases": [
+        "ספגטי מלא",
+        "פסטה חיטה מלאה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 348,
+        "protein": 14,
+        "carbohydrates": 68,
+        "sugar": 3,
+        "fat": 2,
+        "sodium": 8
+      }
+    },
+    {
+      "name": "קינואה",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 368,
+        "protein": 14,
+        "carbohydrates": 64,
+        "sugar": 0,
+        "fat": 6,
+        "sodium": 5
+      }
+    },
+    {
+      "name": "כוסמת",
+      "aliases": [
+        "כוסמת יבשה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 343,
+        "protein": 13,
+        "carbohydrates": 71,
+        "sugar": 0,
+        "fat": 3.4,
+        "sodium": 1
+      }
+    },
+    {
+      "name": "אורז מבושל",
+      "aliases": [
+        "אורז מוכן"
+      ],
+      "nutrition_per_100g": {
+        "calories": 130,
+        "protein": 2.7,
+        "carbohydrates": 28,
+        "sugar": 0,
+        "fat": 0.3,
+        "sodium": 5
+      }
+    },
+    {
+      "name": "פסטה מבושלת",
+      "aliases": [
+        "פסטה מוכנה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 158,
+        "protein": 5.5,
+        "carbohydrates": 31,
+        "sugar": 0.6,
+        "fat": 0.9,
+        "sodium": 4
+      }
+    },
+    {
+      "name": "קינואה מבושלת",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 120,
+        "protein": 4.4,
+        "carbohydrates": 21,
+        "sugar": 0.9,
+        "fat": 1.9,
+        "sodium": 7
+      }
+    },
+    {
+      "name": "פיתה",
+      "aliases": [
+        "לחם פיתה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 275,
+        "protein": 9,
+        "carbohydrates": 56,
+        "sugar": 0.5,
+        "fat": 1.2,
+        "sodium": 490
+      },
+      "unit_weight_g": 55
+    },
+    {
+      "name": "לחם מחמצת",
+      "aliases": [
+        "לחם סאורדאו"
+      ],
+      "nutrition_per_100g": {
+        "calories": 236,
+        "protein": 8,
+        "carbohydrates": 46,
+        "sugar": 1.2,
+        "fat": 1.5,
+        "sodium": 440
+      }
+    },
+    {
+      "name": "שעועית שחורה",
+      "aliases": [
+        "שעועית שחורה מבושלת"
+      ],
+      "nutrition_per_100g": {
+        "calories": 132,
+        "protein": 8.9,
+        "carbohydrates": 24,
+        "sugar": 0.3,
+        "fat": 0.5,
+        "sodium": 240
+      }
+    },
+    {
+      "name": "אפונה",
+      "aliases": [
+        "אפונה ירוקה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 81,
+        "protein": 5.4,
+        "carbohydrates": 14,
+        "sugar": 5.7,
+        "fat": 0.4,
+        "sodium": 5
+      }
+    },
+    {
+      "name": "ברוקולי",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 34,
+        "protein": 2.8,
+        "carbohydrates": 7,
+        "sugar": 1.7,
+        "fat": 0.4,
+        "sodium": 33
+      }
+    },
+    {
+      "name": "כרובית",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 25,
+        "protein": 2,
+        "carbohydrates": 5,
+        "sugar": 1.9,
+        "fat": 0.3,
+        "sodium": 30
+      }
+    },
+    {
+      "name": "תרד",
+      "aliases": [
+        "עלי תרד"
+      ],
+      "nutrition_per_100g": {
+        "calories": 23,
+        "protein": 2.9,
+        "carbohydrates": 3.6,
+        "sugar": 0.4,
+        "fat": 0.4,
+        "sodium": 79
+      }
+    },
+    {
+      "name": "שעועית ירוקה",
+      "aliases": [
+        "שעועית",
+        "פול ירוק"
+      ],
+      "nutrition_per_100g": {
+        "calories": 31,
+        "protein": 1.8,
+        "carbohydrates": 7,
+        "sugar": 3.3,
+        "fat": 0.2,
+        "sodium": 6
+      }
+    },
+    {
+      "name": "פלפל אדום",
+      "aliases": [
+        "פלפל"
+      ],
+      "nutrition_per_100g": {
+        "calories": 31,
+        "protein": 1,
+        "carbohydrates": 6,
+        "sugar": 4.2,
+        "fat": 0.3,
+        "sodium": 4
+      },
+      "unit_weight_g": 150
+    },
+    {
+      "name": "פלפל ירוק",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 20,
+        "protein": 0.9,
+        "carbohydrates": 4.6,
+        "sugar": 2.4,
+        "fat": 0.2,
+        "sodium": 3
+      },
+      "unit_weight_g": 150
+    },
+    {
+      "name": "חציל",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 25,
+        "protein": 1,
+        "carbohydrates": 6,
+        "sugar": 3.5,
+        "fat": 0.2,
+        "sodium": 2
+      },
+      "unit_weight_g": 350
+    },
+    {
+      "name": "אספרגוס",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 20,
+        "protein": 2.2,
+        "carbohydrates": 3.9,
+        "sugar": 1.9,
+        "fat": 0.1,
+        "sodium": 2
+      }
+    },
+    {
+      "name": "כרוב",
+      "aliases": [
+        "כרוב לבן"
+      ],
+      "nutrition_per_100g": {
+        "calories": 25,
+        "protein": 1.3,
+        "carbohydrates": 5.8,
+        "sugar": 3.2,
+        "fat": 0.1,
+        "sodium": 18
+      }
+    },
+    {
+      "name": "גמבה",
+      "aliases": [
+        "גמבה אדומה",
+        "גמבה ירוקה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 31,
+        "protein": 1,
+        "carbohydrates": 6,
+        "sugar": 4.2,
+        "fat": 0.3,
+        "sodium": 4
+      },
+      "unit_weight_g": 150
+    },
+    {
+      "name": "מנגולד",
+      "aliases": [
+        "עלי מנגולד"
+      ],
+      "nutrition_per_100g": {
+        "calories": 19,
+        "protein": 1.8,
+        "carbohydrates": 3.7,
+        "sugar": 1,
+        "fat": 0.2,
+        "sodium": 213
+      }
+    },
+    {
+      "name": "אבטיח",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 30,
+        "protein": 0.6,
+        "carbohydrates": 7.6,
+        "sugar": 6.2,
+        "fat": 0.2,
+        "sodium": 1
+      }
+    },
+    {
+      "name": "מלון",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 34,
+        "protein": 0.8,
+        "carbohydrates": 8,
+        "sugar": 7.9,
+        "fat": 0.2,
+        "sodium": 16
+      }
+    },
+    {
+      "name": "ענבים",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 69,
+        "protein": 0.6,
+        "carbohydrates": 18,
+        "sugar": 15,
+        "fat": 0.2,
+        "sodium": 2
+      }
+    },
+    {
+      "name": "מנגו",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 60,
+        "protein": 0.8,
+        "carbohydrates": 15,
+        "sugar": 14,
+        "fat": 0.4,
+        "sodium": 1
+      },
+      "unit_weight_g": 200
+    },
+    {
+      "name": "תמר",
+      "aliases": [
+        "תמרים"
+      ],
+      "nutrition_per_100g": {
+        "calories": 277,
+        "protein": 1.8,
+        "carbohydrates": 75,
+        "sugar": 63,
+        "fat": 0.2,
+        "sodium": 1
+      },
+      "unit_weight_g": 8
+    },
+    {
+      "name": "אפרסמון",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 70,
+        "protein": 0.6,
+        "carbohydrates": 18,
+        "sugar": 12,
+        "fat": 0.2,
+        "sodium": 1
+      },
+      "unit_weight_g": 170
+    },
+    {
+      "name": "שזיף",
+      "aliases": [
+        "שזיפים"
+      ],
+      "nutrition_per_100g": {
+        "calories": 46,
+        "protein": 0.7,
+        "carbohydrates": 11,
+        "sugar": 9.9,
+        "fat": 0.3,
+        "sodium": 0
+      },
+      "unit_weight_g": 65
+    },
+    {
+      "name": "אפרסק",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 39,
+        "protein": 0.9,
+        "carbohydrates": 10,
+        "sugar": 8.4,
+        "fat": 0.3,
+        "sodium": 0
+      },
+      "unit_weight_g": 150
+    },
+    {
+      "name": "קלמנטינה",
+      "aliases": [
+        "קלמנטינות",
+        "מנדרינה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 53,
+        "protein": 0.9,
+        "carbohydrates": 12,
+        "sugar": 9.4,
+        "fat": 0.3,
+        "sodium": 1
+      },
+      "unit_weight_g": 75
+    },
+    {
+      "name": "טחינה",
+      "aliases": [
+        "טחינה גולמית",
+        "טחינה ביתית"
+      ],
+      "nutrition_per_100g": {
+        "calories": 592,
+        "protein": 17,
+        "carbohydrates": 20,
+        "sugar": 0.5,
+        "fat": 53,
+        "sodium": 115
+      }
+    },
+    {
+      "name": "חמאת בוטנים",
+      "aliases": [
+        "ממרח בוטנים"
+      ],
+      "nutrition_per_100g": {
+        "calories": 598,
+        "protein": 25,
+        "carbohydrates": 20,
+        "sugar": 9,
+        "fat": 51,
+        "sodium": 420
+      }
+    },
+    {
+      "name": "שמן קוקוס",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 862,
+        "protein": 0,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 100,
+        "sodium": 0
+      }
+    },
+    {
+      "name": "גוואקמולי",
+      "aliases": [
+        "גואקמולי"
+      ],
+      "nutrition_per_100g": {
+        "calories": 155,
+        "protein": 2,
+        "carbohydrates": 9,
+        "sugar": 0.7,
+        "fat": 14,
+        "sodium": 240
+      }
+    },
+    {
+      "name": "גרנולה",
+      "aliases": [
+        "גרנולה ללא תוספות"
+      ],
+      "nutrition_per_100g": {
+        "calories": 471,
+        "protein": 10,
+        "carbohydrates": 64,
+        "sugar": 22,
+        "fat": 20,
+        "sodium": 300
+      }
+    },
+    {
+      "name": "שוקולד מריר 85%",
+      "aliases": [
+        "שוקולד 85%",
+        "שוקולד מריר"
+      ],
+      "nutrition_per_100g": {
+        "calories": 598,
+        "protein": 8,
+        "carbohydrates": 30,
+        "sugar": 8,
+        "fat": 50,
+        "sodium": 10
+      }
+    },
+    {
+      "name": "קרקר",
+      "aliases": [
+        "קרקרים",
+        "קרקר מלח"
+      ],
+      "nutrition_per_100g": {
+        "calories": 414,
+        "protein": 9,
+        "carbohydrates": 72,
+        "sugar": 1,
+        "fat": 12,
+        "sodium": 800
+      },
+      "unit_weight_g": 5
+    },
+    {
+      "name": "מצה",
+      "aliases": [
+        "מצות"
+      ],
+      "nutrition_per_100g": {
+        "calories": 395,
+        "protein": 11,
+        "carbohydrates": 83,
+        "sugar": 0.5,
+        "fat": 1.3,
+        "sodium": 3
+      },
+      "unit_weight_g": 30
+    },
+    {
+      "name": "במבה",
+      "aliases": [
+        "חטיף במבה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 526,
+        "protein": 10,
+        "carbohydrates": 60,
+        "sugar": 3,
+        "fat": 29,
+        "sodium": 378
+      }
+    },
+    {
+      "name": "מיץ תפוזים",
+      "aliases": [
+        "מיץ תפוז טבעי"
+      ],
+      "nutrition_per_100g": {
+        "calories": 45,
+        "protein": 0.7,
+        "carbohydrates": 10,
+        "sugar": 8.4,
+        "fat": 0.2,
+        "sodium": 1
+      }
+    },
+    {
+      "name": "מיץ עגבניות",
+      "aliases": [
+        "מיץ עגבנייה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 17,
+        "protein": 0.9,
+        "carbohydrates": 3.5,
+        "sugar": 2.6,
+        "fat": 0.1,
+        "sodium": 223
+      }
+    },
+    {
+      "name": "קפה שחור",
+      "aliases": [
+        "קפה",
+        "קפה בלי סוכר"
+      ],
+      "nutrition_per_100g": {
+        "calories": 2,
+        "protein": 0.3,
+        "carbohydrates": 0,
+        "sugar": 0,
+        "fat": 0,
+        "sodium": 4
+      }
+    },
+    {
+      "name": "תה",
+      "aliases": [
+        "תה ירוק",
+        "תה שחור"
+      ],
+      "nutrition_per_100g": {
+        "calories": 1,
+        "protein": 0,
+        "carbohydrates": 0.2,
+        "sugar": 0,
+        "fat": 0,
+        "sodium": 3
+      }
     }
   ]
 }
