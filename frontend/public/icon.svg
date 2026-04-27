@@ -1,7 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="120" fill="#0f5238"/>
-  <circle cx="256" cy="256" r="180" fill="#2d6a4f"/>
-  <circle cx="256" cy="256" r="140" fill="#0f5238" stroke="#5db876" stroke-width="8"/>
-  <!-- fork and leaf shape -->
-  <text x="256" y="310" font-family="serif" font-size="190" text-anchor="middle" fill="#b1f0ce">>W</text>
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="115" fill="#0f5238"/>
+
+  <!-- Apple body -->
+  <path d="
+    M256 160
+    C210 160 170 190 155 235
+    C140 280 145 340 170 380
+    C190 413 215 430 240 430
+    C250 430 258 425 268 425
+    C278 425 286 430 296 430
+    C321 430 346 413 366 380
+    C391 340 396 280 381 235
+    C366 190 326 160 280 160
+    C272 156 264 155 256 155
+    Z
+  " fill="#5db876"/>
+
+  <!-- Apple highlight -->
+  <path d="
+    M200 210
+    C215 195 235 188 255 188
+    C262 188 268 190 270 194
+    C255 198 240 208 228 222
+    C216 236 210 254 210 272
+    C206 258 198 242 196 226
+    C194 220 196 214 200 210 Z
+  " fill="rgba(255,255,255,0.22)"/>
+
+  <!-- Stem -->
+  <path d="M256 155 C256 130 270 108 290 100" stroke="#2d6a4f" stroke-width="10" stroke-linecap="round" fill="none"/>
+
+  <!-- Leaf -->
+  <path d="M286 118 C306 100 330 102 338 118 C326 136 302 138 286 118 Z" fill="#40c070"/>
+  <line x1="286" y1="118" x2="332" y2="118" stroke="#2d6a4f" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Apple indent top -->
+  <path d="M248 160 C252 148 260 148 264 160" fill="#0f5238"/>
 </svg>
