@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { NUTRITION_SOURCE_BADGES } from "../constants/nutritionSourceBadges";
 import type { HebrewUnit, IngredientRowState, NutritionPer100g } from "../types";
 import { UNITS } from "../types";
 import { NutritionEditor } from "./NutritionEditor";
@@ -12,13 +13,7 @@ interface Props {
   canRemove: boolean;
 }
 
-const SOURCE_LABEL: Record<string, { label: string; cls: string }> = {
-  local: { label: "מאגר מקומי", cls: "local" },
-  openfoodfacts: { label: "Open Food Facts", cls: "openfoodfacts" },
-  ai_estimate: { label: "הערכת AI", cls: "ai" },
-  manual: { label: "עריכה ידנית", cls: "manual" },
-  unknown: { label: "לא נמצא", cls: "unknown" },
-};
+const SOURCE_LABEL = NUTRITION_SOURCE_BADGES;
 
 export function IngredientRow({
   row,

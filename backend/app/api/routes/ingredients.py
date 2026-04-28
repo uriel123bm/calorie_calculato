@@ -52,4 +52,5 @@ async def analyze_ingredient(payload: AnalyzeRequest) -> AnalyzeResponse:
         confidence=confidence,
         source=source,
         matched_name=matched_name,
+        unit_weight_g=unit_weight_g,
     )

@@ -24,5 +24,7 @@ describe("DailyTracker", () => {
     expect(screen.getByText("קלוריות היומיות")).toBeInTheDocument();
     expect(screen.getByText("הוסף ערך ידני")).toBeInTheDocument();
     expect(screen.getByLabelText("יעד יומי (קק\"ל):")).toBeInTheDocument();
+    expect(screen.getByText("שם הפריט")).toBeInTheDocument();
+    expect(screen.getByText("יחידת מידה")).toBeInTheDocument();
   });
 });

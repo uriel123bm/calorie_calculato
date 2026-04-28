@@ -1,8 +1,12 @@
 """Convert user-supplied quantities (in Hebrew units) to grams.
 
 The conversions assume water-like density for volumetric units (`מ"ל`, `כף`,
-`כפית`, `כוס`). For "יחידה" (a piece / unit) the actual gram weight depends
-on the ingredient itself, so callers should pass `unit_weight_g`.
+`כפית`, `כוס`). Millilitre quantities are treated as mass in grams at ~1 g/mL.
+
+For ``יחידה`` the gram weight comes from ``unit_weight_g`` in the **local**
+ingredient dataset. **Keep it aligned with how users measure the same portion in
+millilitres** — e.g. if one retail bottle is 330 mL, set ``unit_weight_g`` to
+``330`` so that "1 יחידה" and "330 מ\"ל" yield the same total calories.
 """
 
 from __future__ import annotations

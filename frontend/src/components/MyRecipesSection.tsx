@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { DailyEntryInput, NutritionPer100g, SavedRecipe } from "../types";
+import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 
 interface Props {
   recipes: SavedRecipe[];
@@ -38,10 +39,10 @@ function RecipeCard({
     if (!preview || gramsNum <= 0) return;
     onAddToDaily({
       name: `${recipe.name} (${gramsNum}ג)`,
-      calories: Math.round(preview.calories),
-      protein: Math.round(preview.protein * 10) / 10,
-      carbohydrates: Math.round(preview.carbohydrates * 10) / 10,
-      fat: Math.round(preview.fat * 10) / 10,
+      calories: roundCalories(preview.calories),
+      protein: roundMacro(preview.protein),
+      carbohydrates: roundMacro(preview.carbohydrates),
+      fat: roundMacro(preview.fat),
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);

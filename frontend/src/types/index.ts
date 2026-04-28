@@ -35,6 +35,8 @@ export interface AnalyzeResponse {
   confidence: number;
   source: NutritionSource;
   matched_name: string | null;
+  /** Grams per יחידה when known (local DB); used to rescale rows without defaulting to 100g. */
+  unit_weight_g?: number | null;
 }
 
 export interface IngredientRowState {

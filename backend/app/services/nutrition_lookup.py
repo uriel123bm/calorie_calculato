@@ -68,6 +68,21 @@ def _load_local_dataset() -> list[dict]:
     return payload.get("ingredients", [])
 
 
+def _substring_rank_key(
+    needle: str, nc: str, dataset_index: int
+) -> Optional[tuple[int, int | float, int]]:
+    """Ranking key for non-exact containment (higher tuple compares greater)."""
+    if not nc or nc == needle:
+        return None
+    # User typed a longer phrase that contains this catalog substring — prefer longest match.
+    if nc in needle:
+        return (3, len(nc), -dataset_index)
+    # User typed shorthand contained in catalog name — prefer shorter ingredient name (dry vs cooked rows).
+    if needle in nc:
+        return (2, -len(nc), -dataset_index)
+    return None
+
+
 def _local_lookup(name: str) -> Optional[LookupResult]:
     needle = _normalize(name)
     if not needle:
@@ -75,36 +90,49 @@ def _local_lookup(name: str) -> Optional[LookupResult]:
 
     dataset = _load_local_dataset()
 
-    exact_match: Optional[dict] = None
-    substring_match: Optional[dict] = None
-    matched_alias: Optional[str] = None
-
     for entry in dataset:
-        candidates = [entry["name"], *entry.get("aliases", [])]
-        for cand in candidates:
-            normalized = _normalize(cand)
-            if normalized == needle:
-                exact_match = entry
-                matched_alias = cand
-                break
-            if substring_match is None and normalized and (
-                needle in normalized or normalized in needle
-            ):
-                substring_match = entry
-                matched_alias = cand
-        if exact_match:
-            break
+        for cand in [entry["name"], *entry.get("aliases", [])]:
+            nc = _normalize(str(cand) if cand else "")
+            if nc and nc == needle:
+                return LookupResult(
+                    nutrition=NutritionPer100g(**entry["nutrition_per_100g"]),
+                    confidence=0.95,
+                    source="local",
+                    matched_name=str(cand).strip() if cand else entry["name"],
+                    unit_weight_g=entry.get("unit_weight_g"),
+                )
 
-    chosen = exact_match or substring_match
-    if chosen is None:
+    best_rank: tuple[int, int | float, int] | None = None
+    chosen_entry: dict | None = None
+    matched_label: str | None = None
+
+    for i, entry in enumerate(dataset):
+        for cand in [entry["name"], *entry.get("aliases", [])]:
+            nc = _normalize(str(cand) if cand else "")
+            if not nc or nc == needle:
+                continue
+            if not (nc in needle or needle in nc):
+                continue
+            rk = _substring_rank_key(needle, nc, i)
+            if rk is None:
+                continue
+            if best_rank is None or rk > best_rank:
+                best_rank = rk
+                chosen_entry = entry
+                matched_label = str(cand).strip() if cand else entry["name"]
+
+    if chosen_entry is None or matched_label is None:
         return None
 
+    tier = (best_rank or (0,))[0]
+    confidence = 0.85 if tier >= 3 else 0.83
+
     return LookupResult(
-        nutrition=NutritionPer100g(**chosen["nutrition_per_100g"]),
-        confidence=0.95 if exact_match else 0.85,
+        nutrition=NutritionPer100g(**chosen_entry["nutrition_per_100g"]),
+        confidence=confidence,
         source="local",
-        matched_name=matched_alias or chosen["name"],
-        unit_weight_g=chosen.get("unit_weight_g"),
+        matched_name=matched_label or chosen_entry["name"],
+        unit_weight_g=chosen_entry.get("unit_weight_g"),
     )
 
 
@@ -114,6 +142,45 @@ def _local_lookup(name: str) -> Optional[LookupResult]:
 
 
 _OFF_SEARCH_URL = "https://world.openfoodfacts.org/cgi/search.pl"
+_HAS_HEBREW = re.compile(r"[\u0590-\u05FF]")
+
+
+def _off_match_score(user_query: str, product: dict) -> float:
+    """Heuristic 0..1: how well the product titles match the user's search terms."""
+    nq = _normalize(user_query)
+    if not nq:
+        return 0.0
+    best = 0.0
+    he = (product.get("product_name_he") or "").strip()
+    en = (product.get("product_name") or "").strip()
+    # Prefer Hebrew display name when present and actually Hebrew.
+    weighted: list[tuple[str, float]] = []
+    if he and _HAS_HEBREW.search(he):
+        weighted.append((he, 1.1))
+    elif he:
+        weighted.append((he, 1.02))
+    if en:
+        weighted.append((en, 1.0))
+    for title, w in weighted:
+        nt = _normalize(title)
+        if not nt:
+            continue
+        s: float
+        if nq == nt:
+            s = 1.0
+        elif nq in nt or nt in nq:
+            s = 0.82 + 0.08 * min(len(nq), len(nt)) / max(len(nq), len(nt), 1)
+        else:
+            tq, tt = set(nq.split()), set(nt.split())
+            inter = len(tq & tt)
+            s = 0.42 * (inter / max(len(tq), 1)) if inter else 0.0
+        best = max(best, min(1.0, s * w))
+    return min(1.0, best)
+
+
+def _confidence_from_off_score(score: float) -> float:
+    """Map heuristic match strength to numeric confidence (~0.55 weak .. ~0.72 strong)."""
+    return round(min(0.72, max(0.55, 0.55 + score * 0.17)), 3)
 
 
 def _safe_float(value: object) -> float:
@@ -158,11 +225,11 @@ async def _openfoodfacts_lookup(name: str) -> Optional[LookupResult]:
         "search_simple": 1,
         "action": "process",
         "json": 1,
-        "page_size": 5,
+        "page_size": 24,
         "fields": "product_name,product_name_he,brands,nutriments",
     }
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
                 _OFF_SEARCH_URL,
                 params=params,
@@ -174,23 +241,31 @@ async def _openfoodfacts_lookup(name: str) -> Optional[LookupResult]:
     except (httpx.HTTPError, ValueError):
         return None
 
+    ranked: list[tuple[float, NutritionPer100g, str]] = []
     for product in data.get("products", []):
         nutrition = _map_off_product(product)
         if nutrition is None:
             continue
+        sc = _off_match_score(name, product)
         matched = (
             product.get("product_name_he")
             or product.get("product_name")
             or name
         )
-        return LookupResult(
-            nutrition=nutrition,
-            confidence=0.7,
-            source="openfoodfacts",
-            matched_name=str(matched),
-        )
+        ranked.append((sc, nutrition, str(matched)))
 
-    return None
+    if not ranked:
+        return None
+
+    ranked.sort(key=lambda t: t[0], reverse=True)
+    best_score, nutrition, matched = ranked[0]
+    confidence = _confidence_from_off_score(best_score)
+    return LookupResult(
+        nutrition=nutrition,
+        confidence=confidence,
+        source="openfoodfacts",
+        matched_name=matched,
+    )
 
 
 # ---------------------------------------------------------------------------

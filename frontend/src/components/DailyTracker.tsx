@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
+import { NUTRITION_SOURCE_BADGES } from "../constants/nutritionSourceBadges";
 import { analyzeIngredient } from "../services/api";
 import type {
   DailyEntryInput,
   DailyTrackerState,
   HebrewUnit,
+  NutritionSource,
 } from "../types";
 import { UNITS } from "../types";
+import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 
 interface Props {
   state: DailyTrackerState;
@@ -13,10 +16,6 @@ interface Props {
   addEntry: (input: DailyEntryInput) => void;
   removeEntry: (id: string) => void;
   resetDay: () => void;
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
 }
 
 /**
@@ -37,6 +36,11 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
   const [mCalories, setMCalories] = useState<number | "">("");
   const [mProtein, setMProtein] = useState<number | "">("");
   const [mDetected, setMDetected] = useState<DetectedMacros | null>(null);
+  const [mAnalyzeMeta, setMAnalyzeMeta] = useState<{
+    source: NutritionSource;
+    confidence: number;
+    matchedName: string | null;
+  } | null>(null);
   const [mStatus, setMStatus] = useState<"idle" | "loading" | "ready" | "error" | "none">("idle");
 
   const totals = useMemo(() => state.entries.reduce(
@@ -59,12 +63,18 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
     const qty = typeof mQty === "number" ? mQty : 0;
     if (!name || qty <= 0) return;
     setMStatus("loading");
+    setMAnalyzeMeta(null);
     try {
       const res = await analyzeIngredient({ ingredient_name: name, quantity: qty, unit: mUnit });
       const found = res.source !== "ai_estimate" && res.confidence > 0.4;
       const macros = res.nutrition_for_quantity;
-      setMCalories(Math.round(macros.calories));
-      setMProtein(round1(macros.protein));
+      setMCalories(roundCalories(macros.calories));
+      setMProtein(roundMacro(macros.protein));
+      setMAnalyzeMeta({
+        source: res.source,
+        confidence: res.confidence,
+        matchedName: res.matched_name,
+      });
       setMDetected({
         calories: macros.calories,
         carbohydrates: macros.carbohydrates,
@@ -73,6 +83,7 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
       setMStatus(found ? "ready" : "none");
     } catch {
       setMDetected(null);
+      setMAnalyzeMeta(null);
       setMStatus("error");
     }
   };
@@ -87,20 +98,22 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
     let fat = 0;
     if (mDetected && mDetected.calories > 0) {
       const factor = cals / mDetected.calories;
-      carbs = round1(mDetected.carbohydrates * factor);
-      fat = round1(mDetected.fat * factor);
+      carbs = roundMacro(mDetected.carbohydrates * factor);
+      fat = roundMacro(mDetected.fat * factor);
     }
 
     addEntry({
       name: mName.trim(),
-      calories: cals,
-      protein: typeof mProtein === "number" ? mProtein : 0,
+      calories: roundCalories(cals),
+      protein: roundMacro(typeof mProtein === "number" ? mProtein : 0),
       carbohydrates: carbs,
       fat,
     });
     setMName(""); setMQty(100); setMUnit("גרם");
     setMCalories(""); setMProtein("");
-    setMDetected(null); setMStatus("idle");
+    setMDetected(null);
+    setMAnalyzeMeta(null);
+    setMStatus("idle");
   };
 
   const handleResetDay = () => {
@@ -211,69 +224,137 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
             רשום שם וכמות — המערכת תזהה קלוריות וחלבון אוטומטית. ניתן לתקן לפני הוספה.
           </p>
           <div className="tracker-manual-grid">
-            <input
-              className="manual-name"
-              type="text"
-              placeholder="לדוגמה: תפוח / חזה עוף / יוגורט"
-              value={mName}
-              onChange={(e) => {
-                setMName(e.target.value);
-                setMDetected(null);
-                if (mStatus !== "idle") setMStatus("idle");
-              }}
-              onBlur={runManualAnalyze}
-              aria-label="שם הפריט"
-            />
-            <input
-              className="manual-qty"
-              type="number"
-              min={0}
-              step="any"
-              placeholder="כמות"
-              value={mQty === "" ? "" : mQty}
-              onChange={(e) => {
-                const v = e.target.value;
-                setMQty(v === "" ? "" : Math.max(0, Number(v)));
-                setMDetected(null);
-                if (mStatus !== "idle") setMStatus("idle");
-              }}
-              onBlur={runManualAnalyze}
-              aria-label="כמות"
-            />
-            <select
-              className="manual-unit"
-              value={mUnit}
-              onChange={(e) => {
-                setMUnit(e.target.value as HebrewUnit);
-                setMDetected(null);
-                if (mStatus !== "idle") setMStatus("idle");
-              }}
-              onBlur={runManualAnalyze}
-              aria-label="יחידה"
-            >
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-            <input
-              className="manual-cal"
-              type="number"
-              min={0}
-              step="any"
-              placeholder='קק"ל'
-              value={mCalories === "" ? "" : mCalories}
-              onChange={(e) => { const v = e.target.value; setMCalories(v === "" ? "" : Math.max(0, Number(v))); }}
-              aria-label="קלוריות"
-            />
-            <input
-              className="manual-protein"
-              type="number"
-              min={0}
-              step="any"
-              placeholder="חלבון (ג')"
-              value={mProtein === "" ? "" : mProtein}
-              onChange={(e) => { const v = e.target.value; setMProtein(v === "" ? "" : Math.max(0, Number(v))); }}
-              aria-label="חלבון בגרם"
-            />
+            <div className="manual-field manual-field--name">
+              <label className="manual-field-label" htmlFor="tracker-manual-name">
+                שם הפריט
+              </label>
+              <input
+                id="tracker-manual-name"
+                className="manual-input manual-name"
+                type="text"
+                placeholder='למשל תפוח, יוגורט, חזה עוף…'
+                value={mName}
+                onChange={(e) => {
+                  setMName(e.target.value);
+                  setMDetected(null);
+                  setMAnalyzeMeta(null);
+                  if (mStatus !== "idle") setMStatus("idle");
+                }}
+                onBlur={runManualAnalyze}
+                aria-label="שם הפריט"
+              />
+            </div>
+
+            <div className="manual-field manual-field--qty">
+              <label className="manual-field-label" htmlFor="tracker-manual-qty">
+                כמות
+              </label>
+              <input
+                id="tracker-manual-qty"
+                className="manual-input manual-qty"
+                type="number"
+                min={0}
+                step="any"
+                placeholder="מספר"
+                value={mQty === "" ? "" : mQty}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setMQty(v === "" ? "" : Math.max(0, Number(v)));
+                  setMDetected(null);
+                  setMAnalyzeMeta(null);
+                  if (mStatus !== "idle") setMStatus("idle");
+                }}
+                onBlur={runManualAnalyze}
+              />
+            </div>
+
+            <div className="manual-field manual-field--unit">
+              <span className="manual-field-label" id="manual-unit-caption">
+                יחידת מידה
+              </span>
+              {/* Select גלוי (בלי צבע שקוף — כדי שלא ייפגע טקסט ברשימה ב-Chromium). החץ עם pointer-events: none מעל. */}
+              <div className="manual-select-shell">
+                <select
+                  id="tracker-manual-unit"
+                  className="manual-unit-select-native"
+                  title="פתחו ובחרו יחידה מהרשימה"
+                  aria-labelledby="manual-unit-caption"
+                  value={mUnit}
+                  onChange={(e) => {
+                    setMUnit(e.target.value as HebrewUnit);
+                    setMDetected(null);
+                    setMAnalyzeMeta(null);
+                    if (mStatus !== "idle") setMStatus("idle");
+                  }}
+                  onBlur={runManualAnalyze}
+                >
+                  {UNITS.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
+                <span className="manual-select-chevron-deco" aria-hidden="true">
+                  <span className="material-symbols-outlined manual-select-chevron-icon">
+                    expand_more
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div className="manual-field manual-field--cal">
+              <label className="manual-field-label" htmlFor="tracker-manual-cal">
+                קק״ל (לכמות שציינת)
+              </label>
+              <input
+                id="tracker-manual-cal"
+                className="manual-input manual-cal"
+                type="number"
+                min={0}
+                step="any"
+                placeholder="—"
+                value={mCalories === "" ? "" : mCalories}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setMCalories(v === "" ? "" : Math.max(0, Number(v)));
+                }}
+              />
+            </div>
+
+            <div className="manual-field manual-field--protein">
+              <label className="manual-field-label" htmlFor="tracker-manual-protein">
+                חלבון (גרם)
+              </label>
+              <input
+                id="tracker-manual-protein"
+                className="manual-input manual-protein"
+                type="number"
+                min={0}
+                step="any"
+                placeholder="—"
+                value={mProtein === "" ? "" : mProtein}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setMProtein(v === "" ? "" : Math.max(0, Number(v)));
+                }}
+              />
+            </div>
           </div>
+          {(mStatus === "ready" || mStatus === "none") && mAnalyzeMeta && (
+            <div className="manual-analyze-meta" aria-live="polite">
+              <span className={`badge ${NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.cls ?? "unknown"}`}>
+                {NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.label ?? mAnalyzeMeta.source}
+              </span>
+              {mAnalyzeMeta.confidence > 0 && (
+                <span className="manual-analyze-confidence">
+                  ביטחון {Math.round(mAnalyzeMeta.confidence * 100)}%
+                </span>
+              )}
+              {mAnalyzeMeta.matchedName && mAnalyzeMeta.matchedName.trim() !== mName.trim() && (
+                <span className="manual-analyze-matched">← {mAnalyzeMeta.matchedName}</span>
+              )}
+            </div>
+          )}
           <div className="tracker-manual-actions">
             <span className={`manual-status ${mStatus}`}>
               {mStatus === "loading" && "מזהה..."}

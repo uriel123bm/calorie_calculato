@@ -984,16 +984,148 @@ button.pill {
   line-height: 1.5;
 }
 
+/* שתי עמודות שוות: כמות|יחידה וקק"ל|חלבון על אותו קו */
 .tracker-manual-grid {
   display: grid;
-  grid-template-columns: 1fr 90px 100px;
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
 }
-.tracker-manual-grid .manual-name    { grid-column: 1 / -1; }
-.tracker-manual-grid .manual-cal     { grid-column: 1 / 2; }
-.tracker-manual-grid .manual-protein { grid-column: 2 / 4; }
-.tracker-manual-grid input,
-.tracker-manual-grid select { width: 100%; color: #191c1d; background: #fff; }
+
+.manual-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.manual-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-surface-var);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.tracker-manual-grid .manual-input {
+  width: 100%;
+  margin: 0;
+  padding: 14px 14px;
+  min-height: 50px;
+  border-radius: 12px;
+  border: 1px solid rgba(13, 60, 40, 0.2);
+  color: #191c1d;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.tracker-manual-grid .manual-input:focus {
+  outline: none;
+  border-color: var(--primary-strong, #0d5238);
+  box-shadow: 0 0 0 2px rgba(13, 82, 56, 0.15);
+}
+
+.tracker-manual-grid .manual-field--name {
+  grid-column: 1 / -1;
+}
+
+.tracker-manual-grid .manual-field--qty {
+  grid-column: 1;
+}
+
+.tracker-manual-grid .manual-field--unit {
+  grid-column: 2;
+}
+
+.tracker-manual-grid .manual-field--cal {
+  grid-column: 1;
+}
+
+.tracker-manual-grid .manual-field--protein {
+  grid-column: 2;
+}
+
+/*
+ * יחידת מידה — select גלוי (ללא color:transparent / opacity נמוך) כדי שרשימת ה-native תוצג מלאה ב-Chromium.
+ * החץ הוא דקורציה מעל עם pointer-events: none — הקליק עובר אל ה-select מתחתיו.
+ */
+.manual-select-shell {
+  position: relative;
+  width: 100%;
+  min-height: 50px;
+  border-radius: 12px;
+  border: 1px solid rgba(13, 60, 40, 0.2);
+  background: #fff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.manual-select-shell:focus-within {
+  border-color: var(--primary-strong, #0d5238);
+  box-shadow: 0 0 0 2px rgba(13, 82, 56, 0.15);
+}
+
+.manual-unit-select-native {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  margin: 0;
+  padding-block: 14px;
+  padding-inline: 14px 52px;
+  border: none;
+  border-radius: inherit;
+  background-color: #fff;
+  color: #191c1d;
+  font-size: 16px !important;
+  font-family: inherit;
+  line-height: 1.35;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.manual-unit-select-native:focus {
+  outline: none;
+}
+
+.manual-select-chevron-deco {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  inset-block-end: 0;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-inline-start: 1px solid rgba(13, 60, 40, 0.12);
+  background: rgba(13, 82, 56, 0.07);
+}
+
+.manual-select-chevron-icon {
+  font-size: 22px !important;
+  line-height: 1;
+  color: var(--primary-strong, #0d5238);
+  opacity: 0.92;
+}
+
+.manual-analyze-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.manual-analyze-meta .manual-analyze-confidence { color: var(--on-surface-var); }
+
+.manual-analyze-meta .manual-analyze-matched {
+  opacity: 0.9;
+}
 
 .tracker-manual-actions {
   display: flex;
@@ -1958,7 +2090,24 @@ html, body {
   .macro-bento { grid-template-columns: repeat(3,1fr); gap: 8px; }
 
   .page-title { font-size: 22px; }
-  .tracker-manual-grid { grid-template-columns: 1fr 1fr; }
+  .tracker-manual-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tracker-manual-grid .manual-field--name {
+    grid-column: 1 / -1;
+  }
+  .tracker-manual-grid .manual-field--qty {
+    grid-column: 1;
+  }
+  .tracker-manual-grid .manual-field--unit {
+    grid-column: 2;
+  }
+  .tracker-manual-grid .manual-field--cal {
+    grid-column: 1;
+  }
+  .tracker-manual-grid .manual-field--protein {
+    grid-column: 2;
+  }
 }
 
 /* ── Mobile phones (≤ 480px) ───────────────────────────── */
@@ -1977,9 +2126,10 @@ html, body {
   .tracker-manual-grid {
     grid-template-columns: 1fr;
   }
-  .tracker-manual-grid .manual-name,
-  .tracker-manual-grid .manual-cal,
-  .tracker-manual-grid .manual-protein {
+  .tracker-manual-grid .manual-field--qty,
+  .tracker-manual-grid .manual-field--unit,
+  .tracker-manual-grid .manual-field--cal,
+  .tracker-manual-grid .manual-field--protein {
     grid-column: 1 / -1;
   }
 
@@ -2069,7 +2219,8 @@ html, body {
   .portion-input,
   .portion-card-input input,
   .target-row input,
-  .tracker-manual-grid input,
+  .tracker-manual-grid .manual-input,
+  .tracker-manual-grid .manual-unit-select-native,
   .tracker-manual-grid select,
   .tracker-add-row input,
   .meal-name,

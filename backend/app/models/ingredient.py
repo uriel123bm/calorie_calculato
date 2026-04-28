@@ -46,3 +46,7 @@ class AnalyzeResponse(BaseModel):
     confidence: float = Field(..., ge=0, le=1)
     source: NutritionSource
     matched_name: Optional[str] = None
+    unit_weight_g: Optional[float] = Field(
+        None,
+        description="Grams per יחידה when known from local dataset (optional).",
+    )

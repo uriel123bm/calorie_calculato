@@ -201,10 +201,17 @@ export function useIngredientRows(initialCount: number = 4): UseIngredientRowsRe
           quantity: qty,
           unit: target.unit,
         });
+        const inferredUnitG =
+          res.unit_weight_g != null && res.unit_weight_g > 0
+            ? res.unit_weight_g
+            : target.unit === "יחידה" && qty > 0 && res.quantity_in_grams > 0
+              ? res.quantity_in_grams / qty
+              : undefined;
         patchRow(id, {
           nutritionPer100g: res.nutrition_per_100g,
           nutritionForQuantity: res.nutrition_for_quantity,
           quantityInGrams: res.quantity_in_grams,
+          unitWeightG: inferredUnitG,
           confidence: res.confidence,
           source: res.source,
           matchedName: res.matched_name,

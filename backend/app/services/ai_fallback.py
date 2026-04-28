@@ -28,18 +28,23 @@ class AIEstimate:
 
 
 _PROMPT_SYSTEM = (
-    "You are a nutrition database. Given a food ingredient name (often in Hebrew), "
-    "return realistic average nutrition values per 100 grams of the ingredient as JSON. "
+    "You are a nutrition database for Israeli home cooking. Given a food or ingredient "
+    "name (often Hebrew), output average nutrition values per 100 grams of edible portion "
+    "(not packed weight of a boxed product unless the phrase clearly names a branded item). "
     "Respond ONLY with a JSON object, no commentary, with these numeric keys: "
     "calories (kcal), protein (g), carbohydrates (g), sugar (g), fat (g), sodium (mg). "
-    "Use 0 for unknowns. Estimate for the raw, common form of the food."
+    "Use 0 only for genuinely unknown macros. "
+    "If the ingredient can be bought dry/soaked vs cooked (e.g. grains, pulses, couscous vs "
+    "pearled couscous cooked), prefer typical dry/unprepared edible numbers per 100g raw "
+    "unless the wording explicitly mentions cooked/prepared/soaked (מבושל, מוכן, מוגש). "
+    "Do not swap bulgur, couscous, rice, pasta, quinoa, or lentils for one another—they differ."
 )
 
 
 def _build_user_prompt(ingredient_name: str) -> str:
     return (
-        f"Ingredient: {ingredient_name}\n"
-        "Return JSON with keys: calories, protein, carbohydrates, sugar, fat, sodium."
+        f"Ingredient phrase: {ingredient_name}\n"
+        "Return JSON with keys only: calories, protein, carbohydrates, sugar, fat, sodium."
     )
 
 

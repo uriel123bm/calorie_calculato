@@ -921,8 +921,11 @@
       "name": "בורגול",
       "aliases": [
         "בורגל",
+        "בורגול יבש",
+        "בורגול גולמי",
         "בורגול גס",
-        "בורגול דק"
+        "בורגול דק",
+        "bulgur"
       ],
       "nutrition_per_100g": {
         "calories": 342,
@@ -936,7 +939,8 @@
     {
       "name": "בורגול מבושל",
       "aliases": [
-        "בורגול מוכן"
+        "בורגול מוכן",
+        "בורגול אחרי בישול"
       ],
       "nutrition_per_100g": {
         "calories": 83,
@@ -977,14 +981,14 @@
         "protein shake"
       ],
       "nutrition_per_100g": {
-        "calories": 54,
-        "protein": 10,
-        "carbohydrates": 5,
-        "sugar": 4,
-        "fat": 0.5,
-        "sodium": 80
+        "calories": 41,
+        "protein": 7.6,
+        "carbohydrates": 3.8,
+        "sugar": 3,
+        "fat": 0.4,
+        "sodium": 61
       },
-      "unit_weight_g": 250
+      "unit_weight_g": 330
     },
     {
       "name": "אצבעות שניצל שומשום",

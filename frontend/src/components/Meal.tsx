@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useIngredientRows } from "../hooks/useIngredientRows";
 import type { DailyEntryInput } from "../types";
+import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 import { IngredientTable } from "./IngredientTable";
 
 interface Props {
@@ -9,10 +10,6 @@ interface Props {
   onUpdateName: (name: string) => void;
   onRemove: () => void;
   onAddToDaily: (input: DailyEntryInput) => void;
-}
-
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
 }
 
 export function Meal({ name, onUpdateName, onRemove, onAddToDaily }: Props) {
@@ -36,10 +33,10 @@ export function Meal({ name, onUpdateName, onRemove, onAddToDaily }: Props) {
     if (!hasContent) return;
     onAddToDaily({
       name: name.trim() || "ארוחה",
-      calories: Math.round(total.calories),
-      protein: round1(total.protein),
-      carbohydrates: round1(total.carbohydrates),
-      fat: round1(total.fat),
+      calories: roundCalories(total.calories),
+      protein: roundMacro(total.protein),
+      carbohydrates: roundMacro(total.carbohydrates),
+      fat: roundMacro(total.fat),
     });
   };
 
@@ -79,19 +76,19 @@ export function Meal({ name, onUpdateName, onRemove, onAddToDaily }: Props) {
         <div className="meal-totals">
           <div className="meal-total-item">
             <span className="meal-total-label">סה"כ קלוריות</span>
-            <strong>{Math.round(total.calories)}</strong>
+            <strong>{roundCalories(total.calories)}</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">חלבון</span>
-            <strong>{round1(total.protein)} ג'</strong>
+            <strong>{roundMacro(total.protein)} ג'</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">פחמימות</span>
-            <strong>{round1(total.carbohydrates)} ג'</strong>
+            <strong>{roundMacro(total.carbohydrates)} ג'</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">שומן</span>
-            <strong>{round1(total.fat)} ג'</strong>
+            <strong>{roundMacro(total.fat)} ג'</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">משקל</span>
