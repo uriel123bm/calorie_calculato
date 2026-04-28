@@ -6,6 +6,7 @@ SQLAlchemy database setup.
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 from sqlalchemy import create_engine
@@ -21,8 +22,12 @@ if _DATABASE_URL:
         _DATABASE_URL = _DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
     engine = create_engine(_DATABASE_URL, pool_pre_ping=True)
 else:
-    # Local SQLite fallback
-    _DB_PATH = Path(__file__).parent.parent.parent / "data" / "app.db"
+    # Local SQLite fallback. Vercel serverless has no persistent writable project dir —
+    # use the system temp dir so init_db can create the file.
+    if os.getenv("VERCEL"):
+        _DB_PATH = Path(tempfile.gettempdir()) / "calorie_calculator_app.db"
+    else:
+        _DB_PATH = Path(__file__).parent.parent.parent / "data" / "app.db"
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     engine = create_engine(
         f"sqlite:///{_DB_PATH}",
