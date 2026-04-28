@@ -19,6 +19,16 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+/**
+ * Snapshot of the AI-detected nutrition for the manual entry. Used to scale
+ * carbs and fat proportionally when the user edits calories before saving.
+ */
+interface DetectedMacros {
+  calories: number;
+  carbohydrates: number;
+  fat: number;
+}
+
 export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay }: Props) {
   // Manual entry state
   const [mName, setMName] = useState("");
@@ -26,6 +36,7 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
   const [mUnit, setMUnit] = useState<HebrewUnit>("גרם");
   const [mCalories, setMCalories] = useState<number | "">("");
   const [mProtein, setMProtein] = useState<number | "">("");
+  const [mDetected, setMDetected] = useState<DetectedMacros | null>(null);
   const [mStatus, setMStatus] = useState<"idle" | "loading" | "ready" | "error" | "none">("idle");
 
   const totals = useMemo(() => state.entries.reduce(
@@ -51,10 +62,17 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
     try {
       const res = await analyzeIngredient({ ingredient_name: name, quantity: qty, unit: mUnit });
       const found = res.source !== "ai_estimate" && res.confidence > 0.4;
-      setMCalories(Math.round(res.nutrition_for_quantity.calories));
-      setMProtein(round1(res.nutrition_for_quantity.protein));
+      const macros = res.nutrition_for_quantity;
+      setMCalories(Math.round(macros.calories));
+      setMProtein(round1(macros.protein));
+      setMDetected({
+        calories: macros.calories,
+        carbohydrates: macros.carbohydrates,
+        fat: macros.fat,
+      });
       setMStatus(found ? "ready" : "none");
     } catch {
+      setMDetected(null);
       setMStatus("error");
     }
   };
@@ -62,13 +80,27 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
   const handleManualAdd = () => {
     const cals = typeof mCalories === "number" ? mCalories : 0;
     if (!mName.trim() || cals <= 0) return;
+
+    // Scale detected carbs/fat by the user's adjusted calories so the totals
+    // stay consistent. If the AI didn't return anything we fall back to 0.
+    let carbs = 0;
+    let fat = 0;
+    if (mDetected && mDetected.calories > 0) {
+      const factor = cals / mDetected.calories;
+      carbs = round1(mDetected.carbohydrates * factor);
+      fat = round1(mDetected.fat * factor);
+    }
+
     addEntry({
       name: mName.trim(),
       calories: cals,
       protein: typeof mProtein === "number" ? mProtein : 0,
+      carbohydrates: carbs,
+      fat,
     });
     setMName(""); setMQty(100); setMUnit("גרם");
-    setMCalories(""); setMProtein(""); setMStatus("idle");
+    setMCalories(""); setMProtein("");
+    setMDetected(null); setMStatus("idle");
   };
 
   const handleResetDay = () => {
@@ -89,161 +121,176 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
         </div>
       </div>
 
-      {/* Target input */}
-      <div className="section">
-        <div className="target-row">
-          <label htmlFor="daily-target">יעד יומי (קק"ל):</label>
-          <input
-            id="daily-target"
-            type="number"
-            min={0}
-            step={50}
-            value={state.targetCalories}
-            onChange={(e) => setTarget(Number(e.target.value))}
-          />
-        </div>
+      <div className="daily-tracker-top-grid">
+        {/* Target input */}
+        <div className="section">
+          <div className="target-row">
+            <label htmlFor="daily-target">יעד יומי (קק"ל):</label>
+            <input
+              id="daily-target"
+              type="number"
+              min={0}
+              step={50}
+              value={state.targetCalories}
+              onChange={(e) => setTarget(Number(e.target.value))}
+            />
+          </div>
 
-        {/* Circular ring */}
-        {(() => {
-          const R = 42;
-          const CIRC = 2 * Math.PI * R;
-          const offset = CIRC * (1 - Math.min(progressPct / 100, 1));
-          return (
-            <div className="tracker-ring-wrap">
-              <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
-                <svg className="progress-ring-svg" viewBox="0 0 100 100">
-                  <circle className="progress-ring-bg" cx="50" cy="50" r={R} strokeWidth="7" />
-                  <circle
-                    className={`progress-ring-fill${overshoot ? " over" : ""}`}
-                    cx="50" cy="50" r={R}
-                    strokeWidth="7"
-                    strokeDasharray={`${CIRC}`}
-                    strokeDashoffset={`${offset}`}
-                  />
-                </svg>
-                <div className="ring-inner">
-                  <span className={`ring-calories${overshoot ? " over" : ""}`}>
-                    {Math.abs(Math.round(remaining))}
-                  </span>
-                  <span className="ring-label">
-                    {overshoot ? 'חרגת (קק"ל)' : 'נותרו (קק"ל)'}
-                  </span>
+          {/* Circular ring */}
+          {(() => {
+            const R = 42;
+            const CIRC = 2 * Math.PI * R;
+            const offset = CIRC * (1 - Math.min(progressPct / 100, 1));
+            return (
+              <div className="tracker-ring-wrap">
+                <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
+                  <svg className="progress-ring-svg" viewBox="0 0 100 100">
+                    <circle className="progress-ring-bg" cx="50" cy="50" r={R} strokeWidth="7" />
+                    <circle
+                      className={`progress-ring-fill${overshoot ? " over" : ""}`}
+                      cx="50" cy="50" r={R}
+                      strokeWidth="7"
+                      strokeDasharray={`${CIRC}`}
+                      strokeDashoffset={`${offset}`}
+                    />
+                  </svg>
+                  <div className="ring-inner">
+                    <span className={`ring-calories${overshoot ? " over" : ""}`}>
+                      {Math.abs(Math.round(remaining))}
+                    </span>
+                    <span className="ring-label">
+                      {overshoot ? 'חרגת (קק"ל)' : 'נותרו (קק"ל)'}
+                    </span>
+                  </div>
+                </div>
+                <div className="ring-stats">
+                  <div style={{ textAlign: "center", padding: "0 8px" }}>
+                    <div className="ring-stat-label">יעד</div>
+                    <div className="ring-stat-value">{state.targetCalories.toLocaleString()}</div>
+                  </div>
+                  <div className="divider" />
+                  <div style={{ textAlign: "center", padding: "0 8px" }}>
+                    <div className="ring-stat-label">נצרך</div>
+                    <div className="ring-stat-value primary">{Math.round(totals.calories).toLocaleString()}</div>
+                  </div>
                 </div>
               </div>
-              <div className="ring-stats">
-                <div style={{ textAlign: "center", padding: "0 8px" }}>
-                  <div className="ring-stat-label">יעד</div>
-                  <div className="ring-stat-value">{state.targetCalories.toLocaleString()}</div>
-                </div>
-                <div className="divider" />
-                <div style={{ textAlign: "center", padding: "0 8px" }}>
-                  <div className="ring-stat-label">נצרך</div>
-                  <div className="ring-stat-value primary">{Math.round(totals.calories).toLocaleString()}</div>
-                </div>
-              </div>
+            );
+          })()}
+
+          {/* Macros bento */}
+          <div className="macro-bento">
+            <div className="macro-tile protein">
+              <span className="material-symbols-outlined macro-icon">egg</span>
+              <span className="macro-label">חלבון</span>
+              <div className="progress-bar"><div className="progress-fill green" style={{ width: `${Math.min(100, (totals.protein / 120) * 100)}%` }} /></div>
+              <span className="macro-value">{totals.protein.toFixed(0)}ג</span>
             </div>
-          );
-        })()}
-
-        {/* Macros bento */}
-        <div className="macro-bento">
-          <div className="macro-tile protein">
-            <span className="material-symbols-outlined macro-icon">egg</span>
-            <span className="macro-label">חלבון</span>
-            <div className="progress-bar"><div className="progress-fill green" style={{ width: `${Math.min(100, (totals.protein / 120) * 100)}%` }} /></div>
-            <span className="macro-value">{totals.protein.toFixed(0)}ג</span>
-          </div>
-          <div className="macro-tile carbs">
-            <span className="material-symbols-outlined macro-icon">bakery_dining</span>
-            <span className="macro-label">פחמימות</span>
-            <div className="progress-bar"><div className="progress-fill orange" style={{ width: `${Math.min(100, (totals.carbohydrates / 250) * 100)}%` }} /></div>
-            <span className="macro-value">{totals.carbohydrates.toFixed(0)}ג</span>
-          </div>
-          <div className="macro-tile fat">
-            <span className="material-symbols-outlined macro-icon">opacity</span>
-            <span className="macro-label">שומן</span>
-            <div className="progress-bar"><div className="progress-fill teal" style={{ width: `${Math.min(100, (totals.fat / 70) * 100)}%` }} /></div>
-            <span className="macro-value">{totals.fat.toFixed(0)}ג</span>
+            <div className="macro-tile carbs">
+              <span className="material-symbols-outlined macro-icon">bakery_dining</span>
+              <span className="macro-label">פחמימות</span>
+              <div className="progress-bar"><div className="progress-fill orange" style={{ width: `${Math.min(100, (totals.carbohydrates / 250) * 100)}%` }} /></div>
+              <span className="macro-value">{totals.carbohydrates.toFixed(0)}ג</span>
+            </div>
+            <div className="macro-tile fat">
+              <span className="material-symbols-outlined macro-icon">opacity</span>
+              <span className="macro-label">שומן</span>
+              <div className="progress-bar"><div className="progress-fill teal" style={{ width: `${Math.min(100, (totals.fat / 70) * 100)}%` }} /></div>
+              <span className="macro-value">{totals.fat.toFixed(0)}ג</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Manual add */}
-      <div className="section">
-        <h2>
-          <span className="material-symbols-outlined">add_circle</span>
-          הוסף ערך ידני
-        </h2>
-        <p className="tracker-manual-hint">
-          רשום שם וכמות — המערכת תזהה קלוריות וחלבון אוטומטית. ניתן לתקן לפני הוספה.
-        </p>
-        <div className="tracker-manual-grid">
-          <input
-            className="manual-name"
-            type="text"
-            placeholder="לדוגמה: תפוח / חזה עוף / יוגורט"
-            value={mName}
-            onChange={(e) => { setMName(e.target.value); if (mStatus !== "idle") setMStatus("idle"); }}
-            onBlur={runManualAnalyze}
-            aria-label="שם הפריט"
-          />
-          <input
-            className="manual-qty"
-            type="number"
-            min={0}
-            step="any"
-            placeholder="כמות"
-            value={mQty === "" ? "" : mQty}
-            onChange={(e) => { const v = e.target.value; setMQty(v === "" ? "" : Math.max(0, Number(v))); if (mStatus !== "idle") setMStatus("idle"); }}
-            onBlur={runManualAnalyze}
-            aria-label="כמות"
-          />
-          <select
-            className="manual-unit"
-            value={mUnit}
-            onChange={(e) => { setMUnit(e.target.value as HebrewUnit); if (mStatus !== "idle") setMStatus("idle"); }}
-            onBlur={runManualAnalyze}
-            aria-label="יחידה"
-          >
-            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-          <input
-            className="manual-cal"
-            type="number"
-            min={0}
-            step="any"
-            placeholder='קק"ל'
-            value={mCalories === "" ? "" : mCalories}
-            onChange={(e) => { const v = e.target.value; setMCalories(v === "" ? "" : Math.max(0, Number(v))); }}
-            aria-label="קלוריות"
-          />
-          <input
-            className="manual-protein"
-            type="number"
-            min={0}
-            step="any"
-            placeholder="חלבון (ג')"
-            value={mProtein === "" ? "" : mProtein}
-            onChange={(e) => { const v = e.target.value; setMProtein(v === "" ? "" : Math.max(0, Number(v))); }}
-            aria-label="חלבון בגרם"
-          />
-        </div>
-        <div className="tracker-manual-actions">
-          <span className={`manual-status ${mStatus}`}>
-            {mStatus === "loading" && "מזהה..."}
-            {mStatus === "ready" && "✓ ערכים זוהו — ניתן לערוך"}
-            {mStatus === "none" && "⚠ לא נמצא — מלאו ידנית"}
-            {mStatus === "error" && "✕ שגיאה — מלאו ידנית"}
-            {mStatus === "idle" && " "}
-          </span>
-          <button
-            type="button"
-            className="primary"
-            onClick={handleManualAdd}
-            disabled={!mName.trim() || mCalories === "" || (typeof mCalories === "number" && mCalories <= 0)}
-          >
-            הוסף ליום
-          </button>
+        {/* Manual add */}
+        <div className="section">
+          <h2>
+            <span className="material-symbols-outlined">add_circle</span>
+            הוסף ערך ידני
+          </h2>
+          <p className="tracker-manual-hint">
+            רשום שם וכמות — המערכת תזהה קלוריות וחלבון אוטומטית. ניתן לתקן לפני הוספה.
+          </p>
+          <div className="tracker-manual-grid">
+            <input
+              className="manual-name"
+              type="text"
+              placeholder="לדוגמה: תפוח / חזה עוף / יוגורט"
+              value={mName}
+              onChange={(e) => {
+                setMName(e.target.value);
+                setMDetected(null);
+                if (mStatus !== "idle") setMStatus("idle");
+              }}
+              onBlur={runManualAnalyze}
+              aria-label="שם הפריט"
+            />
+            <input
+              className="manual-qty"
+              type="number"
+              min={0}
+              step="any"
+              placeholder="כמות"
+              value={mQty === "" ? "" : mQty}
+              onChange={(e) => {
+                const v = e.target.value;
+                setMQty(v === "" ? "" : Math.max(0, Number(v)));
+                setMDetected(null);
+                if (mStatus !== "idle") setMStatus("idle");
+              }}
+              onBlur={runManualAnalyze}
+              aria-label="כמות"
+            />
+            <select
+              className="manual-unit"
+              value={mUnit}
+              onChange={(e) => {
+                setMUnit(e.target.value as HebrewUnit);
+                setMDetected(null);
+                if (mStatus !== "idle") setMStatus("idle");
+              }}
+              onBlur={runManualAnalyze}
+              aria-label="יחידה"
+            >
+              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <input
+              className="manual-cal"
+              type="number"
+              min={0}
+              step="any"
+              placeholder='קק"ל'
+              value={mCalories === "" ? "" : mCalories}
+              onChange={(e) => { const v = e.target.value; setMCalories(v === "" ? "" : Math.max(0, Number(v))); }}
+              aria-label="קלוריות"
+            />
+            <input
+              className="manual-protein"
+              type="number"
+              min={0}
+              step="any"
+              placeholder="חלבון (ג')"
+              value={mProtein === "" ? "" : mProtein}
+              onChange={(e) => { const v = e.target.value; setMProtein(v === "" ? "" : Math.max(0, Number(v))); }}
+              aria-label="חלבון בגרם"
+            />
+          </div>
+          <div className="tracker-manual-actions">
+            <span className={`manual-status ${mStatus}`}>
+              {mStatus === "loading" && "מזהה..."}
+              {mStatus === "ready" && "✓ ערכים זוהו — ניתן לערוך"}
+              {mStatus === "none" && "⚠ לא נמצא — מלאו ידנית"}
+              {mStatus === "error" && "✕ שגיאה — מלאו ידנית"}
+              {mStatus === "idle" && " "}
+            </span>
+            <button
+              type="button"
+              className="primary"
+              onClick={handleManualAdd}
+              disabled={!mName.trim() || mCalories === "" || (typeof mCalories === "number" && mCalories <= 0)}
+            >
+              הוסף ליום
+            </button>
+          </div>
         </div>
       </div>
 
