@@ -121,6 +121,14 @@ The app uses `vite-plugin-pwa` with `autoUpdate` and now shows an in-app prompt
 when a new service-worker version is ready. Users can click "עדכן עכשיו" to
 refresh into the newest build, reducing stale-cache incidents after deployments.
 
+### DevTools console noise (harmless “message channel closed”)
+
+If you see:
+
+`A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received`
+
+it is **almost always** from a **Chrome extension** (password manager, ad blocker, grammar tools, etc.) talking to the page over `chrome.runtime.sendMessage` — **not** from this repo’s code (there is no `runtime.onMessage` / `postMessage` bridge in the app). Try an **Incognito** window with extensions disabled, or another browser, to confirm. It does not mean the API or PWA is misconfigured.
+
 ## Production deploy flow
 
 1. Merge to `main` (or push directly for hotfixes).

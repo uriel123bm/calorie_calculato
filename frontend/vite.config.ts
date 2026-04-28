@@ -38,6 +38,8 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        // Avoid serving the SPA shell when the URL is the API prefix (Vercel mounts FastAPI here).
+        navigateFallbackDenylist: [/^\/_\/?backend\b/],
         // API calls must not go through workbox cache strategies. Caching
         // cross-origin /auth, /sync, POST /ingredients can break 401 handling
         // and has caused runtime errors in the minified service worker
