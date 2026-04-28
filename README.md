@@ -7,8 +7,8 @@ per serving.
 
 - **Frontend**: React 18 + TypeScript + Vite (RTL Hebrew, Heebo font)
 - **Backend**: FastAPI (Python)
-- **Auth / DB / Image upload**: none (intentionally — architecture is
-  future-ready for adding them later)
+- **Auth**: JWT access token + httpOnly refresh cookie; user data in SQLite
+  (local) or Postgres when `DATABASE_URL` is set (`app/db/database.py`).
 
 ## Auto-detection strategy
 
@@ -133,6 +133,29 @@ npm run verify:prod
 
 4. If verification passes, do a hard refresh in browser (`Ctrl+F5`) and check
 the home tracker plus manual-add flow.
+
+### Vercel environment variables (Production)
+
+Set these in **Project → Settings → Environment Variables** for **Production**
+(after changing env vars, redeploy the latest deployment).
+
+| Variable | Required | Example / note |
+|----------|----------|----------------|
+| `JWT_SECRET` | Yes | Long random string (`python scripts/generate_jwt_secret.py`). Stable across deploys. |
+| `COOKIE_SECURE` | Yes | `true` (HTTPS). |
+| `COOKIE_SAMESITE` | Yes | `lax` (same site as the app). |
+| `CORS_ORIGINS` | Recommended | Your site origin, e.g. `https://calorie-calculato.vercel.app` (comma-separate multiple). |
+| `DATABASE_URL` | Strongly recommended | PostgreSQL URL from Neon, Supabase, Railway, etc. Without it, serverless SQLite is ephemeral. |
+| `OPENAI_API_KEY` | Optional | Enables AI nutrition fallback when local + Open Food Facts miss. |
+| `AUTH_COOKIE_PATH` | Optional | Default `/` in code; only override if your API path layout differs. |
+
+The frontend build uses [`frontend/.env.production`](frontend/.env.production) (`VITE_API_BASE=/_/backend`) so the browser calls the API under the same host. Do not commit secrets; only non-secret build vars belong in tracked `.env.*` files.
+
+**Manual steps after configuring env:** Redeploy, then in the browser use **Ctrl+F5** and sign in again so cookies/tokens match the new settings.
+
+### Provision Postgres for production
+
+Create a Postgres instance (e.g. [Neon](https://neon.tech) or Supabase), copy the connection string into `DATABASE_URL` for the Vercel **backend** runtime, redeploy. Local development can keep `DATABASE_URL` empty (SQLite).
 
 ## Observability (Sentry)
 
