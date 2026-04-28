@@ -18,6 +18,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -88,19 +89,27 @@ class TokenOut(BaseModel):
 # ──────────────────────────────────────────────
 
 def _set_refresh_cookie(response: Response, token: str) -> None:
+    # path must match browser URL prefixes. Dev (Vite proxy) uses /auth/*; Vercel uses /_/backend/auth/*.
+    # Default "/" is correct for prefixed APIs; override with AUTH_COOKIE_PATH if needed.
     response.set_cookie(
         key=REFRESH_COOKIE,
         value=token,
-        httponly=True,          # JS cannot read this
-        secure=False,           # set True in production (HTTPS)
-        samesite="lax",
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
         max_age=COOKIE_MAX_AGE,
-        path="/auth",           # only sent to /auth/* routes
+        path=settings.auth_cookie_path,
     )
 
 
 def _clear_refresh_cookie(response: Response) -> None:
-    response.delete_cookie(key=REFRESH_COOKIE, path="/auth")
+    response.delete_cookie(
+        key=REFRESH_COOKIE,
+        path=settings.auth_cookie_path,
+        secure=settings.cookie_secure,
+        httponly=True,
+        samesite=settings.cookie_samesite,
+    )
 
 
 def _get_user_by_email(db: Session, email: str) -> User | None:
