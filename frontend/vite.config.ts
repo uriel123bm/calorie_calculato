@@ -43,6 +43,12 @@ export default defineConfig({
         // and has caused runtime errors in the minified service worker
         // (e.g. reading .payload on failed responses).
         runtimeCaching: [
+          // Same-origin FastAPI under Vercel experimentalServices — must never be cached
+          // by Workbox (stale 401/500 bodies or opaque errors in the SW have caused 500s in DevTools).
+          {
+            urlPattern: /\/_\/?backend\//,
+            handler: "NetworkOnly",
+          },
           {
             urlPattern: /\/\/(?:.*\.)?onrender\.com\//i,
             handler: "NetworkOnly",

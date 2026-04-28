@@ -31,7 +31,7 @@ else:
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     engine = create_engine(
         f"sqlite:///{_DB_PATH}",
-        connect_args={"check_same_thread": False},
+        connect_args={"check_same_thread": False, "timeout": 30},
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
