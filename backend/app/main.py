@@ -6,15 +6,24 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import sentry_sdk
 
 from app.api.routes import ingredients as ingredients_routes
 from app.api.routes import recipes as recipes_routes
 from app.api.routes import auth as auth_routes
+from app.api.routes import sync as sync_routes
 from app.core.config import settings
 from app.db.database import init_db
 
 
 logging.basicConfig(level=logging.INFO)
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.sentry_environment,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+    )
 
 
 def create_app() -> FastAPI:
@@ -35,6 +44,7 @@ def create_app() -> FastAPI:
     app.include_router(ingredients_routes.router)
     app.include_router(recipes_routes.router)
     app.include_router(auth_routes.router)
+    app.include_router(sync_routes.router)
 
     from contextlib import asynccontextmanager  # noqa: E402 (local import ok here)
 

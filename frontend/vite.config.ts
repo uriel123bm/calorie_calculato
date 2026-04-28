@@ -38,14 +38,22 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        // API calls must not go through workbox cache strategies. Caching
+        // cross-origin /auth, /sync, POST /ingredients can break 401 handling
+        // and has caused runtime errors in the minified service worker
+        // (e.g. reading .payload on failed responses).
         runtimeCaching: [
           {
-            urlPattern: /^https?:\/\/.*\/ingredients\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-ingredients",
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
-            },
+            urlPattern: /\/\/(?:.*\.)?onrender\.com\//i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https?:\/\/127\.0\.0\.1:8000\//i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https?:\/\/localhost:8000\//i,
+            handler: "NetworkOnly",
           },
         ],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
@@ -59,6 +67,12 @@ export default defineConfig({
       "/ingredients": "http://127.0.0.1:8000",
       "/recipe":      "http://127.0.0.1:8000",
       "/auth":        "http://127.0.0.1:8000",
+      "/sync":        "http://127.0.0.1:8000",
     },
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+    globals: true,
   },
 });

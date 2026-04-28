@@ -1540,6 +1540,34 @@ button.pill {
 
 .header-logout .material-symbols-outlined { font-size: 20px; }
 
+/* PWA update / offline toast */
+.pwa-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(var(--nav-h) + 14px);
+  z-index: 70;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(177, 240, 206, 0.65);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pwa-toast-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-deep);
+}
+
+.pwa-toast-actions {
+  flex-shrink: 0;
+}
+
 /* =========================================================
    My Recipes section
    ========================================================= */

@@ -27,6 +27,9 @@ class Settings:
     # Refresh-token cookie security (cross-origin needs Secure + SameSite=None)
     cookie_secure: bool
     cookie_samesite: str
+    sentry_dsn: str
+    sentry_environment: str
+    sentry_traces_sample_rate: float
 
 
 def _parse_origins(raw: str) -> list[str]:
@@ -62,6 +65,9 @@ def get_settings() -> Settings:
         refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE", ""), default=False),
         cookie_samesite=_parse_samesite(os.getenv("COOKIE_SAMESITE", "lax")),
+        sentry_dsn=os.getenv("SENTRY_DSN", "").strip(),
+        sentry_environment=os.getenv("SENTRY_ENVIRONMENT", "development").strip() or "development",
+        sentry_traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
     )
 
 

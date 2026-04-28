@@ -87,11 +87,61 @@ npm run dev
 # → http://localhost:5173
 ```
 
+Run frontend tests:
+
+```bash
+npm run test
+```
+
 The Vite dev server proxies `/ingredients/*` and `/recipe/*` to
 `http://localhost:8000`, so just run both processes in parallel.
 
 For production (or to point at a different backend) set
 `VITE_API_BASE=https://your-api.example.com` before `npm run build`.
+
+## Testing and CI
+
+- Frontend tests run with Vitest (`frontend/src/components/__tests__`).
+- Backend smoke tests run with Pytest (`backend/tests`).
+- GitHub Actions CI runs on pushes/PRs to `main` and fails if build/tests fail.
+
+Useful root scripts:
+
+```bash
+npm run test
+npm run verify:prod
+```
+
+`verify:prod` checks that the production deployment serves expected CSS markers
+for critical UI updates.
+
+## PWA update behavior
+
+The app uses `vite-plugin-pwa` with `autoUpdate` and now shows an in-app prompt
+when a new service-worker version is ready. Users can click "עדכן עכשיו" to
+refresh into the newest build, reducing stale-cache incidents after deployments.
+
+## Production deploy flow
+
+1. Merge to `main` (or push directly for hotfixes).
+2. Wait for Vercel production deploy to reach `READY`.
+3. Run:
+
+```bash
+npm run verify:prod
+```
+
+4. If verification passes, do a hard refresh in browser (`Ctrl+F5`) and check
+the home tracker plus manual-add flow.
+
+## Observability (Sentry)
+
+Sentry is environment-gated:
+
+- Frontend: set `VITE_SENTRY_DSN` (+ optional env/sample-rate vars).
+- Backend: set `SENTRY_DSN` (+ optional env/sample-rate vars).
+
+When DSN is missing, Sentry is disabled automatically.
 
 ## API
 

@@ -1,0 +1,17 @@
+{
+  "name": "calorie-calculator",
+  "private": true,
+  "description": "Run API + Vite together for local development (npm run dev).",
+  "scripts": {
+    "dev": "concurrently -k -n API,UI -c cyan,magenta \"npm run dev:api\" \"npm run dev:ui\"",
+    "dev:api": "npm run dev --prefix backend",
+    "dev:ui": "npm run dev --prefix frontend",
+    "test:frontend": "npm run test --prefix frontend",
+    "test:backend": "npm run test --prefix backend",
+    "test": "npm run test:frontend && npm run test:backend",
+    "verify:prod": "node verify-production.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
