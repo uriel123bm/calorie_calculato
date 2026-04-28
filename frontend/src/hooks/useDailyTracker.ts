@@ -1,18 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
+import { todayStr } from "../utils/date";
+import { coerceDailyTrackerState } from "../utils/syncMerge";
 import type { DailyEntry, DailyEntryInput, DailyTrackerState, DayLog } from "../types";
 
-const storageKey  = (uid: string) => `user_${uid}:dailyTracker:v1`;
-const historyKey  = (uid: string) => `user_${uid}:dailyHistory:v1`;
-const DEFAULT_TARGET = 2000;
+const storageKey = (uid: string) => `user_${uid}:dailyTracker:v1`;
+const historyKey = (uid: string) => `user_${uid}:dailyHistory:v1`;
+export { todayStr };
 const MAX_HISTORY_DAYS = 30;
-
-export function todayStr(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 function makeEntryId(): string {
   return Math.random().toString(36).slice(2, 11);
@@ -20,42 +15,40 @@ function makeEntryId(): string {
 
 function loadState(uid: string): DailyTrackerState {
   if (typeof window === "undefined") {
-    return { date: todayStr(), targetCalories: DEFAULT_TARGET, entries: [] };
+    return coerceDailyTrackerState(null);
   }
   try {
     const raw = localStorage.getItem(storageKey(uid));
-    if (!raw) return { date: todayStr(), targetCalories: DEFAULT_TARGET, entries: [] };
-    const parsed = JSON.parse(raw) as Partial<DailyTrackerState>;
-    const today = todayStr();
-    return {
-      date: today,
-      targetCalories:
-        typeof parsed.targetCalories === "number" && parsed.targetCalories > 0
-          ? parsed.targetCalories
-          : DEFAULT_TARGET,
-      entries:
-        parsed.date === today && Array.isArray(parsed.entries)
-          ? parsed.entries
-          : [],
-    };
+    if (!raw) return coerceDailyTrackerState(null);
+    return coerceDailyTrackerState(JSON.parse(raw));
   } catch {
-    return { date: todayStr(), targetCalories: DEFAULT_TARGET, entries: [] };
+    return coerceDailyTrackerState(null);
   }
 }
 
 function saveState(uid: string, state: DailyTrackerState): void {
-  try { localStorage.setItem(storageKey(uid), JSON.stringify(state)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(storageKey(uid), JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
 }
 
 function loadHistory(uid: string): DayLog[] {
   try {
     const raw = localStorage.getItem(historyKey(uid));
     return raw ? (JSON.parse(raw) as DayLog[]) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function saveHistory(uid: string, logs: DayLog[]): void {
-  try { localStorage.setItem(historyKey(uid), JSON.stringify(logs)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(historyKey(uid), JSON.stringify(logs));
+  } catch {
+    /* ignore */
+  }
 }
 
 function archiveDay(uid: string, state: DailyTrackerState): void {
@@ -82,15 +75,38 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
   const [state, setState] = useState<DailyTrackerState>(() => loadState(userId));
   const [history, setHistory] = useState<DayLog[]>(() => loadHistory(userId));
 
-  // Re-load when the user changes (login / logout)
   useEffect(() => {
     setState(loadState(userId));
     setHistory(loadHistory(userId));
   }, [userId]);
 
-  useEffect(() => { saveState(userId, state); }, [userId, state]);
+  useEffect(() => {
+    return subscribeSyncRefreshed((uid) => {
+      if (uid !== userId) return;
+      setState(loadState(userId));
+      setHistory(loadHistory(userId));
+    });
+  }, [userId]);
 
-  // Auto-reset at midnight: archive yesterday → fresh today
+  /** Other tabs / windows updating the same storage keys */
+  useEffect(() => {
+    const key = storageKey(userId);
+    const histKey = historyKey(userId);
+    const onStorage = (e: StorageEvent) => {
+      if (e.storageArea !== localStorage) return;
+      if (e.key !== key && e.key !== histKey) return;
+      setState(loadState(userId));
+      setHistory(loadHistory(userId));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId]);
+
+  useEffect(() => {
+    saveState(userId, state);
+    schedulePush(userId);
+  }, [userId, state]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       const today = todayStr();
@@ -99,6 +115,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
         archiveDay(userId, prev);
         const newLogs = loadHistory(userId);
         setHistory(newLogs);
+        schedulePush(userId);
         return { date: today, targetCalories: prev.targetCalories, entries: [] };
       });
     }, 60_000);
@@ -131,6 +148,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
     setState((prev) => {
       archiveDay(userId, prev);
       setHistory(loadHistory(userId));
+      schedulePush(userId);
       return { ...prev, entries: [] };
     });
   }, [userId]);

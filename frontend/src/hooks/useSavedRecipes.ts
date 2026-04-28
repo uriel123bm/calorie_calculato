@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import type { NutritionPer100g, SavedRecipe } from "../types";
 
 const storageKey = (uid: string) => `user_${uid}:savedRecipes:v1`;
@@ -23,7 +24,7 @@ export interface UseSavedRecipesResult {
     name: string,
     totalWeightG: number,
     per100g: NutritionPer100g,
-    servings: number
+    servings?: number
   ) => SaveResult;
   deleteRecipe: (id: string) => void;
 }
@@ -34,8 +35,26 @@ export function useSavedRecipes(userId: string): UseSavedRecipesResult {
   // Re-load when user changes (login / logout)
   useEffect(() => { setRecipes(load(userId)); }, [userId]);
 
+  // Reload from localStorage whenever the sync layer pulls fresh data.
+  useEffect(() => {
+    return subscribeSyncRefreshed((uid) => {
+      if (uid !== userId) return;
+      setRecipes(load(userId));
+    });
+  }, [userId]);
+
+  useEffect(() => {
+    const key = storageKey(userId);
+    const onStorage = (e: StorageEvent) => {
+      if (e.storageArea !== localStorage || e.key !== key) return;
+      setRecipes(load(userId));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId]);
+
   const saveRecipe = useCallback(
-    (name: string, totalWeightG: number, per100g: NutritionPer100g, servings: number): SaveResult => {
+    (name: string, totalWeightG: number, per100g: NutritionPer100g, servings?: number): SaveResult => {
       const trimmed = name.trim() || "מתכון ללא שם";
       const normalised = trimmed.toLowerCase();
 
@@ -53,6 +72,7 @@ export function useSavedRecipes(userId: string): UseSavedRecipesResult {
       const updated = [entry, ...current];
       save(userId, updated);
       setRecipes(updated);
+      schedulePush(userId);
       return "saved";
     },
     [userId]
@@ -62,6 +82,7 @@ export function useSavedRecipes(userId: string): UseSavedRecipesResult {
     setRecipes((prev) => {
       const updated = prev.filter((r) => r.id !== id);
       save(userId, updated);
+      schedulePush(userId);
       return updated;
     });
   }, [userId]);

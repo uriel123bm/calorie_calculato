@@ -1,21 +1,82 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import type { DailyEntryInput, Meal as MealType } from "../types";
 import { Meal } from "./Meal";
 
 interface Props {
+  userId: string;
   onAddToDaily: (input: DailyEntryInput) => void;
 }
 
 const DEFAULT_NAMES = ["ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "נשנוש"];
 
+const storageKey = (uid: string) => `user_${uid}:meals:v1`;
+
 function makeMealId(): string {
   return Math.random().toString(36).slice(2, 11);
 }
 
-export function MealsSection({ onAddToDaily }: Props) {
-  const [meals, setMeals] = useState<MealType[]>(() => [
-    { id: makeMealId(), name: "ארוחת בוקר" },
-  ]);
+function defaultMeals(): MealType[] {
+  return [{ id: makeMealId(), name: "ארוחת בוקר" }];
+}
+
+function isMeal(x: unknown): x is MealType {
+  return (
+    x !== null &&
+    typeof x === "object" &&
+    typeof (x as MealType).id === "string" &&
+    typeof (x as MealType).name === "string"
+  );
+}
+
+function loadMeals(uid: string): MealType[] {
+  try {
+    const raw = localStorage.getItem(storageKey(uid));
+    if (!raw) return defaultMeals();
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultMeals();
+    const meals = parsed.filter(isMeal);
+    return meals.length > 0 ? meals : defaultMeals();
+  } catch {
+    return defaultMeals();
+  }
+}
+
+function saveMeals(uid: string, meals: MealType[]): void {
+  try {
+    localStorage.setItem(storageKey(uid), JSON.stringify(meals));
+  } catch { /* ignore */ }
+}
+
+export function MealsSection({ userId, onAddToDaily }: Props) {
+  const [meals, setMeals] = useState<MealType[]>(() => loadMeals(userId));
+
+  useEffect(() => {
+    setMeals(loadMeals(userId));
+  }, [userId]);
+
+  useEffect(
+    () =>
+      subscribeSyncRefreshed((uid) => {
+        if (uid === userId) setMeals(loadMeals(userId));
+      }),
+    [userId]
+  );
+
+  useEffect(() => {
+    const key = storageKey(userId);
+    const onStorage = (e: StorageEvent) => {
+      if (e.storageArea !== localStorage || e.key !== key) return;
+      setMeals(loadMeals(userId));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId]);
+
+  useEffect(() => {
+    saveMeals(userId, meals);
+    schedulePush(userId);
+  }, [userId, meals]);
 
   const handleAddMeal = useCallback(() => {
     setMeals((prev) => {
@@ -44,7 +105,7 @@ export function MealsSection({ onAddToDaily }: Props) {
 
       <div className="meals-list">
         {meals.length === 0 ? (
-          <div className="meals-empty">עדיין לא הגדרתם ארוחה. לחצו "הוסף ארוחה" כדי להתחיל.</div>
+          <div className="meals-empty">עדיין לא הגדרתם ארוחה. לחצו &quot;הוסף ארוחה&quot; כדי להתחיל.</div>
         ) : (
           meals.map((meal) => (
             <Meal
