@@ -27,10 +27,19 @@ if settings.sentry_dsn:
 
 
 def create_app() -> FastAPI:
+    from contextlib import asynccontextmanager  # noqa: E402 (local import ok here)
+
+    @asynccontextmanager
+    async def lifespan(app_instance: FastAPI):
+        init_db()
+        logging.info("Database initialised.")
+        yield
+
     app = FastAPI(
         title="Recipe Calorie Calculator",
         version="0.2.0",
         description="מחשבון קלוריות למתכונים — backend",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -45,16 +54,6 @@ def create_app() -> FastAPI:
     app.include_router(recipes_routes.router)
     app.include_router(auth_routes.router)
     app.include_router(sync_routes.router)
-
-    from contextlib import asynccontextmanager  # noqa: E402 (local import ok here)
-
-    @asynccontextmanager
-    async def lifespan(a):  # type: ignore[override]
-        init_db()
-        logging.info("Database initialised.")
-        yield
-
-    app.router.lifespan_context = lifespan
 
     @app.get("/", tags=["meta"])
     def root() -> dict[str, str]:
