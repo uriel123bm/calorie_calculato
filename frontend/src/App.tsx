@@ -251,7 +251,7 @@ function AppShell({
             />
 
             {/* Freestyle meals */}
-            <MealsSection onAddToDaily={daily.addEntry} />
+            <MealsSection userId={userId} onAddToDaily={daily.addEntry} />
           </div>
         )}
 

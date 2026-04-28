@@ -119,5 +119,6 @@ export interface SavedRecipe {
   savedAt: number;          // Date.now()
   totalWeightG: number;     // total weight of the recipe in grams
   per100g: NutritionPer100g;
-  servings: number;
+  /** Legacy field from older saves — omitted for per-grams recipes */
+  servings?: number;
 }

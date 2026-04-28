@@ -19,3 +19,6 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Vercel local link (credentials)
+.vercel/

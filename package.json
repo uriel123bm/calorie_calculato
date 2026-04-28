@@ -9,7 +9,8 @@
     "test:frontend": "npm run test --prefix frontend",
     "test:backend": "npm run test --prefix backend",
     "test": "npm run test:frontend && npm run test:backend",
-    "verify:prod": "node verify-production.mjs"
+    "verify:prod": "node verify-production.mjs",
+    "build": "npm run build --prefix frontend"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
