@@ -14,7 +14,9 @@ export function PwaUpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
-      updateRegistrationRef.current = () => registration?.update();
+      updateRegistrationRef.current = async () => {
+        await registration?.update();
+      };
     },
   });
 
