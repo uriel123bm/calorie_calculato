@@ -57,9 +57,15 @@ export function mergeDailyTrackerBlobs(localRaw: unknown, remoteRaw: unknown): D
   const today = todayStr();
   const L = coerceDailyTrackerState(localRaw);
   const R = coerceDailyTrackerState(remoteRaw);
+  const mergedTarget =
+    L.targetCalories !== DEFAULT_TARGET
+      ? L.targetCalories
+      : R.targetCalories !== DEFAULT_TARGET
+        ? R.targetCalories
+        : DEFAULT_TARGET;
   return {
     date: today,
-    targetCalories: Math.max(L.targetCalories, R.targetCalories, DEFAULT_TARGET),
+    targetCalories: mergedTarget,
     entries: mergeEntryLists(L.entries, R.entries),
   };
 }

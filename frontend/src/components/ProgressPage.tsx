@@ -25,6 +25,7 @@ const SEX_OPTIONS: Array<{ id: Sex; label: string }> = [
 
 const GOAL_OPTIONS: Array<{ id: Goal; label: string }> = [
   { id: "lose",     label: "ירידה במשקל" },
+  { id: "cut",      label: "חיטוב" },
   { id: "maintain", label: "שמירה" },
   { id: "gain",     label: "עלייה במסה" },
 ];

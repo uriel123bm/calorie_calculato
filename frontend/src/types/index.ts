@@ -150,7 +150,7 @@ export interface UserProduct {
 
 /** Onboarding profile + history for the progress page. */
 export type Sex = "male" | "female" | "other";
-export type Goal = "lose" | "maintain" | "gain";
+export type Goal = "lose" | "cut" | "maintain" | "gain";
 
 export interface WeightLogEntry {
   date: string;     // YYYY-MM-DD

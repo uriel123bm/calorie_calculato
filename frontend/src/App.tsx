@@ -76,6 +76,7 @@ function AppShell({
   const [saveDuplicate, setSaveDuplicate] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [dontShowOnboardingAgain, setDontShowOnboardingAgain] = useState(false);
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
@@ -85,7 +86,6 @@ function AppShell({
   const exportTargetRef = useRef<HTMLDivElement>(null);
   const undoTimeoutRef = useRef<number | null>(null);
   const [deletedRowUndo, setDeletedRowUndo] = useState<DeletedRowUndo | null>(null);
-  const onboardingRotateRef = useRef<number | null>(null);
   const onboardingEndRef = useRef<number | null>(null);
 
   const onboardingSteps = useMemo(
@@ -102,9 +102,6 @@ function AppShell({
       if (undoTimeoutRef.current !== null) {
         window.clearTimeout(undoTimeoutRef.current);
       }
-      if (onboardingRotateRef.current !== null) {
-        window.clearInterval(onboardingRotateRef.current);
-      }
       if (onboardingEndRef.current !== null) {
         window.clearTimeout(onboardingEndRef.current);
       }
@@ -116,6 +113,8 @@ function AppShell({
       const alreadySeen = localStorage.getItem(onboardingSeenKey(userId));
       if (!alreadySeen) {
         setShowOnboarding(true);
+        setOnboardingStep(0);
+        setDontShowOnboardingAgain(false);
         setActiveTab("recipe");
       }
     } catch {
@@ -125,37 +124,44 @@ function AppShell({
 
   useEffect(() => {
     if (!showOnboarding) return;
-    onboardingRotateRef.current = window.setInterval(() => {
-      setOnboardingStep((prev) => (prev + 1) % onboardingSteps.length);
-    }, 6500);
     onboardingEndRef.current = window.setTimeout(() => {
       setShowOnboarding(false);
-      try {
-        localStorage.setItem(onboardingSeenKey(userId), "1");
-      } catch {
-        // ignore storage errors
+      if (dontShowOnboardingAgain) {
+        try {
+          localStorage.setItem(onboardingSeenKey(userId), "1");
+        } catch {
+          // ignore storage errors
+        }
       }
     }, 20000);
     return () => {
-      if (onboardingRotateRef.current !== null) {
-        window.clearInterval(onboardingRotateRef.current);
-        onboardingRotateRef.current = null;
-      }
       if (onboardingEndRef.current !== null) {
         window.clearTimeout(onboardingEndRef.current);
         onboardingEndRef.current = null;
       }
     };
-  }, [onboardingSteps.length, showOnboarding, userId]);
+  }, [dontShowOnboardingAgain, showOnboarding, userId]);
 
   const dismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
-    try {
-      localStorage.setItem(onboardingSeenKey(userId), "1");
-    } catch {
-      // ignore storage errors
+    if (dontShowOnboardingAgain) {
+      try {
+        localStorage.setItem(onboardingSeenKey(userId), "1");
+      } catch {
+        // ignore storage errors
+      }
     }
-  }, [userId]);
+  }, [dontShowOnboardingAgain, userId]);
+
+  const nextOnboardingStep = useCallback(() => {
+    setOnboardingStep((prev) => {
+      if (prev >= onboardingSteps.length - 1) {
+        dismissOnboarding();
+        return prev;
+      }
+      return prev + 1;
+    });
+  }, [dismissOnboarding, onboardingSteps.length]);
 
   useEffect(() => {
     const raw = localStorage.getItem(recipeDraftKey(userId));
@@ -489,12 +495,20 @@ function AppShell({
               ))}
             </div>
             <div className="onboarding-actions">
+              <label className="onboarding-dont-show">
+                <input
+                  type="checkbox"
+                  checked={dontShowOnboardingAgain}
+                  onChange={(e) => setDontShowOnboardingAgain(e.target.checked)}
+                />
+                אל תציג שוב
+              </label>
               <button
                 type="button"
                 className="ghost"
-                onClick={() => setOnboardingStep((prev) => (prev + 1) % onboardingSteps.length)}
+                onClick={nextOnboardingStep}
               >
-                הבא
+                {onboardingStep === onboardingSteps.length - 1 ? "סיום" : "הבא"}
               </button>
               <button type="button" className="primary" onClick={dismissOnboarding}>
                 הבנתי
