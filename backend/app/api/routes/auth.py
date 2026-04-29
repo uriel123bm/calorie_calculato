@@ -10,11 +10,15 @@ POST /auth/logout    — clear the refresh cookie
 from __future__ import annotations
 
 import re
+import secrets
+import time
+import uuid
+from datetime import timedelta
 from datetime import datetime, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 
@@ -23,11 +27,12 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    decode_token_payload,
     hash_password,
     verify_password,
 )
 from app.db.database import get_db
-from app.db.models import User
+from app.db.models import RefreshToken, User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -37,6 +42,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 REFRESH_COOKIE = "refresh_token"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30   # 30 days in seconds
+MAX_ATTEMPTS = 8
+WINDOW_SECONDS = 15 * 60
+_rate_attempts: dict[str, list[float]] = {}
 
 
 class RegisterIn(BaseModel):
@@ -120,6 +128,103 @@ def _get_user_by_id(db: Session, user_id: str) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _is_expired(ts: datetime) -> bool:
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return ts <= _utcnow()
+
+
+def _create_refresh_session(db: Session, user_id: str) -> tuple[str, str]:
+    jti = uuid.uuid4().hex
+    refresh = create_refresh_token(user_id, jti)
+    expires_at = _utcnow() + timedelta(days=settings.refresh_token_expire_days)
+    db.add(
+        RefreshToken(
+            user_id=user_id,
+            jti=jti,
+            expires_at=expires_at,
+        )
+    )
+    return refresh, jti
+
+
+def _revoke_refresh_session(
+    db: Session,
+    jti: str,
+    *,
+    reason: str,
+    replaced_by_jti: str | None = None,
+) -> None:
+    row = db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
+    if row is None or row.revoked_at is not None:
+        return
+    row.revoked_at = _utcnow()
+    row.revoked_reason = reason
+    row.replaced_by_jti = replaced_by_jti
+
+
+def _origin_allowed(request: Request) -> bool:
+    origin = request.headers.get("origin")
+    referer = request.headers.get("referer")
+    if origin:
+        return origin in settings.cors_origins
+    if referer:
+        return any(referer.startswith(f"{allowed}/") or referer == allowed for allowed in settings.cors_origins)
+    # Non-browser / same-origin requests may not include origin headers.
+    return True
+
+
+def _csrf_cookie_header_match(request: Request, csrf_cookie: str | None) -> bool:
+    if not request.headers.get("origin") and not request.headers.get("referer"):
+        # Non-browser clients may not send origin headers/cookies.
+        return True
+    header = request.headers.get("x-csrf-token")
+    return bool(csrf_cookie and header and csrf_cookie == header)
+
+
+def _set_csrf_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key="csrf_token",
+        value=token,
+        httponly=False,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        max_age=COOKIE_MAX_AGE,
+        path=settings.auth_cookie_path,
+    )
+
+
+def _clear_csrf_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key="csrf_token",
+        path=settings.auth_cookie_path,
+        secure=settings.cookie_secure,
+        httponly=False,
+        samesite=settings.cookie_samesite,
+    )
+
+
+def _rate_limit_check(key: str) -> None:
+    now = time.time()
+    window_start = now - WINDOW_SECONDS
+    attempts = [t for t in _rate_attempts.get(key, []) if t >= window_start]
+    if len(attempts) >= MAX_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="יותר מדי ניסיונות, נסו שוב בעוד כמה דקות",
+        )
+    attempts.append(now)
+    _rate_attempts[key] = attempts
+
+
+def _rate_limit_clear(key: str) -> None:
+    _rate_attempts.pop(key, None)
+
+
 # ──────────────────────────────────────────────
 # Auth dependency — inject current user from Bearer token
 # ──────────────────────────────────────────────
@@ -151,6 +256,8 @@ def get_current_user(
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 def register(body: RegisterIn, response: Response, db: Session = Depends(get_db)):
+    # Basic in-process throttle against burst abuse.
+    _rate_limit_check(f"register:{body.email.lower()}")
     email = body.email.lower()
 
     if _get_user_by_email(db, email):
@@ -176,14 +283,19 @@ def register(body: RegisterIn, response: Response, db: Session = Depends(get_db)
     db.refresh(user)
 
     access = create_access_token(user.id)
-    refresh = create_refresh_token(user.id)
+    refresh, _ = _create_refresh_session(db, user.id)
+    db.commit()
     _set_refresh_cookie(response, refresh)
+    _set_csrf_cookie(response, secrets.token_urlsafe(32))
+    _rate_limit_clear(f"register:{body.email.lower()}")
 
     return TokenOut(access_token=access, user=UserOut.model_validate(user))
 
 
 @router.post("/login", response_model=TokenOut)
-def login(body: LoginIn, response: Response, db: Session = Depends(get_db)):
+def login(body: LoginIn, request: Request, response: Response, db: Session = Depends(get_db)):
+    rate_key = f"login:{request.client.host if request.client else 'unknown'}:{body.email.lower()}"
+    _rate_limit_check(rate_key)
     user = _get_user_by_email(db, body.email)
     if user is None or not verify_password(body.password, user.hashed_password):
         raise HTTPException(
@@ -194,8 +306,11 @@ def login(body: LoginIn, response: Response, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="החשבון מושבת")
 
     access = create_access_token(user.id)
-    refresh = create_refresh_token(user.id)
+    refresh, _ = _create_refresh_session(db, user.id)
+    db.commit()
     _set_refresh_cookie(response, refresh)
+    _set_csrf_cookie(response, secrets.token_urlsafe(32))
+    _rate_limit_clear(rate_key)
 
     return TokenOut(access_token=access, user=UserOut.model_validate(user))
 
@@ -207,28 +322,67 @@ def me(current_user: Annotated[User, Depends(get_current_user)]):
 
 @router.post("/refresh", response_model=TokenOut)
 def refresh_tokens(
+    request: Request,
     response: Response,
     refresh_token: Annotated[str | None, Cookie()] = None,
+    csrf_token: Annotated[str | None, Cookie()] = None,
     db: Session = Depends(get_db),
 ):
+    if not _origin_allowed(request) or not _csrf_cookie_header_match(request, csrf_token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="בקשה לא מאומתת")
     if refresh_token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אין טוקן רענון")
     try:
-        user_id = decode_token(refresh_token, "refresh")
+        payload = decode_token_payload(refresh_token, "refresh")
+        user_id = str(payload.get("sub") or "")
+        jti = str(payload.get("jti") or "")
     except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="טוקן רענון לא תקין")
+    if not user_id or not jti:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="טוקן רענון לא תקין")
 
     user = _get_user_by_id(db, user_id)
     if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="משתמש לא קיים")
 
+    session_row = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.user_id == user.id, RefreshToken.jti == jti)
+        .first()
+    )
+    if session_row is None or session_row.revoked_at is not None or _is_expired(session_row.expires_at):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="טוקן רענון לא תקין")
+
+    new_refresh, new_jti = _create_refresh_session(db, user.id)
+    _revoke_refresh_session(db, jti, reason="rotated", replaced_by_jti=new_jti)
+
     new_access = create_access_token(user.id)
-    new_refresh = create_refresh_token(user.id)
+    db.commit()
     _set_refresh_cookie(response, new_refresh)
+    _set_csrf_cookie(response, secrets.token_urlsafe(32))
 
     return TokenOut(access_token=new_access, user=UserOut.model_validate(user))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response):
+def logout(
+    request: Request,
+    response: Response,
+    refresh_token: Annotated[str | None, Cookie()] = None,
+    csrf_token: Annotated[str | None, Cookie()] = None,
+    db: Session = Depends(get_db),
+):
+    if not _origin_allowed(request) or not _csrf_cookie_header_match(request, csrf_token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="בקשה לא מאומתת")
+    if refresh_token:
+        try:
+            payload = decode_token_payload(refresh_token, "refresh")
+            jti = str(payload.get("jti") or "")
+            if jti:
+                _revoke_refresh_session(db, jti, reason="logout")
+                db.commit()
+        except jwt.InvalidTokenError:
+            # Cookie might already be stale; still clear client cookies.
+            pass
     _clear_refresh_cookie(response)
+    _clear_csrf_cookie(response)

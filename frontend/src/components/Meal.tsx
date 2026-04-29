@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useIngredientRows } from "../hooks/useIngredientRows";
-import type { DailyEntryInput } from "../types";
+import type { DailyEntryInput, UserProduct } from "../types";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 import { IngredientTable } from "./IngredientTable";
 
@@ -10,9 +10,17 @@ interface Props {
   onUpdateName: (name: string) => void;
   onRemove: () => void;
   onAddToDaily: (input: DailyEntryInput) => void;
+  personalProducts?: UserProduct[];
 }
 
-export function Meal({ name, onUpdateName, onRemove, onAddToDaily }: Props) {
+export function Meal({
+  id: _mealId,
+  name,
+  onUpdateName,
+  onRemove,
+  onAddToDaily,
+  personalProducts,
+}: Props) {
   const {
     rows,
     patchRow,
@@ -70,6 +78,12 @@ export function Meal({ name, onUpdateName, onRemove, onAddToDaily }: Props) {
         onAnalyzeRow={analyzeRow}
         onNutritionEdit={handleNutritionEdit}
         addLabel="➕ הוסף מצרך לארוחה"
+        hint={
+          (personalProducts?.length ?? 0) > 0
+            ? 'כתבו את שם מוצר מהספרייה — המערכת תמלא מאקרו לפי מה ששמרתם. ב"יחידה": משקל ליחידה בגרם.'
+            : 'ב"יחידה": משקל ליחידה בגרם — לא להסתמך על 100 ג׳ לכל מצרך.'
+        }
+        personalProducts={personalProducts}
       />
 
       <div className="meal-footer">

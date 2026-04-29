@@ -48,9 +48,12 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    if not settings.cors_origins:
+        raise RuntimeError("CORS_ORIGINS must contain at least one explicit origin")
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins or ["*"],
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

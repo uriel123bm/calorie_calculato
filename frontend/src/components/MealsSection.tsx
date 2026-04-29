@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
-import type { DailyEntryInput, Meal as MealType } from "../types";
+import type { DailyEntryInput, Meal as MealType, UserProduct } from "../types";
 import { Meal } from "./Meal";
 
 interface Props {
   userId: string;
   onAddToDaily: (input: DailyEntryInput) => void;
+  personalProducts?: UserProduct[];
 }
 
 const DEFAULT_NAMES = ["ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "נשנוש"];
@@ -48,7 +49,7 @@ function saveMeals(uid: string, meals: MealType[]): void {
   } catch { /* ignore */ }
 }
 
-export function MealsSection({ userId, onAddToDaily }: Props) {
+export function MealsSection({ userId, onAddToDaily, personalProducts }: Props) {
   const [meals, setMeals] = useState<MealType[]>(() => loadMeals(userId));
 
   useEffect(() => {
@@ -115,6 +116,7 @@ export function MealsSection({ userId, onAddToDaily }: Props) {
               onUpdateName={(name) => handleUpdateName(meal.id, name)}
               onRemove={() => handleRemoveMeal(meal.id)}
               onAddToDaily={onAddToDaily}
+              personalProducts={personalProducts}
             />
           ))
         )}

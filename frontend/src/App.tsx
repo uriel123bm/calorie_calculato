@@ -1,32 +1,38 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthPage } from "./components/AuthPage";
 import { DailyTracker } from "./components/DailyTracker";
 import { IngredientTable } from "./components/IngredientTable";
 import { JournalPage } from "./components/JournalPage";
 import { MealsSection } from "./components/MealsSection";
+import { MyProductsSection } from "./components/MyProductsSection";
 import { MyRecipesSection } from "./components/MyRecipesSection";
 import { PdfExportButton } from "./components/PdfExportButton";
+import { ProgressPage } from "./components/ProgressPage";
 import { RecipeNameInput } from "./components/RecipeNameInput";
 import { RecipeSummary } from "./components/RecipeSummary";
 import { useAuth } from "./context/AuthContext";
+import { useBodyMetrics } from "./hooks/useBodyMetrics";
 import { useDailyTracker } from "./hooks/useDailyTracker";
 import { useIngredientRows } from "./hooks/useIngredientRows";
 import { useSavedRecipes } from "./hooks/useSavedRecipes";
-import { EMPTY_NUTRITION, NutritionPer100g } from "./types";
+import { useUserProducts } from "./hooks/useUserProducts";
+import type { IngredientRowState, NutritionPer100g } from "./types";
+import { divideTotalsByServings } from "./utils/nutritionMath";
 
-type TabId = "home" | "recipe" | "meals" | "journal";
+type TabId = "home" | "recipe" | "meals" | "products" | "progress" | "journal";
 
 const TABS: { id: TabId; icon: string; label: string }[] = [
-  { id: "home",    icon: "monitoring",      label: "ראשי"    },
-  { id: "recipe",  icon: "restaurant_menu", label: "מתכון"   },
-  { id: "meals",   icon: "lunch_dining",    label: "ארוחות"  },
-  { id: "journal", icon: "menu_book",       label: "יומן"    },
+  { id: "home",     icon: "monitoring",      label: "ראשי"     },
+  { id: "recipe",   icon: "restaurant_menu", label: "מתכון"    },
+  { id: "meals",    icon: "lunch_dining",    label: "ארוחות"   },
+  { id: "products", icon: "inventory_2",     label: "מוצרים"   },
+  { id: "progress", icon: "show_chart",      label: "התקדמות"  },
+  { id: "journal",  icon: "menu_book",       label: "יומן"     },
 ];
 
-const FIELDS: (keyof NutritionPer100g)[] = [
-  "calories", "protein", "carbohydrates", "sugar", "fat", "sodium",
-];
 const DEFAULT_ROW_COUNT = 4;
+const recipeDraftKey = (uid: string) => `user_${uid}:recipe_draft:v1`;
+const onboardingSeenKey = (uid: string) => `user_${uid}:onboarding_seen:v1`;
 
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -59,28 +65,157 @@ function AppShell({
   username: string;
   onLogout: () => Promise<void>;
 }) {
+  type DeletedRowUndo = {
+    row: IngredientRowState;
+    index: number;
+  };
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [recipeName, setRecipeName] = useState("");
   const [servings, setServings] = useState(1);
   const [recipeSaved, setRecipeSaved] = useState(false);
   const [saveDuplicate, setSaveDuplicate] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
   const savedRecipes  = useSavedRecipes(userId);
+  const userProducts  = useUserProducts(userId);
+  const body          = useBodyMetrics(userId);
   const exportTargetRef = useRef<HTMLDivElement>(null);
+  const undoTimeoutRef = useRef<number | null>(null);
+  const [deletedRowUndo, setDeletedRowUndo] = useState<DeletedRowUndo | null>(null);
+  const onboardingRotateRef = useRef<number | null>(null);
+  const onboardingEndRef = useRef<number | null>(null);
 
-  const perServing = useMemo<NutritionPer100g>(() => {
-    if (servings <= 0) return { ...EMPTY_NUTRITION };
-    return FIELDS.reduce((acc, k) => {
-      acc[k] = recipe.total[k] / servings;
-      return acc;
-    }, {} as NutritionPer100g);
-  }, [recipe.total, servings]);
+  const onboardingSteps = useMemo(
+    () => [
+      "מוסיפים מצרך עם שם, כמות ויחידה — והמערכת מזהה ערכים אוטומטית.",
+      "אפשר ללחוץ Enter כדי לעבור בין השדות במהירות ולהוסיף שורות חדשות.",
+      "בסיום שומרים מתכון ומוסיפים אותו לארוחות בלחיצה אחת.",
+    ],
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current !== null) {
+        window.clearTimeout(undoTimeoutRef.current);
+      }
+      if (onboardingRotateRef.current !== null) {
+        window.clearInterval(onboardingRotateRef.current);
+      }
+      if (onboardingEndRef.current !== null) {
+        window.clearTimeout(onboardingEndRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const alreadySeen = localStorage.getItem(onboardingSeenKey(userId));
+      if (!alreadySeen) {
+        setShowOnboarding(true);
+        setActiveTab("recipe");
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (!showOnboarding) return;
+    onboardingRotateRef.current = window.setInterval(() => {
+      setOnboardingStep((prev) => (prev + 1) % onboardingSteps.length);
+    }, 6500);
+    onboardingEndRef.current = window.setTimeout(() => {
+      setShowOnboarding(false);
+      try {
+        localStorage.setItem(onboardingSeenKey(userId), "1");
+      } catch {
+        // ignore storage errors
+      }
+    }, 20000);
+    return () => {
+      if (onboardingRotateRef.current !== null) {
+        window.clearInterval(onboardingRotateRef.current);
+        onboardingRotateRef.current = null;
+      }
+      if (onboardingEndRef.current !== null) {
+        window.clearTimeout(onboardingEndRef.current);
+        onboardingEndRef.current = null;
+      }
+    };
+  }, [onboardingSteps.length, showOnboarding, userId]);
+
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(onboardingSeenKey(userId), "1");
+    } catch {
+      // ignore storage errors
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(recipeDraftKey(userId));
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        recipeName?: string;
+        servings?: number;
+        rows?: typeof recipe.rows;
+      };
+      if (typeof parsed.recipeName === "string") {
+        setRecipeName(parsed.recipeName);
+      }
+      if (typeof parsed.servings === "number" && Number.isFinite(parsed.servings) && parsed.servings > 0) {
+        setServings(parsed.servings);
+      }
+      if (Array.isArray(parsed.rows)) {
+        recipe.hydrateRows(parsed.rows);
+      }
+    } catch {
+      // ignore malformed drafts
+    }
+    // Run only when user changes; draft hydration should happen once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        recipeDraftKey(userId),
+        JSON.stringify({
+          recipeName,
+          servings,
+          rows: recipe.rows,
+        })
+      );
+    } catch {
+      // ignore storage quota/availability errors
+    }
+  }, [userId, recipeName, servings, recipe.rows]);
+
+  const perServing = useMemo<NutritionPer100g>(
+    () => divideTotalsByServings(recipe.total, servings),
+    [recipe.total, servings]
+  );
 
   const hasFilledRows = recipe.rows.some(
     (r) => r.name.trim() && r.quantity && Number(r.quantity) > 0
   );
+  const nameSuggestions = useMemo(() => {
+    const base = [
+      "פתיבר", "ביצה L", "קמח", "סוכר", "שמן זית", "חלב", "קקאו", "אגוזים",
+      "תפוח", "בננה", "אורז", "שקדים", "דבש", "יוגורט", "טונה", "גזר", "שום", "בצל", "עגבנייה",
+    ];
+    const fromRows = recipe.rows
+      .map((r) => r.name.trim())
+      .filter((name): name is string => name.length > 0);
+    const fromLibrary = userProducts.products.map((p) => p.name.trim()).filter(Boolean);
+    return Array.from(new Set([...fromLibrary, ...fromRows, ...base]));
+  }, [recipe.rows, userProducts.products]);
 
   const isDirty =
     recipeName.trim() !== "" ||
@@ -96,8 +231,52 @@ function AppShell({
     setRecipeName("");
     setServings(1);
     setRecipeSaved(false);
+    setSaveDuplicate(false);
+    setDeletedRowUndo(null);
+    if (undoTimeoutRef.current !== null) {
+      window.clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
     recipe.reset(DEFAULT_ROW_COUNT);
-  }, [isDirty, recipe]);
+    try {
+      localStorage.removeItem(recipeDraftKey(userId));
+    } catch {
+      // ignore storage failures
+    }
+  }, [isDirty, recipe, userId]);
+
+  const handleRemoveRowWithUndo = useCallback((id: string) => {
+    const index = recipe.rows.findIndex((r) => r.id === id);
+    if (index < 0) return;
+    const removed = recipe.rows[index];
+    if (undoTimeoutRef.current !== null) {
+      window.clearTimeout(undoTimeoutRef.current);
+    }
+    setDeletedRowUndo({ row: removed, index });
+    recipe.removeRow(id);
+    undoTimeoutRef.current = window.setTimeout(() => {
+      setDeletedRowUndo(null);
+      undoTimeoutRef.current = null;
+    }, 5000);
+  }, [recipe]);
+
+  const handleUndoRemoveRow = useCallback(() => {
+    if (!deletedRowUndo) return;
+    const current = recipe.rows.slice();
+    const existingIdx = current.findIndex((r) => r.id === deletedRowUndo.row.id);
+    if (existingIdx >= 0) {
+      current[existingIdx] = deletedRowUndo.row;
+    } else {
+      const idx = Math.max(0, Math.min(deletedRowUndo.index, current.length));
+      current.splice(idx, 0, deletedRowUndo.row);
+    }
+    recipe.hydrateRows(current);
+    setDeletedRowUndo(null);
+    if (undoTimeoutRef.current !== null) {
+      window.clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+  }, [deletedRowUndo, recipe]);
 
   const handleSaveRecipe = useCallback(() => {
     if (!hasFilledRows || recipe.total.calories <= 0) return;
@@ -144,6 +323,7 @@ function AppShell({
             addEntry={daily.addEntry}
             removeEntry={daily.removeEntry}
             resetDay={daily.resetDay}
+            personalProducts={userProducts.products}
           />
         )}
 
@@ -169,10 +349,13 @@ function AppShell({
                 <IngredientTable
                   rows={recipe.rows}
                   onPatchRow={recipe.patchRow}
-                  onRemoveRow={recipe.removeRow}
+                  onRemoveRow={handleRemoveRowWithUndo}
                   onAddRow={recipe.addRow}
                   onAnalyzeRow={recipe.analyzeRow}
                   onNutritionEdit={recipe.handleNutritionEdit}
+                  onSubmitLastRow={recipe.addRow}
+                  nameSuggestions={nameSuggestions}
+                  hint='טיפ: ביחידת "יחידה" הזינו משקל טיפוסי למנה אחת (למשל ביצה ~55 ג׳, תפוח ~180 ג׳). ברירת המחדל 100 ג׳ מתאימה לעיתים רק למוצרים ארוזים.'
                 />
               </section>
 
@@ -187,7 +370,7 @@ function AppShell({
               />
             </div>
 
-            <div className="actions-bar">
+            <div className="actions-bar recipe-actions-bar">
               <button
                 type="button"
                 className="ghost"
@@ -229,6 +412,17 @@ function AppShell({
                 מתכון בשם "{recipeName || "ללא שם"}" כבר קיים במאגר. שנו את השם כדי לשמור גרסה חדשה.
               </div>
             )}
+            {deletedRowUndo && (
+              <div className="save-success-banner">
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                  undo
+                </span>
+                שורת מצרך נמחקה.
+                <button type="button" className="ghost undo-inline-btn" onClick={handleUndoRemoveRow}>
+                  בטל
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -251,9 +445,22 @@ function AppShell({
             />
 
             {/* Freestyle meals */}
-            <MealsSection userId={userId} onAddToDaily={daily.addEntry} />
+            <MealsSection userId={userId} onAddToDaily={daily.addEntry} personalProducts={userProducts.products} />
           </div>
         )}
+
+        {/* ── PRODUCTS ── */}
+        {activeTab === "products" && (
+          <MyProductsSection
+            products={userProducts.products}
+            onAddProduct={userProducts.addProduct}
+            onDeleteProduct={userProducts.deleteProduct}
+            onAddToDaily={daily.addEntry}
+          />
+        )}
+
+        {/* ── PROGRESS ── */}
+        {activeTab === "progress" && <ProgressPage body={body} />}
 
         {/* ── JOURNAL ── */}
         {activeTab === "journal" && (
@@ -265,6 +472,37 @@ function AppShell({
           />
         )}
       </main>
+
+      {showOnboarding && (
+        <div className="onboarding-overlay" role="dialog" aria-live="polite" aria-label="הדרכה קצרה">
+          <div className="onboarding-card">
+            <div className="onboarding-head">
+              <strong>הדרכה קצרה (20 שניות)</strong>
+              <button type="button" className="ghost onboarding-close" onClick={dismissOnboarding}>
+                סגור
+              </button>
+            </div>
+            <p className="onboarding-text">{onboardingSteps[onboardingStep]}</p>
+            <div className="onboarding-dots" aria-hidden="true">
+              {onboardingSteps.map((_, idx) => (
+                <span key={idx} className={idx === onboardingStep ? "active" : ""} />
+              ))}
+            </div>
+            <div className="onboarding-actions">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setOnboardingStep((prev) => (prev + 1) % onboardingSteps.length)}
+              >
+                הבא
+              </button>
+              <button type="button" className="primary" onClick={dismissOnboarding}>
+                הבנתי
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom navigation */}
       <nav className="bottom-nav">

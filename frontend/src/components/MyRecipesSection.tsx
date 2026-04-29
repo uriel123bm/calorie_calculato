@@ -1,23 +1,12 @@
 import { useState } from "react";
-import type { DailyEntryInput, NutritionPer100g, SavedRecipe } from "../types";
+import type { DailyEntryInput, SavedRecipe } from "../types";
+import { scaleNutrition } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 
 interface Props {
   recipes: SavedRecipe[];
   onDeleteRecipe: (id: string) => void;
   onAddToDaily: (input: DailyEntryInput) => void;
-}
-
-function scale(per100g: NutritionPer100g, grams: number): NutritionPer100g {
-  const f = grams / 100;
-  return {
-    calories:      per100g.calories      * f,
-    protein:       per100g.protein       * f,
-    carbohydrates: per100g.carbohydrates * f,
-    sugar:         per100g.sugar         * f,
-    fat:           per100g.fat           * f,
-    sodium:        per100g.sodium        * f,
-  };
 }
 
 function RecipeCard({
@@ -33,7 +22,7 @@ function RecipeCard({
   const [added, setAdded] = useState(false);
 
   const gramsNum = typeof grams === "number" ? grams : 0;
-  const preview = gramsNum > 0 ? scale(recipe.per100g, gramsNum) : null;
+  const preview = gramsNum > 0 ? scaleNutrition(recipe.per100g, gramsNum) : null;
 
   const handleAdd = () => {
     if (!preview || gramsNum <= 0) return;

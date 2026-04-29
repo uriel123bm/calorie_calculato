@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { NUTRITION_SOURCE_BADGES } from "../constants/nutritionSourceBadges";
 import { analyzeIngredient } from "../services/api";
 import type {
@@ -6,8 +6,15 @@ import type {
   DailyTrackerState,
   HebrewUnit,
   NutritionSource,
+  UserProduct,
 } from "../types";
 import { UNITS } from "../types";
+import {
+  findPersonalProductByName,
+  normalizeProductLabel,
+  totalsForProductQuantity,
+} from "../utils/personalProductMatch";
+import { scaleServingMacros } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 
 interface Props {
@@ -16,6 +23,8 @@ interface Props {
   addEntry: (input: DailyEntryInput) => void;
   removeEntry: (id: string) => void;
   resetDay: () => void;
+  /** Personal library — shown as quick-add chips when non-empty. */
+  personalProducts?: UserProduct[];
 }
 
 /**
@@ -28,7 +37,87 @@ interface DetectedMacros {
   fat: number;
 }
 
-export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay }: Props) {
+function PersonalProductQuickAdd({
+  products,
+  onAdd,
+}: {
+  products: UserProduct[];
+  onAdd: (input: DailyEntryInput) => void;
+}) {
+  const [productId, setProductId] = useState("");
+  const [qty, setQty] = useState<number | "">("");
+
+  const selected = products.find((p) => p.id === productId);
+  const qNum = typeof qty === "number" ? qty : 0;
+  const preview =
+    selected && qNum > 0 ? scaleServingMacros(selected, qNum) : null;
+
+  const handleAdd = () => {
+    if (!selected || !preview || qNum <= 0) return;
+    onAdd({
+      name: `${selected.name} (${qNum} יח׳)`,
+      calories: roundCalories(preview.calories),
+      protein: roundMacro(preview.protein),
+      carbohydrates: roundMacro(preview.carbohydrates),
+      fat: roundMacro(preview.fat),
+    });
+    setQty("");
+    setProductId("");
+  };
+
+  return (
+    <div className="tracker-quick-product-row">
+      <select
+        className="tracker-quick-select"
+        value={productId}
+        onChange={(e) => setProductId(e.target.value)}
+        aria-label="בחר מוצר אישי"
+      >
+        <option value="">— בחרו מוצר —</option>
+        {products.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      <input
+        type="number"
+        className="tracker-quick-qty"
+        min={0}
+        step="any"
+        placeholder="כמות"
+        value={qty === "" ? "" : qty}
+        onChange={(e) =>
+          setQty(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))
+        }
+        aria-label="כמות יחידות"
+      />
+      <span className="tracker-quick-unit-label">יח׳</span>
+      {preview && qNum > 0 && (
+        <span className="tracker-quick-preview">
+          ≈ {Math.round(preview.calories)} קק״ל
+        </span>
+      )}
+      <button
+        type="button"
+        className="primary"
+        disabled={!preview || qNum <= 0}
+        onClick={handleAdd}
+      >
+        הוסף ליום
+      </button>
+    </div>
+  );
+}
+
+export function DailyTracker({
+  state,
+  setTarget,
+  addEntry,
+  removeEntry,
+  resetDay,
+  personalProducts = [],
+}: Props) {
   // Manual entry state
   const [mName, setMName] = useState("");
   const [mQty, setMQty] = useState<number | "">(100);
@@ -42,6 +131,9 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
     matchedName: string | null;
   } | null>(null);
   const [mStatus, setMStatus] = useState<"idle" | "loading" | "ready" | "error" | "none">("idle");
+
+  const manualProductsListId = useId().replace(/:/g, "");
+  const matchedPersonalRef = useRef<UserProduct | null>(null);
 
   const totals = useMemo(() => state.entries.reduce(
     (acc, e) => ({
@@ -58,10 +150,32 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
   const progressPct = Math.min(100, state.targetCalories > 0
     ? (totals.calories / state.targetCalories) * 100 : 0);
 
-  const runManualAnalyze = async () => {
+  const applyPersonalProductFill = (p: UserProduct) => {
+    matchedPersonalRef.current = p;
+    const qty = 1;
+    setMQty(qty);
+    setMUnit("יחידה");
+    const m = totalsForProductQuantity(p, qty);
+    setMCalories(roundCalories(m.calories));
+    setMProtein(roundMacro(m.protein));
+    setMDetected({
+      calories: m.calories,
+      carbohydrates: m.carbohydrates,
+      fat: m.fat,
+    });
+    setMAnalyzeMeta({
+      source: "personal_library",
+      confidence: 1,
+      matchedName: p.name,
+    });
+    setMStatus("ready");
+  };
+
+  const fetchIngredientAnalyze = async () => {
     const name = mName.trim();
     const qty = typeof mQty === "number" ? mQty : 0;
     if (!name || qty <= 0) return;
+    matchedPersonalRef.current = null;
     setMStatus("loading");
     setMAnalyzeMeta(null);
     try {
@@ -88,6 +202,53 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
     }
   };
 
+  const handleManualNameBlur = () => {
+    const trimmed = mName.trim();
+    if (!trimmed) return;
+    const libs = personalProducts.length ? personalProducts : [];
+    const hit = findPersonalProductByName(trimmed, libs);
+    if (hit) {
+      applyPersonalProductFill(hit);
+      return;
+    }
+    matchedPersonalRef.current = null;
+    const qty = typeof mQty === "number" ? mQty : 0;
+    if (qty > 0) void fetchIngredientAnalyze();
+  };
+
+  const handleManualQtyBlur = () => {
+    const name = mName.trim();
+    const qty = typeof mQty === "number" ? mQty : 0;
+    const bound = matchedPersonalRef.current;
+    if (
+      bound &&
+      findPersonalProductByName(name, personalProducts)?.id === bound.id &&
+      qty > 0
+    ) {
+      const m = totalsForProductQuantity(bound, qty);
+      setMCalories(roundCalories(m.calories));
+      setMProtein(roundMacro(m.protein));
+      setMDetected({
+        calories: m.calories,
+        carbohydrates: m.carbohydrates,
+        fat: m.fat,
+      });
+      setMAnalyzeMeta({
+        source: "personal_library",
+        confidence: 1,
+        matchedName: bound.name,
+      });
+      setMStatus("ready");
+      return;
+    }
+    void fetchIngredientAnalyze();
+  };
+
+  const handleManualUnitBlur = () => {
+    matchedPersonalRef.current = null;
+    void fetchIngredientAnalyze();
+  };
+
   const handleManualAdd = () => {
     const cals = typeof mCalories === "number" ? mCalories : 0;
     if (!mName.trim() || cals <= 0) return;
@@ -102,6 +263,7 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
       fat = roundMacro(mDetected.fat * factor);
     }
 
+    matchedPersonalRef.current = null;
     addEntry({
       name: mName.trim(),
       calories: roundCalories(cals),
@@ -133,6 +295,19 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
           <p className="page-subtitle">עקוב אחרי מה שאכלת היום</p>
         </div>
       </div>
+
+      {personalProducts.length > 0 && (
+        <div className="section tracker-quick-products">
+          <h2>
+            <span className="material-symbols-outlined">inventory_2</span>
+            מהיר מהמוצרים האישיים
+          </h2>
+          <p className="tracker-manual-hint">
+            בחרו מוצר והזינו כמה יחידות אכלתם — הערכים מחושבים לפי יחידה אחת כפי שהגדרתם בטאב מוצרים.
+          </p>
+          <PersonalProductQuickAdd products={personalProducts} onAdd={addEntry} />
+        </div>
+      )}
 
       <div className="daily-tracker-top-grid">
         {/* Target input */}
@@ -221,7 +396,9 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
             הוסף ערך ידני
           </h2>
           <p className="tracker-manual-hint">
-            רשום שם וכמות — המערכת תזהה קלוריות וחלבון אוטומטית. ניתן לתקן לפני הוספה.
+            {personalProducts.length > 0
+              ? "בשם הפריט אפשר לכתוב מוצר מהספרייה שלך — יוטען עם המנה והערכים ששמרת. אחרת המערכת תנסה לזהות מהשירות."
+              : "רשום שם וכמות — המערכת תזהה קלוריות וחלבון אוטומטית. ניתן לתקן לפני הוספה."}
           </p>
           <div className="tracker-manual-grid">
             <div className="manual-field manual-field--name">
@@ -232,15 +409,25 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
                 id="tracker-manual-name"
                 className="manual-input manual-name"
                 type="text"
-                placeholder='למשל תפוח, יוגורט, חזה עוף…'
+                placeholder={
+                  personalProducts.length > 0
+                    ? "הקלידו את שם מוצר מהספרייה או כל מזון…"
+                    : "למשל תפוח, יוגורט, חזה עוף…"
+                }
+                list={personalProducts.length > 0 ? manualProductsListId : undefined}
                 value={mName}
                 onChange={(e) => {
-                  setMName(e.target.value);
+                  const v = e.target.value;
+                  setMName(v);
+                  const b = matchedPersonalRef.current;
+                  if (b && normalizeProductLabel(v) !== normalizeProductLabel(b.name)) {
+                    matchedPersonalRef.current = null;
+                  }
                   setMDetected(null);
                   setMAnalyzeMeta(null);
                   if (mStatus !== "idle") setMStatus("idle");
                 }}
-                onBlur={runManualAnalyze}
+                onBlur={handleManualNameBlur}
                 aria-label="שם הפריט"
               />
             </div>
@@ -264,7 +451,7 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
                   setMAnalyzeMeta(null);
                   if (mStatus !== "idle") setMStatus("idle");
                 }}
-                onBlur={runManualAnalyze}
+                onBlur={handleManualQtyBlur}
               />
             </div>
 
@@ -281,12 +468,13 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
                   aria-labelledby="manual-unit-caption"
                   value={mUnit}
                   onChange={(e) => {
+                    matchedPersonalRef.current = null;
                     setMUnit(e.target.value as HebrewUnit);
                     setMDetected(null);
                     setMAnalyzeMeta(null);
                     if (mStatus !== "idle") setMStatus("idle");
                   }}
-                  onBlur={runManualAnalyze}
+                  onBlur={handleManualUnitBlur}
                 >
                   {UNITS.map((u) => (
                     <option key={u} value={u}>
@@ -340,12 +528,19 @@ export function DailyTracker({ state, setTarget, addEntry, removeEntry, resetDay
               />
             </div>
           </div>
+          {personalProducts.length > 0 && (
+            <datalist id={manualProductsListId}>
+              {personalProducts.map((p) => (
+                <option key={p.id} value={p.name} />
+              ))}
+            </datalist>
+          )}
           {(mStatus === "ready" || mStatus === "none") && mAnalyzeMeta && (
             <div className="manual-analyze-meta" aria-live="polite">
               <span className={`badge ${NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.cls ?? "unknown"}`}>
                 {NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.label ?? mAnalyzeMeta.source}
               </span>
-              {mAnalyzeMeta.confidence > 0 && (
+              {mAnalyzeMeta.source !== "personal_library" && mAnalyzeMeta.confidence > 0 && (
                 <span className="manual-analyze-confidence">
                   ביטחון {Math.round(mAnalyzeMeta.confidence * 100)}%
                 </span>

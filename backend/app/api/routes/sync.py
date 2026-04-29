@@ -26,7 +26,15 @@ router = APIRouter(prefix="/sync", tags=["sync"])
 
 # Whitelist of bucket keys the API will accept. Anything else is rejected so
 # clients can't pollute the table with arbitrary keys.
-ALLOWED_KEYS: set[str] = {"tracker", "history", "recipes", "meals", "settings"}
+ALLOWED_KEYS: set[str] = {
+    "tracker",
+    "history",
+    "recipes",
+    "meals",
+    "settings",
+    "products",  # personal products library
+    "body",      # body metrics + weight log
+}
 
 # Hard cap per blob to keep DB rows small (50 KB is plenty for years of usage).
 MAX_BLOB_BYTES = 50_000
@@ -38,6 +46,8 @@ class SyncBuckets(BaseModel):
     recipes: Any | None = None
     meals: Any | None = None
     settings: Any | None = None
+    products: Any | None = None
+    body: Any | None = None
 
 
 class SyncResponse(BaseModel):
@@ -46,6 +56,8 @@ class SyncResponse(BaseModel):
     recipes: Any | None = None
     meals: Any | None = None
     settings: Any | None = None
+    products: Any | None = None
+    body: Any | None = None
     updated_at: datetime | None = None
 
 
@@ -77,6 +89,8 @@ def get_sync(
         recipes=_decode(by_key["recipes"].value_json) if "recipes" in by_key else None,
         meals=_decode(by_key["meals"].value_json) if "meals" in by_key else None,
         settings=_decode(by_key["settings"].value_json) if "settings" in by_key else None,
+        products=_decode(by_key["products"].value_json) if "products" in by_key else None,
+        body=_decode(by_key["body"].value_json) if "body" in by_key else None,
         updated_at=latest,
     )
 

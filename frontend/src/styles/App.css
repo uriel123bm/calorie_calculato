@@ -275,6 +275,7 @@ select {
   caret-color: var(--primary);
   box-sizing: border-box;
   min-width: 0;             /* allow shrinking in flex/grid */
+  min-height: 44px;
   transition: border-color .15s, box-shadow .15s;
   -webkit-appearance: none;
   -moz-appearance: textfield;
@@ -298,6 +299,7 @@ button {
   font-size: 14px;
   font-weight: 600;
   padding: 9px 18px;
+  min-height: 44px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-xs);
   background: rgba(255,255,255,.9);
@@ -372,7 +374,7 @@ button.pill {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 8px 6px;
   border-radius: 16px;
   font-size: 11px;
   font-weight: 600;
@@ -386,6 +388,7 @@ button.pill {
   text-decoration: none;
   flex: 1;
   max-width: 90px;
+  min-width: 0;
 }
 .bottom-nav a .material-symbols-outlined,
 .bottom-nav button .material-symbols-outlined { font-size: 24px; }
@@ -421,28 +424,51 @@ button.pill {
 }
 
 /* =========================================================
-   Ingredient table
+   Ingredient table — fixed columns so headers align with cells
    ========================================================= */
-.ingredient-table-wrap { overflow-x: auto; }
+.ingredient-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 .ingredient-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
+  box-sizing: border-box;
 }
+
+.ingredient-table *,
+.ingredient-table *::before,
+.ingredient-table *::after {
+  box-sizing: border-box;
+}
+
+/* Percent widths via <colgroup>; sum = 100% */
+.ingredient-col-name { width: 21%; }
+.ingredient-col-qty { width: 11%; }
+.ingredient-col-unit { width: 11%; }
+.ingredient-col-unit-weight { width: 11%; }
+.ingredient-col-cal100 { width: 16%; }
+.ingredient-col-total { width: 15%; }
+.ingredient-col-actions { width: 15%; }
 
 .ingredient-table thead th {
   background: linear-gradient(180deg, rgba(177,240,206,.35) 0%, rgba(214,239,222,.3) 100%);
   border-bottom: 2px solid rgba(177,240,206,.6);
-  padding: 11px 8px;
+  padding: 10px 6px;
   font-family: var(--font-head);
   font-weight: 700;
   font-size: 12px;
   color: var(--primary);
-  text-align: right;
-  white-space: nowrap;
-  letter-spacing: .2px;
+  letter-spacing: 0.2px;
+  vertical-align: bottom;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .ingredient-table thead th:first-child { border-top-right-radius: var(--radius-xs); }
@@ -450,7 +476,7 @@ button.pill {
 
 .ingredient-table tbody td {
   border-bottom: 1px solid rgba(220,235,220,.6);
-  padding: 8px 8px;
+  padding: 10px 6px;
   vertical-align: middle;
 }
 
@@ -465,23 +491,111 @@ button.pill {
 .ingredient-table tbody tr:last-child td:first-child { border-bottom-right-radius: var(--radius-xs); }
 .ingredient-table tbody tr:last-child td:last-child  { border-bottom-left-radius: var(--radius-xs); }
 
-.ingredient-table .col-name   { width: 28%; min-width: 110px; }
-.ingredient-table .col-qty    { width: 11%; min-width: 72px; }
-.ingredient-table .col-unit   { width: 13%; min-width: 92px; }
-.ingredient-table .col-cal100 { width: 20%; min-width: 120px; }
-.ingredient-table .col-total  { width: 16%; min-width: 110px; text-align: left; }
-.ingredient-table .col-actions { width: 12%; text-align: center; }
+/* Logical alignment in RTL: name on start edge; narrow cols centered */
+.ingredient-table .col-name { text-align: start; }
+.ingredient-table .col-qty,
+.ingredient-table .col-unit,
+.ingredient-table .col-unit-weight,
+.ingredient-table .col-cal100,
+.ingredient-table .col-total,
+.ingredient-table .col-actions { text-align: center; }
+
+.ingredient-table thead th.col-unit-weight {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.ingredient-table .col-unit-weight-sub {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.ingredient-actions-head {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.35;
+  letter-spacing: 2px;
+  transform: translateY(2px);
+}
+
+.ingredient-table .unit-weight-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 120px;
+}
+
+.ingredient-table .unit-weight-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.ingredient-table .unit-weight-hint {
+  font-size: 11px;
+  color: var(--on-surface-var);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ingredient-table .unit-weight-dash {
+  color: var(--on-surface-var);
+  opacity: 0.45;
+  display: block;
+  padding: 8px 0;
+  text-align: center;
+}
 
 /* inputs inside the table */
-.ingredient-table td { overflow: visible; }   /* never clip inputs */
+.ingredient-table td { overflow: visible; }
 
 .ingredient-table input,
 .ingredient-table select {
   font-size: 16px;
   padding: 6px 8px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   color: #191c1d;
   background: #fff;
+}
+
+.ingredient-table .col-name input[type="text"] {
+  text-align: start;
+}
+
+.ingredient-table .col-qty input[type="number"],
+.ingredient-table .col-cal100 input[type="number"] {
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: center;
+}
+
+.ingredient-table .col-qty input[type="number"] {
+  min-width: 72px;
+}
+
+.ingredient-table .col-total {
+  font-variant-numeric: tabular-nums;
+}
+
+.ingredient-table .col-actions {
+  white-space: nowrap;
+}
+
+.ingredient-table .col-actions .row-icon-button {
+  margin-inline: 2px;
+}
+
+.ingredient-table td {
+  overflow: visible;
 }
 
 /* =========================================================
@@ -522,6 +636,12 @@ button.pill {
   color: var(--on-surface);
 }
 
+.badge.personal-library {
+  border-color: rgba(129, 99, 197, 0.45);
+  background: rgba(206, 191, 255, 0.35);
+  color: #5c448a;
+}
+
 .badge.unknown, .badge.error {
   border-color: #f1c5c5;
   background: #fdecec;
@@ -537,8 +657,8 @@ button.pill {
   box-shadow: none;
   color: var(--outline);
   font-size: 14px;
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -586,11 +706,44 @@ button.pill {
 .status-loading { color: var(--primary-strong); font-size: 12px; }
 .status-error   { color: var(--danger);         font-size: 12px; }
 
+.ingredient-row-loading td {
+  background: rgba(243,253,245,.68) !important;
+}
+
+.loading-skeleton-line,
+.loading-skeleton-chip {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(220,230,224,.7),
+    rgba(238,245,241,.95),
+    rgba(220,230,224,.7)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.15s linear infinite;
+  border-radius: 999px;
+}
+
+.loading-skeleton-line {
+  width: 110px;
+  height: 12px;
+}
+
+.loading-skeleton-chip {
+  width: 64px;
+  height: 20px;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: .5; }
 }
 .loading { animation: pulse 1.2s ease infinite; }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
 /* =========================================================
    Toolbar / actions bar
@@ -610,6 +763,19 @@ button.pill {
   padding: 14px 0 6px;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.recipe-actions-bar {
+  position: sticky;
+  bottom: calc(var(--nav-h) + 10px);
+  z-index: 35;
+  padding: 10px;
+  border: 1px solid rgba(177,240,206,.55);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.93);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-card);
 }
 
 .empty-hint {
@@ -739,6 +905,45 @@ button.pill {
    Daily Tracker (side panel)
    ========================================================= */
 .daily-tracker { margin-bottom: 0; }
+
+.tracker-quick-products {
+  margin-bottom: 16px;
+}
+
+.tracker-quick-product-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tracker-quick-select {
+  min-width: 160px;
+  flex: 1 1 140px;
+  padding: 8px 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
+.tracker-quick-qty {
+  width: 96px;
+  padding: 8px 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--hairline);
+}
+
+.tracker-quick-unit-label {
+  font-size: 14px;
+  color: var(--on-surface-var);
+  min-width: 2.5rem;
+}
+
+.tracker-quick-preview {
+  font-size: 14px;
+  color: var(--primary);
+  font-weight: 600;
+}
 
 .daily-tracker-top-grid {
   display: grid;
@@ -1182,7 +1387,7 @@ button.pill {
   color: var(--on-surface);
 }
 
-.tracker-reset-btn { font-size: 12px; padding: 4px 10px; }
+.tracker-reset-btn { font-size: 12px; padding: 4px 10px; min-height: 40px; }
 
 .tracker-empty {
   text-align: center;
@@ -1871,6 +2076,12 @@ button.pill {
   color: #7a1010;
 }
 
+.undo-inline-btn {
+  margin-inline-start: auto;
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
 /* =========================================================
    Journal page
    ========================================================= */
@@ -2079,7 +2290,10 @@ html, body {
     gap: 0;
   }
 
-  .ingredient-table { font-size: 12px; }
+  .ingredient-table {
+    font-size: 12px;
+    table-layout: auto;
+  }
   .ingredient-table thead th,
   .ingredient-table tbody td { padding: 6px 5px; }
   .ingredient-table .col-cal100,
@@ -2225,7 +2439,318 @@ html, body {
   .tracker-add-row input,
   .meal-name,
   .recipe-name input,
-  .recipe-name-input {
+  .recipe-name-input,
+  .product-form input,
+  .product-form select,
+  .onboarding-form input,
+  .onboarding-form select,
+  .weight-add-row input,
+  .weight-add-row select {
     font-size: 16px !important;
   }
+}
+
+/* =========================================================
+   Personal products library + onboarding form
+   ========================================================= */
+.product-form,
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.product-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.product-form-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 640px) {
+  .product-form-grid-4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.product-form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-deep);
+  letter-spacing: .2px;
+  min-width: 0;
+}
+
+.product-form-label input,
+.product-form-label select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,82,56,0.18);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-deep);
+  font-family: inherit;
+}
+
+.product-form-label input:focus,
+.product-form-label select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(93,184,118,0.18);
+}
+
+.product-form-hint {
+  font-size: 12px;
+  color: rgba(15,82,56,0.65);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.product-unit-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(93,184,118,.35);
+  background: rgba(177,240,206,.16);
+}
+
+.product-unit-preview-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-deep);
+  margin-inline-end: 4px;
+}
+
+.badge.carbs {
+  border-color: rgba(240,217,168,.7);
+  background: rgba(255,245,220,.7);
+  color: var(--tertiary);
+}
+
+.product-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.product-feedback {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+.product-feedback.ok   { background: rgba(93,184,118,.14); color: var(--primary-strong); }
+.product-feedback.warn { background: rgba(230,92,0,.12);   color: #b34800; }
+
+.onboarding-intro {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: rgba(15,82,56,0.7);
+  line-height: 1.5;
+}
+
+/* =========================================================
+   Progress page — stats grid, chart, weight log
+   ========================================================= */
+.progress-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.progress-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(177,240,206,0.35), rgba(255,255,255,0.6));
+  border: 1px solid rgba(93,184,118,0.18);
+}
+
+.progress-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(15,82,56,0.65);
+}
+
+.progress-stat-value {
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-deep);
+  line-height: 1.1;
+}
+.progress-stat-value small {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: .65;
+  margin-right: 2px;
+}
+
+.progress-stat-delta {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(15,82,56,0.7);
+}
+.progress-stat-delta.down { color: var(--primary-strong); }
+.progress-stat-delta.up   { color: #b34800; }
+
+.weight-chart-wrap {
+  width: 100%;
+  /* recharts ResponsiveContainer wants a defined parent height */
+  min-height: 260px;
+  direction: ltr; /* recharts axes are LTR-native */
+}
+
+.weight-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 16px;
+  border: 1px dashed rgba(93,184,118,0.35);
+  border-radius: 16px;
+  color: rgba(15,82,56,0.7);
+  text-align: center;
+}
+
+.weight-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .weight-add-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .weight-add-btn {
+    grid-column: 1 / -1;
+  }
+}
+
+.weight-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weight-log-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.6);
+  border: 1px solid rgba(93,184,118,0.14);
+}
+
+.weight-log-date {
+  font-size: 13px;
+  color: rgba(15,82,56,0.75);
+  font-weight: 600;
+}
+
+.weight-log-weight {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.progress-danger-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(9, 25, 18, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px 14px calc(var(--nav-h) + 12px);
+}
+
+.onboarding-card {
+  width: min(560px, 100%);
+  border: 1px solid rgba(177,240,206,.62);
+  background: rgba(255,255,255,.97);
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(0,0,0,.16);
+  padding: 14px;
+}
+
+.onboarding-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.onboarding-close {
+  min-height: 34px;
+  padding: 4px 10px;
+}
+
+.onboarding-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--on-surface);
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.onboarding-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(15,82,56,.23);
+}
+
+.onboarding-dots span.active {
+  background: var(--primary);
+}
+
+.onboarding-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

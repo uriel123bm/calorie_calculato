@@ -2,11 +2,14 @@
  * Merge local and remote sync payloads so pulls never blindly wipe devices.
  */
 import type {
+  BodyMetrics,
   DailyEntry,
   DailyTrackerState,
   DayLog,
   Meal,
   SavedRecipe,
+  UserProduct,
+  WeightLogEntry,
 } from "../types";
 import { todayStr } from "./date";
 
@@ -125,4 +128,85 @@ export function mergeMealBlobs(localRaw: unknown, remoteRaw: unknown): Meal[] {
   }
   const merged = Array.from(map.values());
   return merged.length > 0 ? merged : defaultMeals();
+}
+
+// ── Personal products library ──────────────────────────────
+function isUserProduct(x: unknown): x is UserProduct {
+  if (!x || typeof x !== "object") return false;
+  const p = x as Partial<UserProduct>;
+  return (
+    typeof p.id === "string" &&
+    typeof p.name === "string" &&
+    typeof p.servingValue === "number" &&
+    typeof p.calories === "number"
+  );
+}
+
+export function mergeProductBlobs(localRaw: unknown, remoteRaw: unknown): UserProduct[] {
+  const parse = (raw: unknown): UserProduct[] =>
+    Array.isArray(raw) ? raw.filter(isUserProduct) : [];
+  const map = new Map<string, UserProduct>();
+  for (const p of [...parse(localRaw), ...parse(remoteRaw)]) {
+    const prev = map.get(p.id);
+    if (!prev || p.addedAt >= prev.addedAt) map.set(p.id, p);
+  }
+  return Array.from(map.values()).sort((a, b) => b.addedAt - a.addedAt);
+}
+
+// ── Body metrics + weight log ──────────────────────────────
+function isWeightLogEntry(x: unknown): x is WeightLogEntry {
+  if (!x || typeof x !== "object") return false;
+  const e = x as Partial<WeightLogEntry>;
+  return (
+    typeof e.date === "string" &&
+    isIsoDate(e.date) &&
+    typeof e.weightKg === "number" &&
+    Number.isFinite(e.weightKg) &&
+    e.weightKg > 0
+  );
+}
+
+function isBodyMetrics(x: unknown): x is BodyMetrics {
+  if (!x || typeof x !== "object") return false;
+  const m = x as Partial<BodyMetrics>;
+  return (
+    typeof m.heightCm === "number" &&
+    typeof m.startWeightKg === "number" &&
+    typeof m.currentWeightKg === "number" &&
+    Array.isArray(m.log)
+  );
+}
+
+/** Merge log entries by date — latest weight per date wins. */
+function mergeWeightLog(a: WeightLogEntry[], b: WeightLogEntry[]): WeightLogEntry[] {
+  const map = new Map<string, WeightLogEntry>();
+  for (const e of [...a, ...b]) {
+    if (!isWeightLogEntry(e)) continue;
+    map.set(e.date, e);
+  }
+  return Array.from(map.values()).sort((x, y) => x.date.localeCompare(y.date));
+}
+
+/**
+ * Body metrics is a single object (not a list). When merging, prefer
+ * the side with the more recent `updatedAt`, but always merge the
+ * weight logs together so no measurements are lost.
+ */
+export function mergeBodyBlobs(localRaw: unknown, remoteRaw: unknown): BodyMetrics | null {
+  const L = isBodyMetrics(localRaw) ? localRaw : null;
+  const R = isBodyMetrics(remoteRaw) ? remoteRaw : null;
+  if (!L && !R) return null;
+  if (L && !R) return { ...L, log: mergeWeightLog(L.log, []) };
+  if (!L && R) return { ...R, log: mergeWeightLog([], R.log) };
+
+  const Lnn = L as BodyMetrics;
+  const Rnn = R as BodyMetrics;
+  const winner = (Lnn.updatedAt ?? 0) >= (Rnn.updatedAt ?? 0) ? Lnn : Rnn;
+  const mergedLog = mergeWeightLog(Lnn.log, Rnn.log);
+  const last = mergedLog.length > 0 ? mergedLog[mergedLog.length - 1] : null;
+  return {
+    ...winner,
+    log: mergedLog,
+    currentWeightKg: last ? last.weightKg : winner.currentWeightKg,
+  };
 }

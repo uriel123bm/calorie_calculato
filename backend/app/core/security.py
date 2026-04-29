@@ -5,7 +5,7 @@ All token logic is centralised here so it's easy to audit.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Literal
+from typing import Any, Literal
 
 import bcrypt
 import jwt
@@ -36,7 +36,12 @@ def verify_password(plain: str, hashed: str) -> bool:
 TokenKind = Literal["access", "refresh"]
 
 
-def _create_token(subject: str, kind: TokenKind, expires_delta: timedelta) -> str:
+def _create_token(
+    subject: str,
+    kind: TokenKind,
+    expires_delta: timedelta,
+    extra_claims: dict[str, Any] | None = None,
+) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": subject,          # user id
@@ -44,6 +49,8 @@ def _create_token(subject: str, kind: TokenKind, expires_delta: timedelta) -> st
         "iat": now,
         "exp": now + expires_delta,
     }
+    if extra_claims:
+        payload.update(extra_claims)
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
@@ -55,11 +62,12 @@ def create_access_token(user_id: str) -> str:
     )
 
 
-def create_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: str, jti: str) -> str:
     return _create_token(
         user_id,
         "refresh",
         timedelta(days=settings.refresh_token_expire_days),
+        extra_claims={"jti": jti},
     )
 
 
@@ -80,3 +88,14 @@ def decode_token(token: str, expected_kind: TokenKind) -> str:
     if not sub:
         raise InvalidTokenError("missing sub claim")
     return str(sub)
+
+
+def decode_token_payload(token: str, expected_kind: TokenKind) -> dict[str, Any]:
+    payload = jwt.decode(
+        token,
+        settings.jwt_secret,
+        algorithms=[settings.jwt_algorithm],
+    )
+    if payload.get("kind") != expected_kind:
+        raise InvalidTokenError("wrong token kind")
+    return payload

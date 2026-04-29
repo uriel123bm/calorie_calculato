@@ -24,6 +24,14 @@ let _accessToken: string | null = (() => {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 })();
 
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const encoded = encodeURIComponent(name) + "=";
+  const hit = document.cookie.split("; ").find((c) => c.startsWith(encoded));
+  if (!hit) return null;
+  return decodeURIComponent(hit.slice(encoded.length));
+}
+
 export function setAccessToken(token: string | null): void {
   _accessToken = token;
   try {
@@ -40,6 +48,10 @@ function dispatchSessionExpired(): void {
 client.interceptors.request.use((config) => {
   if (_accessToken) {
     config.headers.Authorization = `Bearer ${_accessToken}`;
+  }
+  const csrf = readCookie("csrf_token");
+  if (csrf) {
+    config.headers["X-CSRF-Token"] = csrf;
   }
   return config;
 });

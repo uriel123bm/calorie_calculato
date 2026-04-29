@@ -51,6 +51,8 @@ def get_settings() -> Settings:
     # Generate a random fallback secret for dev; MUST be set in production via .env
     import secrets as _s
     default_secret = _s.token_hex(32)
+    environment = (os.getenv("SENTRY_ENVIRONMENT", "development").strip() or "development").lower()
+    default_cookie_secure = bool(os.getenv("VERCEL")) or environment == "production"
     return Settings(
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini",
@@ -65,11 +67,11 @@ def get_settings() -> Settings:
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256").strip(),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200")),
         refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
-        cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE", ""), default=False),
+        cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE", ""), default=default_cookie_secure),
         cookie_samesite=_parse_samesite(os.getenv("COOKIE_SAMESITE", "lax")),
         auth_cookie_path=(os.getenv("AUTH_COOKIE_PATH") or "/").strip() or "/",
         sentry_dsn=os.getenv("SENTRY_DSN", "").strip(),
-        sentry_environment=os.getenv("SENTRY_ENVIRONMENT", "development").strip() or "development",
+        sentry_environment=environment,
         sentry_traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
     )
 

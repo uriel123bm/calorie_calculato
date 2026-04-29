@@ -7,6 +7,7 @@ export type NutritionSource =
   | "openfoodfacts"
   | "ai_estimate"
   | "manual"
+  | "personal_library"
   | "unknown";
 
 export interface NutritionPer100g {
@@ -123,4 +124,53 @@ export interface SavedRecipe {
   per100g: NutritionPer100g;
   /** Legacy field from older saves — omitted for per-grams recipes */
   servings?: number;
+}
+
+/**
+ * A user-defined personal product stored as per-unit macros.
+ * `servingValue` + `servingUnit` define the quantity basis used for scaling.
+ */
+export type ServingUnit = "גרם" | 'מ"ל' | "יחידה";
+
+export interface UserProduct {
+  id: string;
+  name: string;
+  servingValue: number;       // basis quantity (defaults to 1)
+  servingUnit: ServingUnit;   // basis unit (defaults to "יחידה")
+  /** Optional display hint for what one unit contains (e.g. "330 מ״ל"). */
+  unitDescription?: string;
+  /** How many logical units the entered package totals represent. */
+  servingsCount?: number;
+  calories: number;           // per serving
+  protein: number;            // per serving
+  carbohydrates: number;      // per serving
+  fat: number;                // per serving
+  addedAt: number;            // Date.now()
+}
+
+/** Onboarding profile + history for the progress page. */
+export type Sex = "male" | "female" | "other";
+export type Goal = "lose" | "maintain" | "gain";
+
+export interface WeightLogEntry {
+  date: string;     // YYYY-MM-DD
+  weightKg: number;
+}
+
+export interface BodyMetrics {
+  /** Display name (optional). */
+  name?: string;
+  heightCm: number;
+  /** Initial weight from onboarding (kept stable for BMI/baseline calculations). */
+  startWeightKg: number;
+  /** Most recent recorded weight (mirrors the last item in `log`). */
+  currentWeightKg: number;
+  age?: number;
+  sex?: Sex;
+  goal?: Goal;
+  goalWeightKg?: number;
+  /** Append-only list of weight measurements over time. */
+  log: WeightLogEntry[];
+  createdAt: number;
+  updatedAt: number;
 }
