@@ -1851,6 +1851,7 @@ button.pill {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 
 .header-username {
@@ -1870,6 +1871,62 @@ button.pill {
   display: flex;
   align-items: center;
   transition: background .15s, color .15s;
+}
+
+.header-settings {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--on-surface-var);
+  display: flex;
+  align-items: center;
+  transition: background .15s, color .15s;
+}
+
+.header-settings:hover {
+  background: rgba(15,82,56,.1);
+  color: var(--primary);
+}
+
+.header-settings .material-symbols-outlined { font-size: 20px; }
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-end: 0;
+  min-width: 150px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(177,240,206,.6);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  padding: 6px;
+  z-index: 75;
+}
+
+.settings-menu-item {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: start;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--on-surface);
+  min-height: 38px;
+}
+
+.settings-menu-item:hover {
+  background: rgba(177,240,206,.35);
+  color: var(--primary);
+}
+
+.settings-menu-item-danger:hover {
+  background: rgba(186,26,26,.1);
+  color: var(--danger);
 }
 
 .header-logout:hover {
@@ -1905,6 +1962,9 @@ button.pill {
 
 .pwa-toast-actions {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* =========================================================
@@ -2391,6 +2451,36 @@ html, body {
   /* Header: smaller */
   .app-header h1 { font-size: 17px; }
   .header-username { font-size: 12px; max-width: 80px; }
+
+  .settings-menu {
+    inset-inline-end: 0;
+    min-width: 170px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .settings-menu-item {
+    min-height: 42px;
+  }
+
+  .pwa-toast {
+    left: 10px;
+    right: 10px;
+    bottom: calc(var(--nav-h) + 10px);
+    padding: 9px 10px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pwa-toast-text {
+    text-align: start;
+  }
+
+  .pwa-toast-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 
   /* Journal page */
   .journal-entry { padding: 12px; }

@@ -77,6 +77,8 @@ function AppShell({
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [dontShowOnboardingAgain, setDontShowOnboardingAgain] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
@@ -84,6 +86,7 @@ function AppShell({
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
   const exportTargetRef = useRef<HTMLDivElement>(null);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
   const undoTimeoutRef = useRef<number | null>(null);
   const [deletedRowUndo, setDeletedRowUndo] = useState<DeletedRowUndo | null>(null);
   const onboardingEndRef = useRef<number | null>(null);
@@ -297,6 +300,23 @@ function AppShell({
     setTimeout(() => setRecipeSaved(false), 3000);
   }, [hasFilledRows, recipe, recipeName, servings, savedRecipes]);
 
+  const handleCheckUpdates = useCallback(() => {
+    window.dispatchEvent(new CustomEvent("pwa:check-update"));
+    setSettingsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!settingsMenuRef.current) return;
+      if (!settingsMenuRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    window.addEventListener("click", onDocClick);
+    return () => window.removeEventListener("click", onDocClick);
+  }, [settingsOpen]);
+
   return (
     <div className="app-shell">
       {/* Fixed glass header */}
@@ -305,17 +325,51 @@ function AppShell({
           <span className="material-symbols-outlined">nutrition</span>
           מחשבון קלוריות
         </h1>
-        <div className="header-user">
+        <div className="header-user" ref={settingsMenuRef}>
           <span className="header-username">{username}</span>
           <button
             type="button"
-            className="header-logout"
-            onClick={onLogout}
-            title="התנתק"
-            aria-label="התנתק"
+            className="header-settings"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSettingsOpen((prev) => !prev);
+            }}
+            title="הגדרות"
+            aria-label="הגדרות"
+            aria-expanded={settingsOpen}
+            aria-haspopup="menu"
           >
-            <span className="material-symbols-outlined">logout</span>
+            <span className="material-symbols-outlined">settings</span>
           </button>
+          {settingsOpen && (
+            <div className="settings-menu" role="menu" aria-label="תפריט הגדרות">
+              <button type="button" className="settings-menu-item" role="menuitem" onClick={handleCheckUpdates}>
+                בדוק עדכונים
+              </button>
+              <button
+                type="button"
+                className="settings-menu-item"
+                role="menuitem"
+                onClick={() => {
+                  setShowAbout(true);
+                  setSettingsOpen(false);
+                }}
+              >
+                אודות
+              </button>
+              <button
+                type="button"
+                className="settings-menu-item settings-menu-item-danger"
+                role="menuitem"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  void onLogout();
+                }}
+              >
+                התנתק
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -514,6 +568,24 @@ function AppShell({
                 הבנתי
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showAbout && (
+        <div className="onboarding-overlay" role="dialog" aria-label="אודות האפליקציה">
+          <div className="onboarding-card">
+            <div className="onboarding-head">
+              <strong>אודות</strong>
+              <button type="button" className="ghost onboarding-close" onClick={() => setShowAbout(false)}>
+                סגור
+              </button>
+            </div>
+            <p className="onboarding-text">
+              מחשבון קלוריות למתכונים ומעקב יומי.
+              <br />
+              כולל זיהוי מצרכים, מוצרים אישיים, שמירת מתכונים והתקדמות לאורך זמן.
+            </p>
           </div>
         </div>
       )}
