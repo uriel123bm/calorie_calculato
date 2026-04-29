@@ -40,8 +40,8 @@ export function IngredientTable({
       <table className="ingredient-table">
         <colgroup>
           <col className="ingredient-col ingredient-col-name" />
-          <col className="ingredient-col ingredient-col-qty" />
           <col className="ingredient-col ingredient-col-unit" />
+          <col className="ingredient-col ingredient-col-qty" />
           <col className="ingredient-col ingredient-col-unit-weight" />
           <col className="ingredient-col ingredient-col-cal100" />
           <col className="ingredient-col ingredient-col-total" />
@@ -50,11 +50,11 @@ export function IngredientTable({
         <thead>
           <tr>
             <th className="col-name">שם מצרך</th>
-            <th className="col-qty">כמות</th>
             <th className="col-unit">יחידת מידה</th>
+            <th className="col-qty">כמות</th>
             <th className="col-unit-weight" title="רלוונטי כשמודדים ביחידות (ביצה, פרי…)">
               משקל יחידה
-              <span className="col-unit-weight-sub">ג׳</span>
+              <span className="col-unit-weight-sub">גרם</span>
             </th>
             <th className="col-cal100">קלוריות ל-100 גרם</th>
             <th className="col-total">סה"כ קלוריות למרכיב</th>

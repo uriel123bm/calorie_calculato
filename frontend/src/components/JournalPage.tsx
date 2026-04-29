@@ -36,9 +36,9 @@ function DayTotals({ entries }: { entries: DailyEntry[] }) {
   return (
     <div className="journal-day-totals">
       <div className="jdt-item"><span className="jdt-label">קלוריות</span><strong>{Math.round(t.calories)}</strong></div>
-      <div className="jdt-item"><span className="jdt-label">חלבון</span><strong>{t.protein.toFixed(0)}ג</strong></div>
-      <div className="jdt-item"><span className="jdt-label">פחמימות</span><strong>{t.carbohydrates.toFixed(0)}ג</strong></div>
-      <div className="jdt-item"><span className="jdt-label">שומן</span><strong>{t.fat.toFixed(0)}ג</strong></div>
+      <div className="jdt-item"><span className="jdt-label">חלבון</span><strong>{t.protein.toFixed(0)} גרם</strong></div>
+      <div className="jdt-item"><span className="jdt-label">פחמימות</span><strong>{t.carbohydrates.toFixed(0)} גרם</strong></div>
+      <div className="jdt-item"><span className="jdt-label">שומן</span><strong>{t.fat.toFixed(0)} גרם</strong></div>
     </div>
   );
 }
@@ -64,10 +64,10 @@ function EntryCard({ entry, onRemove }: { entry: DailyEntry; onRemove?: () => vo
           )}
         </div>
         <div className="journal-entry-macros">
-          <span className="jmacro calories">{Math.round(entry.calories)} קק"ל</span>
-          {entry.protein > 0 && <span className="jmacro protein">חלבון {entry.protein.toFixed(1)}ג</span>}
-          {entry.carbohydrates > 0 && <span className="jmacro carbs">פחמימות {entry.carbohydrates.toFixed(1)}ג</span>}
-          {entry.fat > 0 && <span className="jmacro fat">שומן {entry.fat.toFixed(1)}ג</span>}
+          <span className="jmacro calories">{Math.round(entry.calories)} קלוריות</span>
+          {entry.protein > 0 && <span className="jmacro protein">חלבון {entry.protein.toFixed(1)} גרם</span>}
+          {entry.carbohydrates > 0 && <span className="jmacro carbs">פחמימות {entry.carbohydrates.toFixed(1)} גרם</span>}
+          {entry.fat > 0 && <span className="jmacro fat">שומן {entry.fat.toFixed(1)} גרם</span>}
         </div>
       </div>
     </div>
@@ -103,7 +103,7 @@ function DayBlock({
         </div>
         <div className="journal-day-right">
           <span className={`journal-day-cal${over ? " over" : ""}`}>
-            {Math.round(totalCal)} / {targetCalories} קק"ל
+            {Math.round(totalCal)} / {targetCalories} קלוריות
           </span>
           {isToday && onResetDay && entries.length > 0 && (
             <button type="button" className="ghost tracker-reset-btn" onClick={onResetDay}>

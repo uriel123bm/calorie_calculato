@@ -7,7 +7,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
-HebrewUnit = Literal["גרם", "מ\"ל", "כף", "כפית", "כוס", "יחידה"]
+HebrewUnit = Literal["גרם", "קילוגרם", "מ\"ל", "ליטר", "כף", "כפית", "כוס", "יחידה"]
 
 
 NutritionSource = Literal["local", "openfoodfacts", "ai_estimate", "manual", "unknown"]

@@ -166,6 +166,14 @@ function AppShell({
     });
   }, [dismissOnboarding, onboardingSteps.length]);
 
+  const reopenOnboarding = useCallback(() => {
+    setSettingsOpen(false);
+    setOnboardingStep(0);
+    setDontShowOnboardingAgain(false);
+    setShowOnboarding(true);
+    setActiveTab("recipe");
+  }, []);
+
   useEffect(() => {
     const raw = localStorage.getItem(recipeDraftKey(userId));
     if (!raw) return;
@@ -359,6 +367,14 @@ function AppShell({
               </button>
               <button
                 type="button"
+                className="settings-menu-item"
+                role="menuitem"
+                onClick={reopenOnboarding}
+              >
+                הדרכה
+              </button>
+              <button
+                type="button"
                 className="settings-menu-item settings-menu-item-danger"
                 role="menuitem"
                 onClick={() => {
@@ -415,7 +431,7 @@ function AppShell({
                   onNutritionEdit={recipe.handleNutritionEdit}
                   onSubmitLastRow={recipe.addRow}
                   nameSuggestions={nameSuggestions}
-                  hint='טיפ: ביחידת "יחידה" הזינו משקל טיפוסי למנה אחת (למשל ביצה ~55 ג׳, תפוח ~180 ג׳). ברירת המחדל 100 ג׳ מתאימה לעיתים רק למוצרים ארוזים.'
+                  hint='טיפ: ביחידת "יחידה" הזינו משקל טיפוסי למנה אחת (למשל ביצה ~55 גרם, תפוח ~180 גרם). ברירת המחדל 100 גרם מתאימה לעיתים רק למוצרים ארוזים.'
                 />
               </section>
 

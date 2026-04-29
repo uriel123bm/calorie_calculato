@@ -18,11 +18,11 @@ const FIELDS: Array<{
   unit: string;
   digits: number;
 }> = [
-  { key: "calories", label: "קלוריות", unit: "קק\"ל", digits: 0 },
-  { key: "protein", label: "חלבון", unit: "ג", digits: 1 },
-  { key: "carbohydrates", label: "פחמימות", unit: "ג", digits: 1 },
-  { key: "sugar", label: "סוכר", unit: "ג", digits: 1 },
-  { key: "fat", label: "שומן", unit: "ג", digits: 1 },
+  { key: "calories", label: "קלוריות", unit: "קלוריות", digits: 0 },
+  { key: "protein", label: "חלבון", unit: "גרם", digits: 1 },
+  { key: "carbohydrates", label: "פחמימות", unit: "גרם", digits: 1 },
+  { key: "sugar", label: "סוכר", unit: "גרם", digits: 1 },
+  { key: "fat", label: "שומן", unit: "גרם", digits: 1 },
   { key: "sodium", label: "נתרן", unit: "מ\"ג", digits: 0 },
 ];
 
@@ -80,7 +80,7 @@ export const RecipeSummary = forwardRef<HTMLElement, Props>(function RecipeSumma
       </div>
 
       <p className="total-headline">
-        סה"כ קלוריות למתכון: {totalCalories} קק"ל
+        סה"כ קלוריות למתכון: {totalCalories} קלוריות
       </p>
 
       <div className="summary-grid">

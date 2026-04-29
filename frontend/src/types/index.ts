@@ -1,6 +1,6 @@
-export type HebrewUnit = "גרם" | 'מ"ל' | "כף" | "כפית" | "כוס" | "יחידה";
+export type HebrewUnit = "גרם" | "קילוגרם" | 'מ"ל' | "ליטר" | "כף" | "כפית" | "כוס" | "יחידה";
 
-export const UNITS: HebrewUnit[] = ["גרם", 'מ"ל', "כף", "כפית", "כוס", "יחידה"];
+export const UNITS: HebrewUnit[] = ["גרם", "קילוגרם", 'מ"ל', "ליטר", "כף", "כפית", "כוס", "יחידה"];
 
 export type NutritionSource =
   | "local"

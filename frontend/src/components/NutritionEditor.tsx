@@ -7,7 +7,7 @@ interface Props {
 }
 
 const FIELDS: Array<{ key: keyof NutritionPer100g; label: string; unit: string }> = [
-  { key: "calories", label: "קלוריות", unit: "קק\"ל" },
+  { key: "calories", label: "קלוריות", unit: "קלוריות" },
   { key: "protein", label: "חלבון", unit: "ג" },
   { key: "carbohydrates", label: "פחמימות", unit: "ג" },
   { key: "sugar", label: "סוכר", unit: "ג" },

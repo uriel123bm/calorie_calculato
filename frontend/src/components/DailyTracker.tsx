@@ -95,7 +95,7 @@ function PersonalProductQuickAdd({
       <span className="tracker-quick-unit-label">יח׳</span>
       {preview && qNum > 0 && (
         <span className="tracker-quick-preview">
-          ≈ {Math.round(preview.calories)} קק״ל
+          ≈ {Math.round(preview.calories)} קלוריות
         </span>
       )}
       <button
@@ -313,7 +313,7 @@ export function DailyTracker({
         {/* Target input */}
         <div className="section">
           <div className="target-row">
-            <label htmlFor="daily-target">יעד יומי (קק"ל):</label>
+            <label htmlFor="daily-target">יעד יומי (קלוריות):</label>
             <input
               id="daily-target"
               type="number"
@@ -347,7 +347,7 @@ export function DailyTracker({
                       {Math.abs(Math.round(remaining))}
                     </span>
                     <span className="ring-label">
-                      {overshoot ? 'חרגת (קק"ל)' : 'נותרו (קק"ל)'}
+                      {overshoot ? "חרגת (קלוריות)" : "נותרו (קלוריות)"}
                     </span>
                   </div>
                 </div>
@@ -372,19 +372,19 @@ export function DailyTracker({
               <span className="material-symbols-outlined macro-icon">egg</span>
               <span className="macro-label">חלבון</span>
               <div className="progress-bar"><div className="progress-fill green" style={{ width: `${Math.min(100, (totals.protein / 120) * 100)}%` }} /></div>
-              <span className="macro-value">{totals.protein.toFixed(0)}ג</span>
+              <span className="macro-value">{totals.protein.toFixed(0)} גרם</span>
             </div>
             <div className="macro-tile carbs">
               <span className="material-symbols-outlined macro-icon">bakery_dining</span>
               <span className="macro-label">פחמימות</span>
               <div className="progress-bar"><div className="progress-fill orange" style={{ width: `${Math.min(100, (totals.carbohydrates / 250) * 100)}%` }} /></div>
-              <span className="macro-value">{totals.carbohydrates.toFixed(0)}ג</span>
+              <span className="macro-value">{totals.carbohydrates.toFixed(0)} גרם</span>
             </div>
             <div className="macro-tile fat">
               <span className="material-symbols-outlined macro-icon">opacity</span>
               <span className="macro-label">שומן</span>
               <div className="progress-bar"><div className="progress-fill teal" style={{ width: `${Math.min(100, (totals.fat / 70) * 100)}%` }} /></div>
-              <span className="macro-value">{totals.fat.toFixed(0)}ג</span>
+              <span className="macro-value">{totals.fat.toFixed(0)} גרם</span>
             </div>
           </div>
         </div>
@@ -492,7 +492,7 @@ export function DailyTracker({
 
             <div className="manual-field manual-field--cal">
               <label className="manual-field-label" htmlFor="tracker-manual-cal">
-                קק״ל (לכמות שציינת)
+                קלוריות (לכמות שציינת)
               </label>
               <input
                 id="tracker-manual-cal"
@@ -591,10 +591,10 @@ export function DailyTracker({
                 <div className="tracker-entry-main">
                   <div className="tracker-entry-name">{entry.name}</div>
                   {entry.protein > 0 && (
-                    <div className="tracker-entry-meta">חלבון {entry.protein.toFixed(1)}ג'</div>
+                    <div className="tracker-entry-meta">חלבון {entry.protein.toFixed(1)} גרם</div>
                   )}
                 </div>
-                <div className="tracker-entry-cal">{entry.calories.toFixed(0)} קק"ל</div>
+                <div className="tracker-entry-cal">{entry.calories.toFixed(0)} קלוריות</div>
                 <button
                   type="button"
                   className="row-icon-button"

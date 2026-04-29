@@ -18,7 +18,9 @@ from typing import Optional
 # Volume-based units assume water density (1 g / mL).
 _UNIT_TO_GRAMS: dict[str, float] = {
     "גרם": 1.0,
+    "קילוגרם": 1000.0,
     "מ\"ל": 1.0,
+    "ליטר": 1000.0,
     "כף": 15.0,
     "כפית": 5.0,
     "כוס": 240.0,
@@ -64,7 +66,9 @@ def to_grams(
 
 SUPPORTED_UNITS: tuple[str, ...] = (
     "גרם",
+    "קילוגרם",
     "מ\"ל",
+    "ליטר",
     "כף",
     "כפית",
     "כוס",

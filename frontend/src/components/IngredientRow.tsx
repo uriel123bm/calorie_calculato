@@ -182,7 +182,7 @@ export function IngredientRow({
               value={row.name}
               onChange={handleNameChange}
               onBlur={handleNameBlur}
-              onKeyDown={(e) => handleEnterNext(e, "quantity")}
+              onKeyDown={(e) => handleEnterNext(e, "unit")}
               aria-label="שם מצרך"
               data-row-idx={rowIndex}
               data-focus-key="name"
@@ -217,26 +217,12 @@ export function IngredientRow({
             )}
           </div>
         </td>
-        <td className="col-qty">
-          <input
-            type="number"
-            min={0}
-            step="0.1"
-            value={row.quantity === "" ? "" : row.quantity}
-            onChange={handleQuantityChange}
-            onBlur={handleQuantityBlur}
-            onKeyDown={(e) => handleEnterNext(e, "unit")}
-            aria-label="כמות"
-            data-row-idx={rowIndex}
-            data-focus-key="quantity"
-          />
-        </td>
         <td className="col-unit">
           <select
             value={row.unit}
             onChange={handleUnitChange}
             onKeyDown={(e) =>
-              handleEnterNext(e, row.unit === "יחידה" ? "unitWeight" : "calories")
+              handleEnterNext(e, "quantity")
             }
             aria-label="יחידת מידה"
             data-row-idx={rowIndex}
@@ -248,6 +234,22 @@ export function IngredientRow({
               </option>
             ))}
           </select>
+        </td>
+        <td className="col-qty">
+          <input
+            type="number"
+            min={0}
+            step="0.1"
+            value={row.quantity === "" ? "" : row.quantity}
+            onChange={handleQuantityChange}
+            onBlur={handleQuantityBlur}
+            onKeyDown={(e) =>
+              handleEnterNext(e, row.unit === "יחידה" ? "unitWeight" : "calories")
+            }
+            aria-label="כמות"
+            data-row-idx={rowIndex}
+            data-focus-key="quantity"
+          />
         </td>
         <td className="col-unit-weight">
           {row.unit === "יחידה" ? (
@@ -273,7 +275,7 @@ export function IngredientRow({
               />
               {row.quantityInGrams > 0 && (
                 <span className="unit-weight-hint">
-                  סה״כ משקל ≈ {Math.round(row.quantityInGrams)} ג׳
+                  סה״כ משקל ≈ {Math.round(row.quantityInGrams)} גרם
                 </span>
               )}
             </div>
@@ -300,7 +302,7 @@ export function IngredientRow({
           {row.status === "loading" ? (
             <span className="loading-skeleton-chip" aria-label="טוען" />
           ) : (
-            `${row.nutritionForQuantity.calories.toFixed(0)} קק"ל`
+            `${row.nutritionForQuantity.calories.toFixed(0)} קלוריות`
           )}
         </td>
         <td className="col-actions">

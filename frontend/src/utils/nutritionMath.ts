@@ -25,6 +25,9 @@ export function gramsFromUnit(
     case "גרם":
     case 'מ"ל':
       return quantity;
+    case "קילוגרם":
+    case "ליטר":
+      return quantity * 1000;
     case "כף":
       return quantity * 15;
     case "כפית":

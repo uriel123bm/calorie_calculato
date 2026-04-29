@@ -81,7 +81,7 @@ export function Meal({
         hint={
           (personalProducts?.length ?? 0) > 0
             ? 'כתבו את שם מוצר מהספרייה — המערכת תמלא מאקרו לפי מה ששמרתם. ב"יחידה": משקל ליחידה בגרם.'
-            : 'ב"יחידה": משקל ליחידה בגרם — לא להסתמך על 100 ג׳ לכל מצרך.'
+            : 'ב"יחידה": משקל ליחידה בגרם — לא להסתמך על 100 גרם לכל מצרך.'
         }
         personalProducts={personalProducts}
       />
@@ -94,19 +94,19 @@ export function Meal({
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">חלבון</span>
-            <strong>{roundMacro(total.protein)} ג'</strong>
+            <strong>{roundMacro(total.protein)} גרם</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">פחמימות</span>
-            <strong>{roundMacro(total.carbohydrates)} ג'</strong>
+            <strong>{roundMacro(total.carbohydrates)} גרם</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">שומן</span>
-            <strong>{roundMacro(total.fat)} ג'</strong>
+            <strong>{roundMacro(total.fat)} גרם</strong>
           </div>
           <div className="meal-total-item">
             <span className="meal-total-label">משקל</span>
-            <strong>{Math.round(totalGrams)} ג'</strong>
+            <strong>{Math.round(totalGrams)} גרם</strong>
           </div>
         </div>
         <button

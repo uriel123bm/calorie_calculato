@@ -175,14 +175,14 @@ function AddProductForm({
 
       <p className="product-form-hint">
         הערכים שתזינו הם לכל המוצר. המערכת שומרת אוטומטית ערכים <strong>ליחידה אחת</strong>.
-        לדוגמה: אם הזנתם 400 קק״ל ו־2 מנות, כל יחידה תישמר כ־200 קק״ל.
+        לדוגמה: אם הזנתם 400 קלוריות ו־2 מנות, כל יחידה תישמר כ־200 קלוריות.
       </p>
       <div className="product-unit-preview" aria-live="polite">
         <span className="product-unit-preview-title">ערכים מחושבים ליחידה אחת:</span>
-        <span className="badge calories">{Math.round(perUnitPreview.calories)} קק"ל</span>
-        <span className="badge protein">חלבון {perUnitPreview.protein.toFixed(1)}ג</span>
-        <span className="badge carbs">פחמימה {perUnitPreview.carbohydrates.toFixed(1)}ג</span>
-        <span className="badge fat">שומן {perUnitPreview.fat.toFixed(1)}ג</span>
+        <span className="badge calories">{Math.round(perUnitPreview.calories)} קלוריות</span>
+        <span className="badge protein">חלבון {perUnitPreview.protein.toFixed(1)} גרם</span>
+        <span className="badge carbs">פחמימה {perUnitPreview.carbohydrates.toFixed(1)} גרם</span>
+        <span className="badge fat">שומן {perUnitPreview.fat.toFixed(1)} גרם</span>
       </div>
 
       <div className="product-form-actions">
@@ -247,7 +247,7 @@ function ProductCard({
           <div>
             <h3 className="my-recipe-name">{product.name}</h3>
             <span className="my-recipe-meta">
-              נוסף {savedDate} · יחידה 1 = {Math.round(product.calories)} קק"ל
+              נוסף {savedDate} · יחידה 1 = {Math.round(product.calories)} קלוריות
               {product.unitDescription ? ` · ${product.unitDescription}` : ""}
             </span>
           </div>
@@ -263,12 +263,12 @@ function ProductCard({
 
       <div className="my-recipe-per100">
         <span>ביחידה אחת יש:</span>
-        <span className="badge calories">{Math.round(product.calories)} קק"ל</span>
+        <span className="badge calories">{Math.round(product.calories)} קלוריות</span>
         {product.protein > 0 && (
-          <span className="badge protein">חלבון {product.protein.toFixed(1)}ג</span>
+          <span className="badge protein">חלבון {product.protein.toFixed(1)} גרם</span>
         )}
         {product.fat > 0 && (
-          <span className="badge fat">שומן {product.fat.toFixed(1)}ג</span>
+          <span className="badge fat">שומן {product.fat.toFixed(1)} גרם</span>
         )}
       </div>
 
@@ -294,9 +294,9 @@ function ProductCard({
 
         {preview && qNum > 0 && (
           <div className="my-recipe-preview">
-            <span className="preview-cal">{Math.round(preview.calories)} קק"ל</span>
+            <span className="preview-cal">{Math.round(preview.calories)} קלוריות</span>
             {preview.protein > 0 && (
-              <span className="preview-prot">חלבון {preview.protein.toFixed(1)}ג</span>
+              <span className="preview-prot">חלבון {preview.protein.toFixed(1)} גרם</span>
             )}
           </div>
         )}

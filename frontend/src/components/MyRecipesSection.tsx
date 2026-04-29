@@ -27,7 +27,7 @@ function RecipeCard({
   const handleAdd = () => {
     if (!preview || gramsNum <= 0) return;
     onAddToDaily({
-      name: `${recipe.name} (${gramsNum}ג)`,
+      name: `${recipe.name} (${gramsNum} גרם)`,
       calories: roundCalories(preview.calories),
       protein: roundMacro(preview.protein),
       carbohydrates: roundMacro(preview.carbohydrates),
@@ -49,7 +49,7 @@ function RecipeCard({
           <div>
             <h3 className="my-recipe-name">{recipe.name}</h3>
             <span className="my-recipe-meta">
-              נשמר {savedDate} · {Math.round(recipe.totalWeightG)}ג סה"כ
+              נשמר {savedDate} · {Math.round(recipe.totalWeightG)} גרם סה"כ
             </span>
           </div>
         </div>
@@ -64,10 +64,10 @@ function RecipeCard({
 
       {/* per-100g summary */}
       <div className="my-recipe-per100">
-        <span>ל-100ג:</span>
-        <span className="badge calories">{Math.round(recipe.per100g.calories)} קק"ל</span>
-        <span className="badge protein">חלבון {recipe.per100g.protein.toFixed(1)}ג</span>
-        <span className="badge fat">שומן {recipe.per100g.fat.toFixed(1)}ג</span>
+        <span>ל-100 גרם:</span>
+        <span className="badge calories">{Math.round(recipe.per100g.calories)} קלוריות</span>
+        <span className="badge protein">חלבון {recipe.per100g.protein.toFixed(1)} גרם</span>
+        <span className="badge fat">שומן {recipe.per100g.fat.toFixed(1)} גרם</span>
       </div>
 
       {/* portion calculator */}
@@ -88,8 +88,8 @@ function RecipeCard({
 
         {preview && gramsNum > 0 && (
           <div className="my-recipe-preview">
-            <span className="preview-cal">{Math.round(preview.calories)} קק"ל</span>
-            {preview.protein > 0 && <span className="preview-prot">חלבון {preview.protein.toFixed(1)}ג</span>}
+            <span className="preview-cal">{Math.round(preview.calories)} קלוריות</span>
+            {preview.protein > 0 && <span className="preview-prot">חלבון {preview.protein.toFixed(1)} גרם</span>}
           </div>
         )}
 
