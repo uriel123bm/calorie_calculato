@@ -79,22 +79,24 @@ export const RecipeSummary = forwardRef<HTMLElement, Props>(function RecipeSumma
         </span>
       </div>
 
-      <p className="total-headline">
-        סה"כ קלוריות למתכון: {totalCalories} קלוריות
-      </p>
+      <div className="recipe-summary-live" aria-live="polite" aria-atomic="true">
+        <p className="total-headline">
+          סה"כ קלוריות למתכון: {totalCalories} קלוריות
+        </p>
 
-      <div className="summary-grid">
-        <div className="summary-card">
-          <h3>סה"כ למתכון</h3>
-          <NutritionList values={total} />
-        </div>
-        <div className="summary-card">
-          <h3>ערכים ל-100 גרם</h3>
-          <NutritionList values={per100g} />
-        </div>
-        <div className="summary-card">
-          <h3>ערכים למנה</h3>
-          <NutritionList values={perServing} />
+        <div className="summary-grid">
+          <div className="summary-card">
+            <h3>סה"כ למתכון</h3>
+            <NutritionList values={total} />
+          </div>
+          <div className="summary-card">
+            <h3>ערכים ל-100 גרם</h3>
+            <NutritionList values={per100g} />
+          </div>
+          <div className="summary-card">
+            <h3>ערכים למנה</h3>
+            <NutritionList values={perServing} />
+          </div>
         </div>
       </div>
     </section>

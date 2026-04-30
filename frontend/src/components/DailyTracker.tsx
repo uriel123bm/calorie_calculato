@@ -1,4 +1,5 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { isCancel } from "axios";
 import { NUTRITION_SOURCE_BADGES } from "../constants/nutritionSourceBadges";
 import { analyzeIngredient } from "../services/api";
 import type {
@@ -16,6 +17,13 @@ import {
 } from "../utils/personalProductMatch";
 import { scaleServingMacros } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
+import { isOfflineError } from "../utils/network";
+import {
+  copyTextToClipboard,
+  formatDailyJournalText,
+  shareTextIfPossible,
+} from "../utils/exportText";
+import { PdfExportButton } from "./PdfExportButton";
 
 interface Props {
   state: DailyTrackerState;
@@ -134,6 +142,28 @@ export function DailyTracker({
 
   const manualProductsListId = useId().replace(/:/g, "");
   const matchedPersonalRef = useRef<UserProduct | null>(null);
+  const dayExportRef = useRef<HTMLDivElement>(null);
+  const manualFieldsRef = useRef({
+    name: "",
+    qty: 100 as number | "",
+    unit: "גרם" as HebrewUnit,
+  });
+  const manualEpochRef = useRef(0);
+  const manualDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manualAbortRef = useRef<AbortController | null>(null);
+  const MANUAL_DEBOUNCE_MS = 420;
+  const [exportFlash, setExportFlash] = useState<string | null>(null);
+
+  useEffect(() => {
+    manualFieldsRef.current = { name: mName, qty: mQty, unit: mUnit };
+  }, [mName, mQty, mUnit]);
+
+  useEffect(() => {
+    return () => {
+      if (manualDebounceRef.current) clearTimeout(manualDebounceRef.current);
+      manualAbortRef.current?.abort();
+    };
+  }, []);
 
   const totals = useMemo(() => state.entries.reduce(
     (acc, e) => ({
@@ -171,15 +201,28 @@ export function DailyTracker({
     setMStatus("ready");
   };
 
-  const fetchIngredientAnalyze = async () => {
-    const name = mName.trim();
-    const qty = typeof mQty === "number" ? mQty : 0;
+  const flashExport = useCallback((msg: string) => {
+    setExportFlash(msg);
+    window.setTimeout(() => setExportFlash(null), 2200);
+  }, []);
+
+  const runIngredientAnalyze = useCallback(async () => {
+    const { name: rawName, qty: rawQty, unit } = manualFieldsRef.current;
+    const name = rawName.trim();
+    const qty = typeof rawQty === "number" ? rawQty : 0;
     if (!name || qty <= 0) return;
     matchedPersonalRef.current = null;
+    const epoch = ++manualEpochRef.current;
+    const ac = new AbortController();
+    manualAbortRef.current = ac;
     setMStatus("loading");
     setMAnalyzeMeta(null);
     try {
-      const res = await analyzeIngredient({ ingredient_name: name, quantity: qty, unit: mUnit });
+      const res = await analyzeIngredient(
+        { ingredient_name: name, quantity: qty, unit },
+        { signal: ac.signal }
+      );
+      if (epoch !== manualEpochRef.current) return;
       const found = res.source !== "ai_estimate" && res.confidence > 0.4;
       const macros = res.nutrition_for_quantity;
       setMCalories(roundCalories(macros.calories));
@@ -195,11 +238,35 @@ export function DailyTracker({
         fat: macros.fat,
       });
       setMStatus(found ? "ready" : "none");
-    } catch {
+    } catch (e: unknown) {
+      if (epoch !== manualEpochRef.current) return;
+      if (isCancel(e)) return;
       setMDetected(null);
       setMAnalyzeMeta(null);
       setMStatus("error");
+      if (isOfflineError(e)) flashExport(e.message);
     }
+  }, [flashExport]);
+
+  const scheduleIngredientAnalyze = useCallback(() => {
+    if (manualDebounceRef.current) clearTimeout(manualDebounceRef.current);
+    manualAbortRef.current?.abort();
+    manualDebounceRef.current = setTimeout(() => {
+      manualDebounceRef.current = null;
+      void runIngredientAnalyze();
+    }, MANUAL_DEBOUNCE_MS);
+  }, [runIngredientAnalyze]);
+
+  const handleCopyDay = async () => {
+    const ok = await copyTextToClipboard(formatDailyJournalText(state));
+    flashExport(ok ? "הטקסט הועתק ללוח." : "לא הצלחנו להעתיק — נסו מהדפדפן.");
+  };
+
+  const handleShareDay = async () => {
+    const text = formatDailyJournalText(state);
+    const shared = await shareTextIfPossible("קלוריות היום", text);
+    if (!shared) void handleCopyDay();
+    else flashExport("נפתח חלון שיתוף.");
   };
 
   const handleManualNameBlur = () => {
@@ -213,7 +280,7 @@ export function DailyTracker({
     }
     matchedPersonalRef.current = null;
     const qty = typeof mQty === "number" ? mQty : 0;
-    if (qty > 0) void fetchIngredientAnalyze();
+    if (qty > 0) scheduleIngredientAnalyze();
   };
 
   const handleManualQtyBlur = () => {
@@ -241,12 +308,12 @@ export function DailyTracker({
       setMStatus("ready");
       return;
     }
-    void fetchIngredientAnalyze();
+    scheduleIngredientAnalyze();
   };
 
   const handleManualUnitBlur = () => {
     matchedPersonalRef.current = null;
-    void fetchIngredientAnalyze();
+    scheduleIngredientAnalyze();
   };
 
   const handleManualAdd = () => {
@@ -287,6 +354,11 @@ export function DailyTracker({
 
   return (
     <div className="page-container">
+      {exportFlash && (
+        <p className="tracker-export-flash" role="status" aria-live="polite">
+          {exportFlash}
+        </p>
+      )}
       {/* Page hero */}
       <div className="page-hero">
         <span className="material-symbols-outlined page-hero-icon">monitoring</span>
@@ -309,7 +381,8 @@ export function DailyTracker({
         </div>
       )}
 
-      <div className="daily-tracker-top-grid">
+      <div ref={dayExportRef} className="tracker-day-export-block">
+      <div className="daily-tracker-top-grid" aria-live="polite" aria-atomic="true">
         {/* Target input */}
         <div className="section">
           <div className="target-row">
@@ -540,7 +613,9 @@ export function DailyTracker({
               <span className={`badge ${NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.cls ?? "unknown"}`}>
                 {NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.label ?? mAnalyzeMeta.source}
               </span>
-              {mAnalyzeMeta.source !== "personal_library" && mAnalyzeMeta.confidence > 0 && (
+              {mAnalyzeMeta.source !== "personal_library" &&
+                mAnalyzeMeta.source !== "local" &&
+                mAnalyzeMeta.confidence > 0 && (
                 <span className="manual-analyze-confidence">
                   ביטחון {Math.round(mAnalyzeMeta.confidence * 100)}%
                 </span>
@@ -574,11 +649,27 @@ export function DailyTracker({
       <div className="section">
         <div className="tracker-list-header">
           <span>ארוחות היום ({state.entries.length})</span>
-          {state.entries.length > 0 && (
-            <button type="button" className="ghost tracker-reset-btn" onClick={handleResetDay}>
-              איפוס היום
-            </button>
-          )}
+          <div className="tracker-list-header-actions">
+            {state.entries.length > 0 && (
+              <>
+                <button type="button" className="ghost" onClick={handleCopyDay}>
+                  העתק יום (טקסט)
+                </button>
+                <button type="button" className="ghost" onClick={handleShareDay}>
+                  שתף
+                </button>
+                <PdfExportButton
+                  targetRef={dayExportRef}
+                  filename={`קלוריות-${state.date}.pdf`}
+                />
+              </>
+            )}
+            {state.entries.length > 0 && (
+              <button type="button" className="ghost tracker-reset-btn" onClick={handleResetDay}>
+                איפוס היום
+              </button>
+            )}
+          </div>
         </div>
         {state.entries.length === 0 ? (
           <p className="tracker-empty">
@@ -606,6 +697,7 @@ export function DailyTracker({
             ))}
           </ul>
         )}
+      </div>
       </div>
     </div>
   );

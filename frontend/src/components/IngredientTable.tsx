@@ -30,6 +30,8 @@ export function IngredientTable({
   nameSuggestions,
 }: Props) {
   const suggestionsId = useId();
+  const hintId = useId();
+
   return (
     <div className="ingredient-table-wrap">
       <datalist id={suggestionsId}>
@@ -37,28 +39,46 @@ export function IngredientTable({
           <option key={name} value={name} />
         ))}
       </datalist>
-      <table className="ingredient-table">
+      <table
+        className="ingredient-table"
+        aria-describedby={hint ? hintId : undefined}
+      >
+        <caption className="sr-only">
+          טבלת מצרכים: שם המזון, יחידת מידה, כמות, ומשקל ליחידה בגרם כשמודדים
+          ביחידות. עמודת הקלוריות מציגה סיכום לפי הכמות שהוזנה. לעריכת ערכים
+          תזונתיים ל-100 גרם השתמשו בכפתור ההרחבה בשורה.
+        </caption>
         <colgroup>
           <col className="ingredient-col ingredient-col-name" />
           <col className="ingredient-col ingredient-col-unit" />
           <col className="ingredient-col ingredient-col-qty" />
           <col className="ingredient-col ingredient-col-unit-weight" />
-          <col className="ingredient-col ingredient-col-cal100" />
           <col className="ingredient-col ingredient-col-total" />
           <col className="ingredient-col ingredient-col-actions" />
         </colgroup>
         <thead>
           <tr>
-            <th className="col-name">שם מצרך</th>
-            <th className="col-unit">יחידת מידה</th>
-            <th className="col-qty">כמות</th>
-            <th className="col-unit-weight" title="רלוונטי כשמודדים ביחידות (ביצה, פרי…)">
+            <th className="col-name" scope="col">
+              שם מצרך
+            </th>
+            <th className="col-unit" scope="col">
+              יחידה
+            </th>
+            <th className="col-qty" scope="col">
+              כמות
+            </th>
+            <th
+              className="col-unit-weight"
+              scope="col"
+              title="כשנבחרת יחידת ״יחידה״ — משקל יחידה אחת בגרם"
+            >
               משקל יחידה
               <span className="col-unit-weight-sub">גרם</span>
             </th>
-            <th className="col-cal100">קלוריות ל-100 גרם</th>
-            <th className="col-total">סה"כ קלוריות למרכיב</th>
-            <th className="col-actions" aria-label="פעולות">
+            <th className="col-total" scope="col">
+              קלוריות לכמות
+            </th>
+            <th className="col-actions" scope="col" aria-label="פעולות">
               <span className="ingredient-actions-head" aria-hidden="true">
                 &#8943;
               </span>
@@ -85,10 +105,14 @@ export function IngredientTable({
         </tbody>
       </table>
       <div className="toolbar">
-        <button type="button" onClick={onAddRow}>
+        <button type="button" onClick={onAddRow} aria-label="הוספת מצרך חדש לרשימה">
           {addLabel}
         </button>
-        {hint && <span className="empty-hint">{hint}</span>}
+        {hint && (
+          <span id={hintId} className="empty-hint">
+            {hint}
+          </span>
+        )}
       </div>
     </div>
   );

@@ -1,8 +1,14 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useIngredientRows } from "../hooks/useIngredientRows";
 import type { DailyEntryInput, UserProduct } from "../types";
+import {
+  copyTextToClipboard,
+  formatMealDraftText,
+  shareTextIfPossible,
+} from "../utils/exportText";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 import { IngredientTable } from "./IngredientTable";
+import { PdfExportButton } from "./PdfExportButton";
 
 interface Props {
   id: string;
@@ -37,6 +43,34 @@ export function Meal({
     [rows]
   );
 
+  const mealExportRef = useRef<HTMLDivElement>(null);
+  const [mealExportFlash, setMealExportFlash] = useState<string | null>(null);
+
+  const flashMealExport = useCallback((msg: string) => {
+    setMealExportFlash(msg);
+    window.setTimeout(() => setMealExportFlash(null), 2200);
+  }, []);
+
+  const mealPdfName = useMemo(() => {
+    const base = name.trim() || "ארוחה";
+    const safe = base.replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 80);
+    return `${safe || "ארוחה"}.pdf`;
+  }, [name]);
+
+  const handleCopyMeal = async () => {
+    const text = formatMealDraftText(name, rows, total, totalGrams);
+    const ok = await copyTextToClipboard(text);
+    flashMealExport(ok ? "הטקסט הועתק ללוח." : "לא הצלחנו להעתיק — נסו מהדפדפן.");
+  };
+
+  const handleShareMeal = async () => {
+    const text = formatMealDraftText(name, rows, total, totalGrams);
+    const title = name.trim() || "ארוחה";
+    const shared = await shareTextIfPossible(title, text);
+    if (!shared) void handleCopyMeal();
+    else flashMealExport("נפתח חלון שיתוף.");
+  };
+
   const handleAdd = () => {
     if (!hasContent) return;
     onAddToDaily({
@@ -70,23 +104,24 @@ export function Meal({
         </button>
       </div>
 
-      <IngredientTable
-        rows={rows}
-        onPatchRow={patchRow}
-        onRemoveRow={removeRow}
-        onAddRow={addRow}
-        onAnalyzeRow={analyzeRow}
-        onNutritionEdit={handleNutritionEdit}
-        addLabel="➕ הוסף מצרך לארוחה"
-        hint={
-          (personalProducts?.length ?? 0) > 0
-            ? 'כתבו את שם מוצר מהספרייה — המערכת תמלא מאקרו לפי מה ששמרתם. ב"יחידה": משקל ליחידה בגרם.'
-            : 'ב"יחידה": משקל ליחידה בגרם — לא להסתמך על 100 גרם לכל מצרך.'
-        }
-        personalProducts={personalProducts}
-      />
+      <div ref={mealExportRef}>
+        <IngredientTable
+          rows={rows}
+          onPatchRow={patchRow}
+          onRemoveRow={removeRow}
+          onAddRow={addRow}
+          onAnalyzeRow={analyzeRow}
+          onNutritionEdit={handleNutritionEdit}
+          addLabel="➕ הוסף מצרך לארוחה"
+          hint={
+            (personalProducts?.length ?? 0) > 0
+              ? 'שם מוצר מהספרייה ממלא את השורה. עמודת ״קלוריות לכמות״ מסכמת לפי מה שהזנתם — לעריכת ערכים ל-100 ג׳ (חלבון וכו׳) השתמשו ב־▼.'
+              : 'עמודת ״קלוריות לכמות״ לפי מה שהזנתם. לעריכת ערכים ל-100 ג׳ — כפתור ▼ בשורה.'
+          }
+          personalProducts={personalProducts}
+        />
 
-      <div className="meal-footer">
+        <div className="meal-footer">
         <div className="meal-totals">
           <div className="meal-total-item">
             <span className="meal-total-label">סה"כ קלוריות</span>
@@ -109,6 +144,38 @@ export function Meal({
             <strong>{Math.round(totalGrams)} גרם</strong>
           </div>
         </div>
+
+        <div className="meal-export-row">
+          {mealExportFlash && (
+            <p className="meal-export-flash" role="status" aria-live="polite">
+              {mealExportFlash}
+            </p>
+          )}
+          <div className="meal-export-actions">
+            <button
+              type="button"
+              className="ghost"
+              disabled={!hasContent}
+              onClick={() => void handleCopyMeal()}
+            >
+              העתק ארוחה (טקסט)
+            </button>
+            <button
+              type="button"
+              className="ghost"
+              disabled={!hasContent}
+              onClick={() => void handleShareMeal()}
+            >
+              שתף
+            </button>
+            <PdfExportButton
+              targetRef={mealExportRef}
+              filename={mealPdfName}
+              disabled={!hasContent}
+            />
+          </div>
+        </div>
+
         <button
           type="button"
           className="meal-add-to-daily"
@@ -118,6 +185,7 @@ export function Meal({
         >
           ➕ הוסף ליום שלי
         </button>
+        </div>
       </div>
     </div>
   );

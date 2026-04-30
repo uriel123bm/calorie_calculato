@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DailyEntryInput, SavedRecipe } from "../types";
 import { scaleNutrition } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
@@ -110,6 +110,13 @@ function RecipeCard({
 }
 
 export function MyRecipesSection({ recipes, onDeleteRecipe, onAddToDaily }: Props) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return recipes;
+    return recipes.filter((r) => r.name.toLowerCase().includes(q));
+  }, [recipes, query]);
+
   if (recipes.length === 0) {
     return (
       <div className="section">
@@ -132,15 +139,35 @@ export function MyRecipesSection({ recipes, onDeleteRecipe, onAddToDaily }: Prop
         <span className="material-symbols-outlined">bookmark</span>
         המתכונים שלי ({recipes.length})
       </h2>
-      <div className="my-recipes-list">
-        {recipes.map((r) => (
-          <RecipeCard
-            key={r.id}
-            recipe={r}
-            onDelete={() => onDeleteRecipe(r.id)}
-            onAddToDaily={onAddToDaily}
+      {recipes.length > 5 && (
+        <div className="library-toolbar">
+          <label htmlFor="my-recipes-filter" className="library-filter-label">
+            חיפוש
+          </label>
+          <input
+            id="my-recipes-filter"
+            type="search"
+            className="library-filter-input"
+            placeholder="סינון לפי שם מתכון…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="סינון מתכונים לפי שם"
           />
-        ))}
+        </div>
+      )}
+      <div className="my-recipes-list">
+        {filtered.length === 0 ? (
+          <p className="library-filter-empty">לא נמצאו מתכונים התואמים לחיפוש.</p>
+        ) : (
+          filtered.map((r) => (
+            <RecipeCard
+              key={r.id}
+              recipe={r}
+              onDelete={() => onDeleteRecipe(r.id)}
+              onAddToDaily={onAddToDaily}
+            />
+          ))
+        )}
       </div>
     </div>
   );

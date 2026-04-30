@@ -28,7 +28,18 @@ interface Props {
   nameSuggestionsId?: string;
 }
 
+/** אחוז ביטחון רק כשיש אי-ודאות (לא ספרייה אישית / עריכה ידנית / מאגר מקומי). */
+function showConfidenceBadge(row: IngredientRowState): boolean {
+  if (row.status !== "ready" || row.confidence <= 0) return false;
+  if (row.source === "personal_library") return false;
+  if (row.manualEdit) return false;
+  if (row.source === "local") return false;
+  return true;
+}
+
 const SOURCE_LABEL = NUTRITION_SOURCE_BADGES;
+
+const EDITOR_COL_SPAN = 6;
 
 export function IngredientRow({
   row,
@@ -43,6 +54,8 @@ export function IngredientRow({
   onSubmitLastRow,
   nameSuggestionsId,
 }: Props) {
+  const quantityEnterNext =
+    row.unit === "יחידה" ? "unitWeight" : "__next_row__";
   const focusByKey = (focusKey: string) => {
     const target = document.querySelector<HTMLElement>(
       `[data-row-idx="${rowIndex}"][data-focus-key="${focusKey}"]`
@@ -160,21 +173,16 @@ export function IngredientRow({
     }
   };
 
-  const handleCalEdit = (e: ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const num = raw === "" ? 0 : Number(raw);
-    if (Number.isNaN(num)) return;
-    const next = { ...row.nutritionPer100g, calories: Math.max(num, 0) };
-    onNutritionEdit(next);
-  };
-
   const sourceMeta = row.source ? SOURCE_LABEL[row.source] : null;
   const confidencePct = Math.round(row.confidence * 100);
 
   return (
     <>
       <tr className={row.status === "loading" ? "ingredient-row-loading" : undefined}>
-        <td className="col-name">
+        <td
+          className="col-name"
+          data-cell-label="שם מצרך"
+        >
           <div className="cell-with-meta">
             <input
               type="text"
@@ -198,7 +206,7 @@ export function IngredientRow({
                 <span className={`badge ${sourceMeta.cls}`}>
                   {sourceMeta.label}
                 </span>
-                {row.confidence > 0 && <span>ביטחון: {confidencePct}%</span>}
+                {showConfidenceBadge(row) && <span>ביטחון: {confidencePct}%</span>}
                 {row.matchedName && row.matchedName !== row.name && (
                   <span>({row.matchedName})</span>
                 )}
@@ -217,7 +225,7 @@ export function IngredientRow({
             )}
           </div>
         </td>
-        <td className="col-unit">
+        <td className="col-unit" data-cell-label="יחידה">
           <select
             value={row.unit}
             onChange={handleUnitChange}
@@ -235,7 +243,7 @@ export function IngredientRow({
             ))}
           </select>
         </td>
-        <td className="col-qty">
+        <td className="col-qty" data-cell-label="כמות">
           <input
             type="number"
             min={0}
@@ -244,14 +252,14 @@ export function IngredientRow({
             onChange={handleQuantityChange}
             onBlur={handleQuantityBlur}
             onKeyDown={(e) =>
-              handleEnterNext(e, row.unit === "יחידה" ? "unitWeight" : "calories")
+              handleEnterNext(e, quantityEnterNext)
             }
             aria-label="כמות"
             data-row-idx={rowIndex}
             data-focus-key="quantity"
           />
         </td>
-        <td className="col-unit-weight">
+        <td className="col-unit-weight" data-cell-label="משקל יחידה (גרם)">
           {row.unit === "יחידה" ? (
             <div className="unit-weight-cell">
               <input
@@ -269,7 +277,7 @@ export function IngredientRow({
                     : ""
                 }
                 onChange={handleUnitWeightChange}
-                onKeyDown={(e) => handleEnterNext(e, "calories")}
+                onKeyDown={(e) => handleEnterNext(e, "__next_row__")}
                 data-row-idx={rowIndex}
                 data-focus-key="unitWeight"
               />
@@ -285,33 +293,37 @@ export function IngredientRow({
             </span>
           )}
         </td>
-        <td className="col-cal100">
-          <input
-            type="number"
-            min={0}
-            step="1"
-            value={row.nutritionPer100g.calories}
-            onChange={handleCalEdit}
-            onKeyDown={(e) => handleEnterNext(e, "__next_row__")}
-            aria-label="קלוריות ל-100 גרם"
-            data-row-idx={rowIndex}
-            data-focus-key="calories"
-          />
-        </td>
-        <td className="col-total">
+        <td
+          className="col-total"
+          data-cell-label="קלוריות לכמות"
+          aria-label={`קלוריות לפי הכמות בשורה: ${Math.round(row.nutritionForQuantity.calories)}`}
+        >
           {row.status === "loading" ? (
             <span className="loading-skeleton-chip" aria-label="טוען" />
           ) : (
-            `${row.nutritionForQuantity.calories.toFixed(0)} קלוריות`
+            <span className="ingredient-cal-total-value">
+              {Math.round(row.nutritionForQuantity.calories)} קלוריות
+            </span>
           )}
         </td>
-        <td className="col-actions">
+        <td className="col-actions" data-cell-label="פעולות">
+          <div className="ingredient-actions-cell">
           <button
             type="button"
             className="row-icon-button"
+            aria-expanded={row.showEditor}
+            aria-controls={`ingredient-nutrition-${row.id}`}
             onClick={() => onChange({ showEditor: !row.showEditor })}
-            aria-label={row.showEditor ? "הסתר ערכים" : "ערוך ערכים"}
-            title={row.showEditor ? "הסתר ערכים" : "ערוך ערכים"}
+            aria-label={
+              row.showEditor
+                ? "סגירת עריכת ערכים ל-100 גרם"
+                : "פתיחת עריכת ערכים תזונתיים ל-100 גרם"
+            }
+            title={
+              row.showEditor
+                ? "סגירת פאנל עריכה"
+                : "עריכת קלוריות, חלבון ושאר הערכים לפי 100 גרם"
+            }
           >
             {row.showEditor ? "▲" : "▼"}
           </button>
@@ -325,11 +337,12 @@ export function IngredientRow({
           >
             ✕
           </button>
+          </div>
         </td>
       </tr>
       {row.showEditor && (
         <tr className="editor-row">
-          <td colSpan={7}>
+          <td colSpan={EDITOR_COL_SPAN} id={`ingredient-nutrition-${row.id}`}>
             <NutritionEditor
               values={row.nutritionPer100g}
               onChange={onNutritionEdit}

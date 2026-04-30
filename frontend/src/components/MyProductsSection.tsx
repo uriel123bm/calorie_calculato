@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ProductInput, ProductSaveResult } from "../hooks/useUserProducts";
+import type { ProductFormDraft } from "../services/productFormDraft";
 import type { DailyEntryInput, UserProduct } from "../types";
 import { scaleServingMacros } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
+import { ProductCaptureModal } from "./ProductCaptureModal";
 
 interface Props {
   products: UserProduct[];
@@ -17,6 +19,7 @@ function AddProductForm({
 }: {
   onAdd: (input: ProductInput) => ProductSaveResult;
 }) {
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [name, setName]                   = useState("");
   const [unitDescription, setUnitDescription] = useState("");
   const [servingsCount, setServingsCount] = useState<number | "">(1);
@@ -83,7 +86,22 @@ function AddProductForm({
       if (Number.isFinite(num) && num >= 0) setter(num);
     };
 
+  const applyDraftFromCapture = useCallback((draft: ProductFormDraft) => {
+    setName((prev) => (draft.name.trim() ? draft.name.trim() : prev));
+    setUnitDescription(draft.unitDescription ?? "");
+    const portions =
+      typeof draft.servingsCount === "number" && draft.servingsCount >= 1
+        ? Math.floor(draft.servingsCount)
+        : 1;
+    setServingsCount(portions);
+    setCalories(draft.calories > 0 ? Math.round(draft.calories) : "");
+    setProtein(draft.protein > 0 ? draft.protein : "");
+    setCarbohydrates(draft.carbohydrates > 0 ? draft.carbohydrates : "");
+    setFat(draft.fat > 0 ? draft.fat : "");
+  }, []);
+
   return (
+    <>
     <form className="product-form" onSubmit={handleSubmit}>
       <div className="product-form-row">
         <label className="product-form-label">
@@ -185,6 +203,19 @@ function AddProductForm({
         <span className="badge fat">שומן {perUnitPreview.fat.toFixed(1)} גרם</span>
       </div>
 
+      <div className="product-scan-trigger-row">
+        <button
+          type="button"
+          className="ghost product-scan-open-btn"
+          onClick={() => setCaptureOpen(true)}
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">
+            photo_camera
+          </span>
+          סריקת ברקוד מהאריזה
+        </button>
+      </div>
+
       <div className="product-form-actions">
         <button type="submit" className="primary">
           <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>
@@ -203,6 +234,12 @@ function AddProductForm({
         )}
       </div>
     </form>
+    <ProductCaptureModal
+      open={captureOpen}
+      onClose={() => setCaptureOpen(false)}
+      onApplyDraft={applyDraftFromCapture}
+    />
+    </>
   );
 }
 
@@ -333,6 +370,13 @@ export function MyProductsSection({
   onDeleteProduct,
   onAddToDaily,
 }: Props) {
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const filteredProducts = useMemo(() => {
+    const q = libraryQuery.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => p.name.toLowerCase().includes(q));
+  }, [products, libraryQuery]);
+
   return (
     <div className="page-container">
       <div className="page-hero">
@@ -359,6 +403,23 @@ export function MyProductsSection({
           הספרייה שלי {products.length > 0 ? `(${products.length})` : ""}
         </h2>
 
+        {products.length > 5 && (
+          <div className="library-toolbar">
+            <label htmlFor="my-products-filter" className="library-filter-label">
+              חיפוש
+            </label>
+            <input
+              id="my-products-filter"
+              type="search"
+              className="library-filter-input"
+              placeholder="סינון לפי שם מוצר…"
+              value={libraryQuery}
+              onChange={(e) => setLibraryQuery(e.target.value)}
+              aria-label="סינון מוצרים לפי שם"
+            />
+          </div>
+        )}
+
         {products.length === 0 ? (
           <div className="my-recipes-empty">
             <span className="material-symbols-outlined" style={{ fontSize: 44, opacity: 0.3 }}>
@@ -371,14 +432,18 @@ export function MyProductsSection({
           </div>
         ) : (
           <div className="my-recipes-list">
-            {products.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onDelete={() => onDeleteProduct(p.id)}
-                onAddToDaily={onAddToDaily}
-              />
-            ))}
+            {filteredProducts.length === 0 ? (
+              <p className="library-filter-empty">לא נמצאו מוצרים התואמים לחיפוש.</p>
+            ) : (
+              filteredProducts.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onDelete={() => onDeleteProduct(p.id)}
+                  onAddToDaily={onAddToDaily}
+                />
+              ))
+            )}
           </div>
         )}
       </section>

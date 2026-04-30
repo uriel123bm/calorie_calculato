@@ -13,6 +13,7 @@ import { RecipeSummary } from "./components/RecipeSummary";
 import { useAuth } from "./context/AuthContext";
 import { useBodyMetrics } from "./hooks/useBodyMetrics";
 import { useDailyTracker } from "./hooks/useDailyTracker";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useIngredientRows } from "./hooks/useIngredientRows";
 import { useSavedRecipes } from "./hooks/useSavedRecipes";
 import { useUserProducts } from "./hooks/useUserProducts";
@@ -85,6 +86,7 @@ function AppShell({
   const savedRecipes  = useSavedRecipes(userId);
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
+  const online        = useOnlineStatus();
   const exportTargetRef = useRef<HTMLDivElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
   const undoTimeoutRef = useRef<number | null>(null);
@@ -326,7 +328,7 @@ function AppShell({
   }, [settingsOpen]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${online ? "" : " app-shell--offline"}`}>
       {/* Fixed glass header */}
       <header className="app-header">
         <h1>
@@ -389,6 +391,12 @@ function AppShell({
         </div>
       </header>
 
+      {!online && (
+        <div className="offline-banner" role="status" aria-live="polite">
+          אין חיבור לאינטרנט — זיהוי מצרכים ושמירה לשרת לא יעבדו עד שיחזור החיבור.
+        </div>
+      )}
+
       <main className="app-pages">
 
         {/* ── HOME ── */}
@@ -431,7 +439,7 @@ function AppShell({
                   onNutritionEdit={recipe.handleNutritionEdit}
                   onSubmitLastRow={recipe.addRow}
                   nameSuggestions={nameSuggestions}
-                  hint='טיפ: ביחידת "יחידה" הזינו משקל טיפוסי למנה אחת (למשל ביצה ~55 גרם, תפוח ~180 גרם). ברירת המחדל 100 גרם מתאימה לעיתים רק למוצרים ארוזים.'
+                  hint='ביחידת "יחידה" הזינו משקל טיפוסי ליחידה (למשל ביצה ~55 גרם). עמודת הקלוריות מסכמת לפי הכמות בשורה. לעריכת ערכים ל-100 גרם — כפתור ▼ בשורה.'
                 />
               </section>
 

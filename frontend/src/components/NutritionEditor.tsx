@@ -27,7 +27,7 @@ export function NutritionEditor({ values, onChange }: Props) {
   return (
     <div>
       <div className="editor-title">
-        ערכים זוהו אוטומטית – ניתן לערוך (ל-100 גרם)
+        עריכת ערכים ל-100 גרם (נפתח מתחת לשורה)
       </div>
       <div className="editor-grid">
         {FIELDS.map(({ key, label, unit }) => (

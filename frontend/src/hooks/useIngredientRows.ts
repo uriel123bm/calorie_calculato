@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { isCancel } from "axios";
 
 import { analyzeIngredient } from "../services/api";
 
@@ -27,6 +29,8 @@ import {
   UNITS,
 
 } from "../types";
+
+import { isOfflineError } from "../utils/network";
 
 
 
@@ -250,7 +254,7 @@ export interface UseIngredientRowsResult {
 
   removeRow: (id: string) => void;
 
-  analyzeRow: (id: string) => Promise<void>;
+  analyzeRow: (id: string) => void;
 
   handleNutritionEdit: (id: string, next: NutritionPer100g) => void;
 
@@ -280,6 +284,21 @@ export function useIngredientRows(initialCount: number = 4): UseIngredientRowsRe
   /** Ignores stale responses when the user re-triggers analyze before the prior request finishes. */
 
   const analyzeEpochRef = useRef<Map<string, number>>(new Map());
+
+  const analyzeDebounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const analyzeAbortRef = useRef<Map<string, AbortController>>(new Map());
+
+  const ANALYZE_DEBOUNCE_MS = 420;
+
+  useEffect(() => {
+    return () => {
+      analyzeDebounceTimersRef.current.forEach((t) => clearTimeout(t));
+      analyzeDebounceTimersRef.current.clear();
+      analyzeAbortRef.current.forEach((ac) => ac.abort());
+      analyzeAbortRef.current.clear();
+    };
+  }, []);
 
 
 
@@ -361,103 +380,75 @@ export function useIngredientRows(initialCount: number = 4): UseIngredientRowsRe
 
 
 
-  const analyzeRow = useCallback(
+  const analyzeRow = useCallback((id: string) => {
+    const prevTimer = analyzeDebounceTimersRef.current.get(id);
+    if (prevTimer) clearTimeout(prevTimer);
 
-    async (id: string) => {
+    analyzeAbortRef.current.get(id)?.abort();
+
+    const timer = setTimeout(async () => {
+      analyzeDebounceTimersRef.current.delete(id);
 
       const target = rowsRef.current.find((r) => r.id === id);
-
       if (!target) return;
 
       const qty = Number(target.quantity);
-
       if (!target.name.trim() || !qty || qty <= 0) return;
 
-
-
       const epoch = (analyzeEpochRef.current.get(id) ?? 0) + 1;
-
       analyzeEpochRef.current.set(id, epoch);
 
-
+      const ac = new AbortController();
+      analyzeAbortRef.current.set(id, ac);
 
       patchRow(id, { status: "loading", error: undefined });
 
-
-
       try {
-
-        const res = await analyzeIngredient({
-
-          ingredient_name: target.name.trim(),
-
-          quantity: qty,
-
-          unit: target.unit,
-
-        });
+        const res = await analyzeIngredient(
+          {
+            ingredient_name: target.name.trim(),
+            quantity: qty,
+            unit: target.unit,
+          },
+          { signal: ac.signal }
+        );
 
         if (analyzeEpochRef.current.get(id) !== epoch) return;
 
-
-
         const inferredUnitG =
-
           res.unit_weight_g != null && res.unit_weight_g > 0
-
             ? res.unit_weight_g
-
             : target.unit === "יחידה" && qty > 0 && res.quantity_in_grams > 0
-
               ? res.quantity_in_grams / qty
-
               : undefined;
 
         patchRow(id, {
-
           nutritionPer100g: res.nutrition_per_100g,
-
           nutritionForQuantity: res.nutrition_for_quantity,
-
           quantityInGrams: res.quantity_in_grams,
-
           unitWeightG: inferredUnitG,
-
           confidence: res.confidence,
-
           source: res.source,
-
           matchedName: res.matched_name,
-
           status: "ready",
-
           manualEdit: false,
-
         });
-
       } catch (err: unknown) {
-
         if (analyzeEpochRef.current.get(id) !== epoch) return;
+        if (isCancel(err)) return;
 
-        const message =
-
-          err && typeof err === "object" && "message" in err
-
+        const message = isOfflineError(err)
+          ? err.message
+          : err && typeof err === "object" && "message" in err
             ? String((err as { message: unknown }).message)
-
             : "שגיאה בזיהוי המצרך";
 
         patchRow(id, { status: "error", error: message });
-
       }
+    }, ANALYZE_DEBOUNCE_MS);
 
-    },
-
-    [patchRow]
-
-  );
-
-
+    analyzeDebounceTimersRef.current.set(id, timer);
+  }, [patchRow]);
 
   const { totalGrams, total, per100g } = useMemo(() => {
 

@@ -5,6 +5,7 @@ import type {
   IngredientRowState,
   RecipeSummary,
 } from "../types";
+import { OfflineError } from "../utils/network";
 
 // In dev the Vite proxy forwards /auth, /ingredients, /recipe → backend.
 // In production set VITE_API_BASE to the deployed backend URL.
@@ -52,6 +53,9 @@ client.interceptors.request.use((config) => {
   const csrf = readCookie("csrf_token");
   if (csrf) {
     config.headers["X-CSRF-Token"] = csrf;
+  }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return Promise.reject(new OfflineError());
   }
   return config;
 });
@@ -134,12 +138,19 @@ client.interceptors.response.use(
 
 // ── Nutrition endpoints ─────────────────────────────────
 
-export async function analyzeIngredient(params: {
-  ingredient_name: string;
-  quantity: number;
-  unit: HebrewUnit;
-}): Promise<AnalyzeResponse> {
-  const { data } = await client.post<AnalyzeResponse>("/ingredients/analyze", params);
+export async function analyzeIngredient(
+  params: {
+    ingredient_name: string;
+    quantity: number;
+    unit: HebrewUnit;
+  },
+  options?: { signal?: AbortSignal }
+): Promise<AnalyzeResponse> {
+  const { data } = await client.post<AnalyzeResponse>(
+    "/ingredients/analyze",
+    params,
+    { signal: options?.signal }
+  );
   return data;
 }
 
