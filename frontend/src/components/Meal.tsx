@@ -1,14 +1,16 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIngredientRows } from "../hooks/useIngredientRows";
-import type { DailyEntryInput, UserProduct } from "../types";
+import type { DailyEntryInput, DailyEntryLine, HebrewUnit, UserProduct } from "../types";
 import {
   copyTextToClipboard,
   formatMealDraftText,
   shareTextIfPossible,
 } from "../utils/exportText";
+import { personalProductToIngredientPer100g } from "../utils/personalProductMatch";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 import { IngredientTable } from "./IngredientTable";
 import { PdfExportButton } from "./PdfExportButton";
+import { PersonalProductChips } from "./PersonalProductChips";
 
 interface Props {
   id: string;
@@ -38,6 +40,49 @@ export function Meal({
     totalGrams,
   } = useIngredientRows(3);
 
+  const pendingChipProductRef = useRef<UserProduct | null>(null);
+
+  const applyLibraryProductToRow = useCallback(
+    (rowId: string, product: UserProduct) => {
+      const per100 = personalProductToIngredientPer100g(product);
+      patchRow(rowId, {
+        name: product.name,
+        nutritionPer100g: per100,
+        quantity: 1,
+        unit: "יחידה" as HebrewUnit,
+        manualEdit: true,
+        source: "personal_library",
+        status: "ready",
+        confidence: 1,
+        matchedName: product.name,
+      });
+    },
+    [patchRow]
+  );
+
+  useEffect(() => {
+    const p = pendingChipProductRef.current;
+    if (!p) return;
+    const last = rows[rows.length - 1];
+    if (!last?.name.trim()) {
+      pendingChipProductRef.current = null;
+      applyLibraryProductToRow(last.id, p);
+    }
+  }, [rows, applyLibraryProductToRow]);
+
+  const handleChipPick = useCallback(
+    (product: UserProduct) => {
+      const empty = rows.find((r) => !r.name.trim());
+      if (empty) {
+        applyLibraryProductToRow(empty.id, product);
+        return;
+      }
+      pendingChipProductRef.current = product;
+      addRow();
+    },
+    [rows, addRow, applyLibraryProductToRow]
+  );
+
   const hasContent = useMemo(
     () => rows.some((r) => r.name.trim() && r.quantityInGrams > 0),
     [rows]
@@ -57,6 +102,11 @@ export function Meal({
     return `${safe || "ארוחה"}.pdf`;
   }, [name]);
 
+  const productNamesForSuggest = useMemo(
+    () => personalProducts?.map((p) => p.name) ?? [],
+    [personalProducts]
+  );
+
   const handleCopyMeal = async () => {
     const text = formatMealDraftText(name, rows, total, totalGrams);
     const ok = await copyTextToClipboard(text);
@@ -73,12 +123,29 @@ export function Meal({
 
   const handleAdd = () => {
     if (!hasContent) return;
+    const lines: DailyEntryLine[] = rows
+      .filter((r) => r.name.trim() && r.quantityInGrams > 0)
+      .map((r) => {
+        const q = r.quantity === "" ? "" : `${r.quantity} ${r.unit}`;
+        const n = r.nutritionForQuantity;
+        return {
+          name: r.name.trim(),
+          calories: roundCalories(n.calories),
+          protein: roundMacro(n.protein),
+          carbohydrates: roundMacro(n.carbohydrates),
+          fat: roundMacro(n.fat),
+          ...(q ? { detail: q } : {}),
+        };
+      });
+    if (lines.length === 0) return;
+
     onAddToDaily({
       name: name.trim() || "ארוחה",
       calories: roundCalories(total.calories),
       protein: roundMacro(total.protein),
       carbohydrates: roundMacro(total.carbohydrates),
       fat: roundMacro(total.fat),
+      lines,
     });
   };
 
@@ -105,6 +172,13 @@ export function Meal({
       </div>
 
       <div ref={mealExportRef}>
+        {(personalProducts?.length ?? 0) > 0 && (
+          <PersonalProductChips
+            products={personalProducts!}
+            onPick={handleChipPick}
+            title="מהיר מהספרייה שלך"
+          />
+        )}
         <IngredientTable
           rows={rows}
           onPatchRow={patchRow}
@@ -119,6 +193,7 @@ export function Meal({
               : 'עמודת ״קלוריות לכמות״ לפי מה שהזנתם. לעריכת ערכים ל-100 ג׳ — כפתור ▼ בשורה.'
           }
           personalProducts={personalProducts}
+          nameSuggestions={productNamesForSuggest}
         />
 
         <div className="meal-footer">

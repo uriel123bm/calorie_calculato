@@ -24,11 +24,17 @@ export function formatDailyJournalText(state: DailyTrackerState): string {
     consumed.f > 0 ? `שומן: ${consumed.f.toFixed(1)} גרם` : null,
     "",
     "רשימת פריטים:",
-    ...state.entries.map(
-      (e) =>
+    ...state.entries.flatMap((e) => {
+      const head =
         `• ${e.name} — ${e.calories.toFixed(0)} קלוריות` +
-        (e.protein ? `, חלבון ${e.protein.toFixed(1)} ג׳` : "")
-    ),
+        (e.protein ? `, חלבון ${e.protein.toFixed(1)} ג׳` : "");
+      const subs =
+        e.lines?.filter((l) => l.name.trim()).map((l) => {
+          const detail = l.detail ? ` (${l.detail})` : "";
+          return `    ◦ ${l.name}${detail} — ${Math.round(l.calories)} קל׳`;
+        }) ?? [];
+      return [head, ...subs];
+    }),
   ].filter(Boolean) as string[];
 
   return lines.join("\n");

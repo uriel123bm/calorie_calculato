@@ -128,6 +128,8 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
   }, []);
 
   const addEntry = useCallback((input: DailyEntryInput) => {
+    const lines =
+      Array.isArray(input.lines) && input.lines.length > 0 ? input.lines : undefined;
     const entry: DailyEntry = {
       id: makeEntryId(),
       name: input.name.trim() || "פריט",
@@ -136,6 +138,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
       carbohydrates: Math.max(0, input.carbohydrates ?? 0),
       fat: Math.max(0, input.fat ?? 0),
       addedAt: Date.now(),
+      ...(lines ? { lines } : {}),
     };
     setState((prev) => ({ ...prev, entries: [...prev.entries, entry] }));
   }, []);

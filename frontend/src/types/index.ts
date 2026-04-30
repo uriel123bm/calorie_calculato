@@ -71,12 +71,24 @@ export interface RecipeTotals {
   perServing: NutritionPer100g;
 }
 
+/** שורה בפירוט ארוחה שנוספה מהעורך (מצרכים בודדים). */
+export interface DailyEntryLine {
+  name: string;
+  calories: number;
+  protein: number;
+  carbohydrates: number;
+  fat: number;
+  /** למשל "100 גרם" או "2 יחידה" */
+  detail?: string;
+}
+
 export interface DailyEntryInput {
   name: string;
   calories: number;
   protein?: number;
   carbohydrates?: number;
   fat?: number;
+  lines?: DailyEntryLine[];
 }
 
 export interface RecipeSummary {
@@ -101,6 +113,8 @@ export interface DailyEntry {
   carbohydrates: number;
   fat: number;
   addedAt: number;
+  /** קיים כשנוסף מארוחה עם מצרכים — מאפשר פירוט במסך הבית וביומן */
+  lines?: DailyEntryLine[];
 }
 
 export interface DailyTrackerState {

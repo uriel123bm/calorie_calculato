@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { DailyEntry, DailyTrackerState, DayLog } from "../types";
 
 interface Props {
@@ -44,12 +45,30 @@ function DayTotals({ entries }: { entries: DailyEntry[] }) {
 }
 
 function EntryCard({ entry, onRemove }: { entry: DailyEntry; onRemove?: () => void }) {
+  const lines = entry.lines?.filter((l) => l.name.trim()) ?? [];
+  const hasBreakdown = lines.length > 0;
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="journal-entry">
+    <div className={`journal-entry${hasBreakdown ? " journal-entry--expandable" : ""}`}>
       <div className="journal-entry-dot" />
       <div className="journal-entry-body">
         <div className="journal-entry-header">
-          <span className="journal-entry-name">{entry.name}</span>
+          {hasBreakdown ? (
+            <button
+              type="button"
+              className="journal-entry-name-btn"
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+            >
+              <span className="journal-entry-name">{entry.name}</span>
+              <span className="material-symbols-outlined journal-entry-chevron" aria-hidden="true">
+                {open ? "expand_less" : "expand_more"}
+              </span>
+            </button>
+          ) : (
+            <span className="journal-entry-name">{entry.name}</span>
+          )}
           {entry.addedAt > 0 && (
             <span className="journal-entry-time">{formatTime(entry.addedAt)}</span>
           )}
@@ -60,15 +79,31 @@ function EntryCard({ entry, onRemove }: { entry: DailyEntry; onRemove?: () => vo
               onClick={onRemove}
               title="מחק"
               aria-label={`מחק ${entry.name}`}
-            >✕</button>
+            >
+              ✕
+            </button>
           )}
         </div>
         <div className="journal-entry-macros">
           <span className="jmacro calories">{Math.round(entry.calories)} קלוריות</span>
           {entry.protein > 0 && <span className="jmacro protein">חלבון {entry.protein.toFixed(1)} גרם</span>}
-          {entry.carbohydrates > 0 && <span className="jmacro carbs">פחמימות {entry.carbohydrates.toFixed(1)} גרם</span>}
+          {entry.carbohydrates > 0 && (
+            <span className="jmacro carbs">פחמימות {entry.carbohydrates.toFixed(1)} גרם</span>
+          )}
           {entry.fat > 0 && <span className="jmacro fat">שומן {entry.fat.toFixed(1)} גרם</span>}
         </div>
+        {open && hasBreakdown && (
+          <ul className="journal-entry-breakdown">
+            {lines.map((line, idx) => (
+              <li key={idx}>
+                <span className="journal-line-name">
+                  {line.detail ? `${line.name} (${line.detail})` : line.name}
+                </span>
+                <span>{Math.round(line.calories)} קל׳</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

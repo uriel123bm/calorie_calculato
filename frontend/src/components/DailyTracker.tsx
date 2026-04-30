@@ -24,6 +24,7 @@ import {
   shareTextIfPossible,
 } from "../utils/exportText";
 import { PdfExportButton } from "./PdfExportButton";
+import { PersonalProductChips } from "./PersonalProductChips";
 
 interface Props {
   state: DailyTrackerState;
@@ -153,6 +154,7 @@ export function DailyTracker({
   const manualAbortRef = useRef<AbortController | null>(null);
   const MANUAL_DEBOUNCE_MS = 420;
   const [exportFlash, setExportFlash] = useState<string | null>(null);
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     manualFieldsRef.current = { name: mName, qty: mQty, unit: mUnit };
@@ -183,6 +185,7 @@ export function DailyTracker({
   const applyPersonalProductFill = (p: UserProduct) => {
     matchedPersonalRef.current = p;
     const qty = 1;
+    setMName(p.name);
     setMQty(qty);
     setMUnit("יחידה");
     const m = totalsForProductQuantity(p, qty);
@@ -205,6 +208,20 @@ export function DailyTracker({
     setExportFlash(msg);
     window.setTimeout(() => setExportFlash(null), 2200);
   }, []);
+
+  const handleQuickChipAdd = useCallback(
+    (p: UserProduct) => {
+      const preview = scaleServingMacros(p, 1);
+      addEntry({
+        name: `${p.name} (1 יח׳)`,
+        calories: roundCalories(preview.calories),
+        protein: roundMacro(preview.protein),
+        carbohydrates: roundMacro(preview.carbohydrates),
+        fat: roundMacro(preview.fat),
+      });
+    },
+    [addEntry]
+  );
 
   const runIngredientAnalyze = useCallback(async () => {
     const { name: rawName, qty: rawQty, unit } = manualFieldsRef.current;
@@ -377,6 +394,11 @@ export function DailyTracker({
           <p className="tracker-manual-hint">
             בחרו מוצר והזינו כמה יחידות אכלתם — הערכים מחושבים לפי יחידה אחת כפי שהגדרתם בטאב מוצרים.
           </p>
+          <PersonalProductChips
+            products={personalProducts}
+            onPick={handleQuickChipAdd}
+            title="הוספה מהירה ליום (יחידה אחת)"
+          />
           <PersonalProductQuickAdd products={personalProducts} onAdd={addEntry} />
         </div>
       )}
@@ -473,6 +495,13 @@ export function DailyTracker({
               ? "בשם הפריט אפשר לכתוב מוצר מהספרייה שלך — יוטען עם המנה והערכים ששמרת. אחרת המערכת תנסה לזהות מהשירות."
               : "רשום שם וכמות — המערכת תזהה קלוריות וחלבון אוטומטית. ניתן לתקן לפני הוספה."}
           </p>
+          {personalProducts.length > 0 && (
+            <PersonalProductChips
+              products={personalProducts}
+              onPick={applyPersonalProductFill}
+              title="מילוי מהיר בשורת ההוספה הידנית"
+            />
+          )}
           <div className="tracker-manual-grid">
             <div className="manual-field manual-field--name">
               <label className="manual-field-label" htmlFor="tracker-manual-name">
@@ -677,24 +706,107 @@ export function DailyTracker({
           </p>
         ) : (
           <ul className="tracker-list">
-            {[...state.entries].reverse().map((entry) => (
-              <li key={entry.id}>
-                <div className="tracker-entry-main">
+            {[...state.entries].reverse().map((entry) => {
+              const lines = entry.lines?.filter((l) => l.name.trim()) ?? [];
+              const hasBreakdown = lines.length > 0;
+              const expanded = expandedEntryId === entry.id;
+              const toggle = () =>
+                setExpandedEntryId((id) => (id === entry.id ? null : entry.id));
+
+              const bodyMain = (
+                <>
                   <div className="tracker-entry-name">{entry.name}</div>
-                  {entry.protein > 0 && (
-                    <div className="tracker-entry-meta">חלבון {entry.protein.toFixed(1)} גרם</div>
+                  {(entry.protein > 0 || hasBreakdown) && (
+                    <div className="tracker-entry-meta">
+                      {entry.protein > 0 && (
+                        <span>חלבון {entry.protein.toFixed(1)} גרם</span>
+                      )}
+                      {hasBreakdown && (
+                        <span className="tracker-entry-meta-sub">
+                          {entry.protein > 0 ? " · " : ""}
+                          לחצו לפירוט מצרכים
+                        </span>
+                      )}
+                    </div>
                   )}
-                </div>
-                <div className="tracker-entry-cal">{entry.calories.toFixed(0)} קלוריות</div>
-                <button
-                  type="button"
-                  className="row-icon-button"
-                  onClick={() => removeEntry(entry.id)}
-                  title="מחק"
-                  aria-label={`מחק ${entry.name}`}
-                >✕</button>
-              </li>
-            ))}
+                </>
+              );
+
+              return (
+                <li key={entry.id}>
+                  <div
+                    className={`tracker-entry-shell${expanded ? " tracker-entry-shell--open" : ""}`}
+                  >
+                    <div className="tracker-entry-top">
+                      {hasBreakdown ? (
+                        <button
+                          type="button"
+                          className="tracker-entry-chevron"
+                          aria-expanded={expanded}
+                          aria-label={
+                            expanded ? "סגור פירוט ארוחה" : `פירוט מצרכים: ${entry.name}`
+                          }
+                          onClick={toggle}
+                        >
+                          <span className="material-symbols-outlined" aria-hidden="true">
+                            {expanded ? "expand_less" : "expand_more"}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="tracker-entry-chevron-spacer" aria-hidden="true" />
+                      )}
+                      {hasBreakdown ? (
+                        <button
+                          type="button"
+                          className="tracker-entry-body-btn"
+                          onClick={toggle}
+                        >
+                          <div className="tracker-entry-main">{bodyMain}</div>
+                        </button>
+                      ) : (
+                        <div className="tracker-entry-body-static">
+                          <div className="tracker-entry-main">{bodyMain}</div>
+                        </div>
+                      )}
+                      <div className="tracker-entry-cal">{entry.calories.toFixed(0)} קלוריות</div>
+                      <button
+                        type="button"
+                        className="row-icon-button"
+                        onClick={() => {
+                          if (expandedEntryId === entry.id) setExpandedEntryId(null);
+                          removeEntry(entry.id);
+                        }}
+                        title="מחק"
+                        aria-label={`מחק ${entry.name}`}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {expanded && hasBreakdown && (
+                      <ul className="tracker-entry-breakdown">
+                        {lines.map((line, idx) => (
+                          <li key={`${entry.id}-ln-${idx}`}>
+                            <span className="tracker-entry-line-name">
+                              {line.detail ? `${line.name} (${line.detail})` : line.name}
+                            </span>
+                            <span className="tracker-entry-line-cal">{Math.round(line.calories)} קל׳</span>
+                            <span className="tracker-entry-line-macros">
+                              {[
+                                line.protein > 0 ? `ח׳ ${line.protein.toFixed(1)}` : "",
+                                line.carbohydrates > 0 ? `פ׳ ${line.carbohydrates.toFixed(1)}` : "",
+                                line.fat > 0 ? `ש׳ ${line.fat.toFixed(1)}` : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
