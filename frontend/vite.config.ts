@@ -8,7 +8,9 @@ export default defineConfig({
     react(),
     basicSsl(),
     VitePWA({
-      registerType: "autoUpdate",
+      // prompt + skipWaiting:false: גרסה חדשה נשארת ב-"waiting" עד "עדכן עכשיו".
+      // autoUpdate+skipWaiting:true גרם לעיתים למצב לא עקבי בין SW לטאב הפתוח.
+      registerType: "prompt",
       includeAssets: ["icon.svg", "apple-touch-icon.png", "favicon-32.png"],
       manifest: {
         name: "מחשבון קלוריות",
@@ -38,8 +40,9 @@ export default defineConfig({
         categories: ["health", "food"],
       },
       workbox: {
-        skipWaiting: true,
+        skipWaiting: false,
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // Avoid serving the SPA shell when the URL is the API prefix (Vercel mounts FastAPI here).
         navigateFallbackDenylist: [/^\/_\/?backend\b/],
         // API calls must not go through workbox cache strategies. Caching

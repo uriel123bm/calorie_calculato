@@ -3,10 +3,65 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 
 type ManualCheckState = "idle" | "checking" | "available" | "none";
 
+function waitUntilInstalled(sw: ServiceWorker): Promise<void> {
+  if (sw.state === "installed" || sw.state === "activated") return Promise.resolve();
+  return new Promise((resolve) => {
+    sw.addEventListener("statechange", () => {
+      if (sw.state === "installed" || sw.state === "activated") resolve();
+    });
+  });
+}
+
+/** אחרי registration.update(): ממתינים ל-waiting או להורדת גרסה חדשה בלי לסיים מוקדם מדי. */
+async function detectUpdateWaiting(registration: ServiceWorkerRegistration): Promise<boolean> {
+  if (registration.waiting) return true;
+  await registration.update();
+  if (registration.waiting) return true;
+
+  const installingNow = registration.installing;
+  if (installingNow) {
+    await waitUntilInstalled(installingNow);
+    return !!registration.waiting;
+  }
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    const finish = (v: boolean) => {
+      if (settled) return;
+      settled = true;
+      resolve(v);
+    };
+
+    const hardCap = window.setTimeout(() => finish(!!registration.waiting), 25000);
+    const noNewsTimer = window.setTimeout(() => {
+      window.clearTimeout(hardCap);
+      finish(false);
+    }, 1600);
+
+    registration.addEventListener(
+      "updatefound",
+      () => {
+        window.clearTimeout(noNewsTimer);
+        const nw = registration.installing;
+        if (!nw) {
+          window.clearTimeout(hardCap);
+          finish(!!registration.waiting);
+          return;
+        }
+        void waitUntilInstalled(nw).then(() => {
+          window.clearTimeout(hardCap);
+          finish(!!registration.waiting);
+        });
+      },
+      { once: true }
+    );
+  });
+}
+
 export function PwaUpdatePrompt() {
   const updateRegistrationRef = useRef<(() => Promise<void> | void) | null>(null);
   const needRefreshRef = useRef(false);
-  const checkTimerRef = useRef<number | null>(null);
+  const checkSeqRef = useRef(0);
   const [manualCheckState, setManualCheckState] = useState<ManualCheckState>("idle");
   const {
     needRefresh: [needRefresh],
@@ -39,25 +94,34 @@ export function PwaUpdatePrompt() {
         setManualCheckState("available");
         return;
       }
-      setManualCheckState("checking");
-      void updateRegistrationRef.current?.();
-      if (checkTimerRef.current !== null) {
-        window.clearTimeout(checkTimerRef.current);
+      if (!("serviceWorker" in navigator)) {
+        setManualCheckState("none");
+        return;
       }
-      checkTimerRef.current = window.setTimeout(() => {
-        setManualCheckState(needRefreshRef.current ? "available" : "none");
-        checkTimerRef.current = null;
-      }, 1400);
-    };
-    window.addEventListener("pwa:check-update", handleManualCheck);
-    return () => window.removeEventListener("pwa:check-update", handleManualCheck);
-  }, []);
 
-  useEffect(() => {
+      const seq = ++checkSeqRef.current;
+      setManualCheckState("checking");
+
+      void (async () => {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (!registration || seq !== checkSeqRef.current) return;
+
+          const waiting = await detectUpdateWaiting(registration);
+          if (seq !== checkSeqRef.current) return;
+
+          setManualCheckState(waiting ? "available" : "none");
+        } catch {
+          if (seq !== checkSeqRef.current) return;
+          setManualCheckState("none");
+        }
+      })();
+    };
+
+    window.addEventListener("pwa:check-update", handleManualCheck);
     return () => {
-      if (checkTimerRef.current !== null) {
-        window.clearTimeout(checkTimerRef.current);
-      }
+      checkSeqRef.current += 1;
+      window.removeEventListener("pwa:check-update", handleManualCheck);
     };
   }, []);
 
