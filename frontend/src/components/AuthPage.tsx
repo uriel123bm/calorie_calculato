@@ -2,8 +2,14 @@
  * Combined Login / Register screen.
  * Single component with an internal `mode` toggle — keeps bundle small.
  */
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { trackEvent } from "../services/analytics";
+
+function signupErrorMeta(err: unknown): { http_status?: number } {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+  return typeof status === "number" ? { http_status: status } : {};
+}
 
 type Mode = "login" | "register";
 
@@ -28,6 +34,10 @@ export function AuthPage() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
 
+  useEffect(() => {
+    trackEvent("auth_screen_viewed", { initial_tab: "login" });
+  }, []);
+
   const [email,    setEmail]    = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +51,13 @@ export function AuthPage() {
     setEmail(""); setUsername(""); setPassword(""); setConfirm(""); setError("");
   };
 
-  const switchMode = (next: Mode) => { clearForm(); setMode(next); };
+  const switchMode = (next: Mode) => {
+    if (next === "register") {
+      trackEvent("signup_tab_opened");
+    }
+    clearForm();
+    setMode(next);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -57,9 +73,13 @@ export function AuthPage() {
       if (mode === "login") {
         await login(email, password);
       } else {
+        trackEvent("signup_submit_attempted");
         await register(email, username, password);
       }
     } catch (err) {
+      if (mode === "register") {
+        trackEvent("signup_failed", signupErrorMeta(err));
+      }
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);

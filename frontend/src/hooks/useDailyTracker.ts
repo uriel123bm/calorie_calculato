@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { trackEvent } from "../services/analytics";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import { todayStr } from "../utils/date";
 import { coerceDailyTrackerState } from "../utils/syncMerge";
@@ -8,6 +9,10 @@ const storageKey = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const historyKey = (uid: string) => `user_${uid}:dailyHistory:v1`;
 export { todayStr };
 const MAX_HISTORY_DAYS = 30;
+
+function journalActivationKey(uid: string): string {
+  return `user_${uid}:journal_activation_sent:v1`;
+}
 
 function makeEntryId(): string {
   return Math.random().toString(36).slice(2, 11);
@@ -127,21 +132,44 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
     setState((prev) => ({ ...prev, targetCalories: Math.floor(target) }));
   }, []);
 
-  const addEntry = useCallback((input: DailyEntryInput) => {
-    const lines =
-      Array.isArray(input.lines) && input.lines.length > 0 ? input.lines : undefined;
-    const entry: DailyEntry = {
-      id: makeEntryId(),
-      name: input.name.trim() || "פריט",
-      calories: Math.max(0, input.calories || 0),
-      protein: Math.max(0, input.protein ?? 0),
-      carbohydrates: Math.max(0, input.carbohydrates ?? 0),
-      fat: Math.max(0, input.fat ?? 0),
-      addedAt: Date.now(),
-      ...(lines ? { lines } : {}),
-    };
-    setState((prev) => ({ ...prev, entries: [...prev.entries, entry] }));
-  }, []);
+  const addEntry = useCallback(
+    (input: DailyEntryInput) => {
+      const lines =
+        Array.isArray(input.lines) && input.lines.length > 0 ? input.lines : undefined;
+      const entry: DailyEntry = {
+        id: makeEntryId(),
+        name: input.name.trim() || "פריט",
+        calories: Math.max(0, input.calories || 0),
+        protein: Math.max(0, input.protein ?? 0),
+        carbohydrates: Math.max(0, input.carbohydrates ?? 0),
+        fat: Math.max(0, input.fat ?? 0),
+        addedAt: Date.now(),
+        ...(lines ? { lines } : {}),
+      };
+      try {
+        const actKey = journalActivationKey(userId);
+        if (!localStorage.getItem(actKey)) {
+          localStorage.setItem(actKey, "1");
+          trackEvent("journal_activation_completed", { surface: "daily_tracker" });
+        }
+      } catch {
+        /* ignore */
+      }
+      trackEvent("journal_entry_added", {
+        surface: "daily_tracker",
+        calories_band:
+          entry.calories <= 0
+            ? "zero"
+            : entry.calories < 200
+              ? "lt_200"
+              : entry.calories < 600
+                ? "lt_600"
+                : "gte_600",
+      });
+      setState((prev) => ({ ...prev, entries: [...prev.entries, entry] }));
+    },
+    [userId]
+  );
 
   const removeEntry = useCallback((id: string) => {
     setState((prev) => ({ ...prev, entries: prev.entries.filter((e) => e.id !== id) }));

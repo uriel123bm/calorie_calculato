@@ -33,6 +33,7 @@ from app.core.security import (
 )
 from app.db.database import get_db
 from app.db.models import RefreshToken, User
+from app.services.product_analytics import capture_user_signed_up
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -281,6 +282,8 @@ def register(body: RegisterIn, response: Response, db: Session = Depends(get_db)
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    capture_user_signed_up(user.id, user.username)
 
     access = create_access_token(user.id)
     refresh, _ = _create_refresh_session(db, user.id)

@@ -4,10 +4,12 @@ import * as Sentry from "@sentry/react";
 import App from "./App";
 import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
 import { AuthProvider } from "./context/AuthContext";
+import { initAnalytics } from "./services/analytics";
 import { registerServiceWorkerLifecycle } from "./registerSwLifecycle";
 import "./styles/App.css";
 
 registerServiceWorkerLifecycle();
+initAnalytics();
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 if (sentryDsn) {

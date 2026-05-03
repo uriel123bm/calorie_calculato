@@ -32,6 +32,9 @@ class Settings:
     sentry_dsn: str
     sentry_environment: str
     sentry_traces_sample_rate: float
+    # PostHog (optional) — same project as frontend VITE_POSTHOG_KEY
+    posthog_api_key: str
+    posthog_host: str
 
 
 def _parse_origins(raw: str) -> list[str]:
@@ -73,6 +76,10 @@ def get_settings() -> Settings:
         sentry_dsn=os.getenv("SENTRY_DSN", "").strip(),
         sentry_environment=environment,
         sentry_traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
+        posthog_api_key=os.getenv("POSTHOG_API_KEY", "").strip(),
+        posthog_host=(
+            os.getenv("POSTHOG_HOST", "").strip() or "https://eu.i.posthog.com"
+        ),
     )
 
 

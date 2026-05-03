@@ -26,6 +26,7 @@ import {
   AuthUser,
   setAccessToken,
 } from "../services/api";
+import { identifyUser, resetAnalytics } from "../services/analytics";
 import { pullSync, setSyncUserId } from "../services/sync";
 
 const USER_CACHE_KEY = "auth:cachedUser";
@@ -85,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // When the refresh token is gone/invalid, axios clears the session; sync UI to login.
   useEffect(() => {
     const onSessionExpired = () => {
+      resetAnalytics();
       setAccessToken(null);
       saveCachedUser(null);
       setState({ user: null, loading: false });
@@ -116,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restore()
       .then(({ user, access_token }) => {
         if (access_token) setAccessToken(access_token);
+        identifyUser(user.id, { username: user.username });
         saveCachedUser(user);
         setState({ user, loading: false });
         void pullSync(user.id);
@@ -124,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const status = err?.response?.status;
         if (status === 401) {
           // Both /auth/me and /auth/refresh rejected — must log in again.
+          resetAnalytics();
           setAccessToken(null);
           saveCachedUser(null);
           setState({ user: null, loading: false });
@@ -136,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const { access_token, user } = await apiLogin(email, password);
+    identifyUser(user.id, { username: user.username });
     setAccessToken(access_token);
     saveCachedUser(user);
     setState({ user, loading: false });
@@ -145,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (email: string, username: string, password: string) => {
       const { access_token, user } = await apiRegister(email, username, password);
+      identifyUser(user.id, { username: user.username });
       setAccessToken(access_token);
       saveCachedUser(user);
       setState({ user, loading: false });
@@ -155,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try { await apiLogout(); } catch { /* ignore */ }
+    resetAnalytics();
     setAccessToken(null);
     saveCachedUser(null);
     setState({ user: null, loading: false });
