@@ -10,6 +10,7 @@ import { PdfExportButton } from "./components/PdfExportButton";
 import { ProgressPage } from "./components/ProgressPage";
 import { RecipeNameInput } from "./components/RecipeNameInput";
 import { RecipeSummary } from "./components/RecipeSummary";
+import { HomeHeroIcon } from "./components/HomeHeroIcon";
 import { useAuth } from "./context/AuthContext";
 import { useBodyMetrics } from "./hooks/useBodyMetrics";
 import { useDailyTracker } from "./hooks/useDailyTracker";
@@ -23,7 +24,7 @@ import { divideTotalsByServings } from "./utils/nutritionMath";
 type TabId = "home" | "recipe" | "meals" | "products" | "progress" | "journal";
 
 const TABS: { id: TabId; icon: string; label: string }[] = [
-  { id: "home",     icon: "monitoring",      label: "ראשי"     },
+  { id: "home",     icon: "home", label: "ראשי" },
   { id: "recipe",   icon: "restaurant_menu", label: "מתכון"    },
   { id: "meals",    icon: "lunch_dining",    label: "ארוחות"   },
   { id: "products", icon: "inventory_2",     label: "מוצרים"   },
@@ -634,7 +635,11 @@ function AppShell({
             onClick={() => setActiveTab(tab.id)}
             aria-label={tab.label}
           >
-            <span className="material-symbols-outlined">{tab.icon}</span>
+            {tab.id === "home" ? (
+              <HomeHeroIcon variant="tab" />
+            ) : (
+              <span className="material-symbols-outlined">{tab.icon}</span>
+            )}
             {tab.label}
           </button>
         ))}

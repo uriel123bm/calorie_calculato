@@ -11,6 +11,7 @@ import type {
 } from "../types";
 import type { GoalTipsInput } from "../utils/goalTips";
 import { GoalTipsCard } from "./GoalTipsCard";
+import { HomeHeroIcon } from "./HomeHeroIcon";
 import { UNITS } from "../types";
 import {
   findPersonalProductByName,
@@ -382,8 +383,10 @@ export function DailyTracker({
         </p>
       )}
       {/* Page hero */}
-      <div className="page-hero">
-        <span className="material-symbols-outlined page-hero-icon">monitoring</span>
+      <div className="page-hero page-hero--home">
+        <div className="home-hero-emblem" aria-hidden="true">
+          <HomeHeroIcon variant="hero" size={56} />
+        </div>
         <div>
           <h2 className="page-title">קלוריות היומיות</h2>
           <p className="page-subtitle">עקוב אחרי מה שאכלת היום</p>

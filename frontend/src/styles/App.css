@@ -173,6 +173,55 @@ body {
   flex-shrink: 0;
 }
 
+/* ראשי — אמבלם SVG מותאם (עלה + אריח ירוק) */
+.page-hero--home {
+  align-items: center;
+}
+
+.home-hero-emblem {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  animation: home-hero-breathe 3.2s ease-in-out infinite;
+}
+
+.home-hero-emblem .home-hero-svg {
+  display: block;
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 4px 14px rgba(15, 82, 56, 0.28));
+  transition: filter 0.2s ease;
+}
+
+@keyframes home-hero-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-emblem {
+    animation: none;
+  }
+}
+
+/* סמל ראשי בניווח תחתון */
+.bottom-nav button .home-hero-svg--tab {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  opacity: 0.88;
+  filter: drop-shadow(0 1px 3px rgba(15, 82, 56, 0.15));
+}
+
+.bottom-nav button.active .home-hero-svg--tab {
+  opacity: 1;
+  filter: drop-shadow(0 2px 6px rgba(15, 82, 56, 0.28));
+}
+
 .page-title {
   font-family: var(--font-head);
   font-size: 26px;
