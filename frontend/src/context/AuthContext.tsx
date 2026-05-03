@@ -154,6 +154,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(access_token);
       saveCachedUser(user);
       setState({ user, loading: false });
+      try {
+        sessionStorage.setItem("auth:showOnboarding", "1");
+      } catch {
+        /* ignore */
+      }
       void pullSync(user.id);
     },
     []

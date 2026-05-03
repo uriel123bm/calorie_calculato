@@ -10,7 +10,8 @@ import {
   YAxis,
 } from "recharts";
 import type { BodyOnboarding, UseBodyMetricsResult } from "../hooks/useBodyMetrics";
-import type { BodyMetrics, Goal, Sex } from "../types";
+import type { BodyCircumferences, BodyMetrics, Goal, Sex } from "../types";
+import { GoalTipsCard } from "./GoalTipsCard";
 import { todayStr } from "../utils/date";
 
 interface Props {
@@ -208,11 +209,23 @@ function OnboardingForm({
 function AddWeightRow({
   onAdd,
 }: {
-  onAdd: (weight: number, date?: string) => void;
+  onAdd: (weight: number, date?: string, circumferences?: BodyCircumferences) => void;
 }) {
   const [weight, setWeight] = useState<number | "">("");
   const [date, setDate]     = useState<string>(todayStr());
+  const [waistCm, setWaistCm] = useState<number | "">("");
+  const [hipsCm, setHipsCm] = useState<number | "">("");
+  const [chestCm, setChestCm] = useState<number | "">("");
   const [feedback, setFeedback] = useState("");
+
+  const num =
+    (setter: (v: number | "") => void) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value;
+      if (raw === "") return setter("");
+      const n = Number(raw.replace(",", "."));
+      if (Number.isFinite(n) && n >= 0) setter(n);
+    };
 
   const handleAdd = () => {
     const w = typeof weight === "number" ? weight : 0;
@@ -221,47 +234,96 @@ function AddWeightRow({
       setTimeout(() => setFeedback(""), 2500);
       return;
     }
-    onAdd(w, date);
+    const circumferences: BodyCircumferences = {};
+    if (typeof waistCm === "number" && waistCm > 0) circumferences.waistCm = waistCm;
+    if (typeof hipsCm === "number" && hipsCm > 0) circumferences.hipsCm = hipsCm;
+    if (typeof chestCm === "number" && chestCm > 0) circumferences.chestCm = chestCm;
+    const hasCirc = Object.keys(circumferences).length > 0;
+    onAdd(w, date, hasCirc ? circumferences : undefined);
     setWeight("");
+    setWaistCm("");
+    setHipsCm("");
+    setChestCm("");
     setFeedback("נשמר!");
     setTimeout(() => setFeedback(""), 1500);
   };
 
   return (
-    <div className="weight-add-row">
-      <label className="product-form-label">
-        תאריך
-        <input
-          type="date"
-          value={date}
-          max={todayStr()}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </label>
-      <label className="product-form-label">
-        משקל (ק"ג)
-        <input
-          type="number"
-          min={20}
-          max={400}
-          step="0.1"
-          placeholder="70.5"
-          value={weight === "" ? "" : weight}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === "") return setWeight("");
-            const num = Number(raw.replace(",", "."));
-            if (Number.isFinite(num) && num >= 0) setWeight(num);
-          }}
-        />
-      </label>
-      <button type="button" className="primary weight-add-btn" onClick={handleAdd}>
-        <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>
-          add_circle
-        </span>
-        הוסף מדידה
-      </button>
-      {feedback && <span className="product-feedback ok">{feedback}</span>}
+    <div className="weight-add-stack">
+      <div className="weight-add-row">
+        <label className="product-form-label">
+          תאריך
+          <input
+            type="date"
+            value={date}
+            max={todayStr()}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
+        <label className="product-form-label">
+          משקל (ק"ג)
+          <input
+            type="number"
+            min={20}
+            max={400}
+            step="0.1"
+            placeholder="70.5"
+            value={weight === "" ? "" : weight}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") return setWeight("");
+              const n = Number(raw.replace(",", "."));
+              if (Number.isFinite(n) && n >= 0) setWeight(n);
+            }}
+          />
+        </label>
+        <button type="button" className="primary weight-add-btn" onClick={handleAdd}>
+          <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>
+            add_circle
+          </span>
+          הוסף מדידה
+        </button>
+        {feedback && <span className="product-feedback ok">{feedback}</span>}
+      </div>
+      <p className="weight-circ-hint">היקפים (אופציונלי, ס"מ) — למעקב אחרי מותן, ירכיים וחזה</p>
+      <div className="weight-add-row weight-circ-row">
+        <label className="product-form-label">
+          מותן
+          <input
+            type="number"
+            min={1}
+            max={300}
+            step="0.1"
+            placeholder="—"
+            value={waistCm === "" ? "" : waistCm}
+            onChange={num(setWaistCm)}
+          />
+        </label>
+        <label className="product-form-label">
+          ירכיים
+          <input
+            type="number"
+            min={1}
+            max={300}
+            step="0.1"
+            placeholder="—"
+            value={hipsCm === "" ? "" : hipsCm}
+            onChange={num(setHipsCm)}
+          />
+        </label>
+        <label className="product-form-label">
+          חזה
+          <input
+            type="number"
+            min={1}
+            max={300}
+            step="0.1"
+            placeholder="—"
+            value={chestCm === "" ? "" : chestCm}
+            onChange={num(setChestCm)}
+          />
+        </label>
+      </div>
     </div>
   );
 }
@@ -350,6 +412,133 @@ function WeightChart({ metrics }: { metrics: BodyMetrics }) {
   );
 }
 
+function lastCircumferences(metrics: BodyMetrics): BodyCircumferences | null {
+  for (let i = metrics.log.length - 1; i >= 0; i--) {
+    const c = metrics.log[i].circumferences;
+    if (!c) continue;
+    if (c.waistCm || c.hipsCm || c.chestCm) return c;
+  }
+  return null;
+}
+
+function CircumferenceChart({ metrics }: { metrics: BodyMetrics }) {
+  const entriesWithCirc = useMemo(
+    () =>
+      metrics.log.filter(
+        (e) =>
+          e.circumferences &&
+          (e.circumferences.waistCm ||
+            e.circumferences.hipsCm ||
+            e.circumferences.chestCm)
+      ),
+    [metrics.log]
+  );
+
+  const data = useMemo(
+    () =>
+      entriesWithCirc.map((e) => ({
+        label: formatChartDate(e.date),
+        waist: e.circumferences?.waistCm,
+        hips: e.circumferences?.hipsCm,
+        chest: e.circumferences?.chestCm,
+      })),
+    [entriesWithCirc]
+  );
+
+  if (entriesWithCirc.length === 0) {
+    return (
+      <p className="hint">
+        כשתזינו מותן, ירכיים או חזה יחד עם מדידת משקל — הם יופיעו כאן.
+      </p>
+    );
+  }
+
+  if (entriesWithCirc.length < 2) {
+    return (
+      <p className="hint circ-chart-hint">
+        נשמרה מדידת היקפים אחת. אחרי מדידה נוספת יוצג גרף מגמה.
+      </p>
+    );
+  }
+
+  return (
+    <div className="circ-chart-wrap">
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={data} margin={{ top: 16, right: 8, left: 8, bottom: 8 }}>
+          <CartesianGrid stroke="rgba(21, 101, 192, 0.12)" strokeDasharray="3 3" />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: "#3a5a40" }}
+            tickMargin={6}
+          />
+          <YAxis
+            domain={["auto", "auto"]}
+            tick={{ fontSize: 11, fill: "#3a5a40" }}
+            width={40}
+          />
+          <Tooltip
+            formatter={(value, name) => {
+              const raw =
+                typeof value === "number"
+                  ? value
+                  : typeof value === "string"
+                    ? Number(value)
+                    : NaN;
+              const v = Number.isFinite(raw) ? raw : null;
+              const seriesLabel =
+                name === "waist"
+                  ? "מותן"
+                  : name === "hips"
+                    ? "ירכיים"
+                    : name === "chest"
+                      ? "חזה"
+                      : String(name);
+              return [v != null ? `${v.toFixed(1)} ס"מ` : "—", seriesLabel];
+            }}
+            labelFormatter={(label) => String(label ?? "")}
+            contentStyle={{
+              direction: "rtl",
+              borderRadius: 12,
+              border: "1px solid rgba(21, 101, 192, 0.25)",
+              fontSize: 13,
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="waist"
+            name="מותן"
+            stroke="#1565c0"
+            strokeWidth={2}
+            dot={{ fill: "#1565c0", r: 3 }}
+            connectNulls
+            isAnimationActive
+          />
+          <Line
+            type="monotone"
+            dataKey="hips"
+            name="ירכיים"
+            stroke="#6a1b9a"
+            strokeWidth={2}
+            dot={{ fill: "#6a1b9a", r: 3 }}
+            connectNulls
+            isAnimationActive
+          />
+          <Line
+            type="monotone"
+            dataKey="chest"
+            name="חזה"
+            stroke="#c62828"
+            strokeWidth={2}
+            dot={{ fill: "#c62828", r: 3 }}
+            connectNulls
+            isAnimationActive
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────
 export function ProgressPage({ body }: Props) {
   const { metrics, setOnboarding, addWeight, removeWeight, reset } = body;
@@ -383,6 +572,7 @@ export function ProgressPage({ body }: Props) {
   const delta = metrics.currentWeightKg - metrics.startWeightKg;
   const goalDelta =
     metrics.goalWeightKg != null ? metrics.currentWeightKg - metrics.goalWeightKg : null;
+  const circSnap = lastCircumferences(metrics);
 
   return (
     <div className="page-container">
@@ -454,18 +644,69 @@ export function ProgressPage({ body }: Props) {
 
       <section className="section">
         <h2>
+          <span className="material-symbols-outlined">add_circle</span>
+          עדכון מדידה
+        </h2>
+        <AddWeightRow onAdd={addWeight} />
+      </section>
+
+      <section className="section">
+        <h2>
           <span className="material-symbols-outlined">show_chart</span>
           גרף משקל
         </h2>
         <WeightChart metrics={metrics} />
       </section>
 
+      <div className="section">
+        <GoalTipsCard
+          variant="full"
+          input={{
+            goal: metrics.goal,
+            currentWeightKg: metrics.currentWeightKg,
+            goalWeightKg: metrics.goalWeightKg ?? null,
+            heightCm: metrics.heightCm,
+          }}
+        />
+      </div>
+
       <section className="section">
         <h2>
-          <span className="material-symbols-outlined">add_circle</span>
-          עדכון מדידה
+          <span className="material-symbols-outlined">straighten</span>
+          מעקב היקפים
         </h2>
-        <AddWeightRow onAdd={addWeight} />
+        <p className="hint circ-section-intro">
+          שדות ההיקף מופיעים יחד עם מדידת המשקל. רק מי שמעוניין צריך למלא.
+        </p>
+        {circSnap && (
+          <div className="circ-snapshot-grid">
+            {circSnap.waistCm != null && (
+              <div className="progress-stat-card circ-snap-card">
+                <span className="progress-stat-label">מותן (אחרון)</span>
+                <span className="progress-stat-value">
+                  {circSnap.waistCm.toFixed(1)} <small>ס"מ</small>
+                </span>
+              </div>
+            )}
+            {circSnap.hipsCm != null && (
+              <div className="progress-stat-card circ-snap-card">
+                <span className="progress-stat-label">ירכיים (אחרון)</span>
+                <span className="progress-stat-value">
+                  {circSnap.hipsCm.toFixed(1)} <small>ס"מ</small>
+                </span>
+              </div>
+            )}
+            {circSnap.chestCm != null && (
+              <div className="progress-stat-card circ-snap-card">
+                <span className="progress-stat-label">חזה (אחרון)</span>
+                <span className="progress-stat-value">
+                  {circSnap.chestCm.toFixed(1)} <small>ס"מ</small>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        <CircumferenceChart metrics={metrics} />
       </section>
 
       <section className="section">
@@ -480,8 +721,34 @@ export function ProgressPage({ body }: Props) {
             {[...metrics.log].reverse().map((entry) => (
               <li key={entry.date} className="weight-log-row">
                 <span className="weight-log-date">{formatChartDate(entry.date)}</span>
-                <span className="weight-log-weight">
-                  {entry.weightKg.toFixed(1)} ק"ג
+                <span className="weight-log-main">
+                  <span className="weight-log-weight">
+                    {entry.weightKg.toFixed(1)} ק"ג
+                  </span>
+                  {entry.circumferences &&
+                    (entry.circumferences.waistCm ||
+                      entry.circumferences.hipsCm ||
+                      entry.circumferences.chestCm) && (
+                      <span className="weight-log-circ">
+                        {entry.circumferences.waistCm != null && (
+                          <>מותן {entry.circumferences.waistCm.toFixed(1)}</>
+                        )}
+                        {entry.circumferences.waistCm != null &&
+                          (entry.circumferences.hipsCm != null ||
+                            entry.circumferences.chestCm != null) &&
+                          " · "}
+                        {entry.circumferences.hipsCm != null && (
+                          <>ירכיים {entry.circumferences.hipsCm.toFixed(1)}</>
+                        )}
+                        {entry.circumferences.hipsCm != null &&
+                          entry.circumferences.chestCm != null &&
+                          " · "}
+                        {entry.circumferences.chestCm != null && (
+                          <>חזה {entry.circumferences.chestCm.toFixed(1)}</>
+                        )}
+                        <span className="weight-log-circ-unit"> ס"מ</span>
+                      </span>
+                    )}
                 </span>
                 <button
                   type="button"

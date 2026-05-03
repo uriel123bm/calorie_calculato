@@ -2555,6 +2555,296 @@ button.pill {
   gap: 8px;
 }
 
+/* יומן — לוח שנה */
+.journal-calendar-section {
+  margin-top: 8px;
+}
+
+.journal-calendar-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.journal-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.journal-cal-nav-btn {
+  padding: 8px 10px;
+  min-width: 44px;
+}
+
+.journal-cal-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.journal-cal-title {
+  font-size: 1.05rem;
+  color: var(--primary-deep);
+}
+
+.journal-cal-today-link {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+.journal-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--on-surface-var);
+  opacity: 0.85;
+}
+
+.journal-cal-weekday {
+  padding: 4px 0;
+}
+
+.journal-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.journal-cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  max-height: 52px;
+  border-radius: 12px;
+  border: 1px solid rgba(93, 184, 118, 0.2);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-deep);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+}
+
+.journal-cal-day--empty {
+  border: none;
+  background: transparent;
+  pointer-events: none;
+  cursor: default;
+}
+
+.journal-cal-day--data {
+  background: rgba(93, 184, 118, 0.14);
+  border-color: rgba(93, 184, 118, 0.35);
+}
+
+.journal-cal-day--today {
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.55);
+}
+
+.journal-cal-day:focus-visible {
+  outline: 2px solid var(--primary-deep);
+  outline-offset: 2px;
+}
+
+.journal-cal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-deep);
+  opacity: 0.65;
+}
+
+.journal-calendar-empty-msg {
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.journal-day-overlay {
+  align-items: center;
+  padding-bottom: calc(var(--nav-h) + 20px);
+}
+
+.journal-day-modal {
+  max-height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.journal-modal-body {
+  overflow-y: auto;
+  flex: 1;
+  margin-top: 4px;
+  padding-inline: 2px;
+}
+
+.journal-modal-body .journal-day-block {
+  margin-top: 0;
+}
+
+.journal-modal-body .journal-day-block.today {
+  border-radius: 14px;
+}
+
+/* התקדמות — היקפים */
+.weight-add-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.weight-circ-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--on-surface-var);
+}
+
+.weight-circ-row {
+  margin-top: 0;
+}
+
+.circ-section-intro {
+  margin: 0 0 14px;
+}
+
+.circ-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.circ-snap-card {
+  text-align: center;
+}
+
+.circ-chart-wrap {
+  margin-top: 4px;
+}
+
+.circ-chart-hint {
+  margin: 0;
+}
+
+/* טיפים לפי מטרה / משקל */
+.goal-tips-card {
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(93, 184, 118, 0.28);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.92),
+    rgba(236, 253, 241, 0.65)
+  );
+}
+
+.goal-tips-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.goal-tips-card-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-tips-card-sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--on-surface-var);
+  opacity: 0.88;
+}
+
+.goal-tips-card-icon {
+  font-size: 22px;
+  color: var(--primary-deep);
+  opacity: 0.9;
+}
+
+.goal-tips-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.goal-tips-list {
+  margin: 0;
+  padding: 0 18px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(15, 52, 36, 0.92);
+}
+
+.goal-tips-list li {
+  margin-bottom: 8px;
+}
+
+.goal-tips-list li:last-child {
+  margin-bottom: 0;
+}
+
+.goal-tips-disclaimer {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--on-surface-var);
+  opacity: 0.85;
+}
+
+.goal-tips-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(93, 184, 118, 0.22);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.goal-tips-strip-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-tips-strip-icon {
+  font-size: 22px;
+  color: #2e7d32;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.goal-tips-strip-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(15, 52, 36, 0.95);
+}
+
+.goal-tips-strip-meta {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--on-surface-var);
+  opacity: 0.82;
+}
+
 /* =========================================================
    Responsive
    ========================================================= */
@@ -3108,7 +3398,7 @@ html, body {
 
 .weight-log-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -3123,10 +3413,29 @@ html, body {
   font-weight: 600;
 }
 
+.weight-log-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .weight-log-weight {
   font-size: 14px;
   font-weight: 700;
   color: var(--primary-deep);
+}
+
+.weight-log-circ {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(15, 82, 56, 0.78);
+  line-height: 1.35;
+}
+
+.weight-log-circ-unit {
+  font-size: 11px;
+  opacity: 0.88;
 }
 
 .progress-danger-zone {

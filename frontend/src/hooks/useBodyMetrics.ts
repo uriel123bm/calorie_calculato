@@ -1,9 +1,49 @@
 import { useCallback, useEffect, useState } from "react";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
-import type { BodyMetrics, WeightLogEntry } from "../types";
+import type { BodyCircumferences, BodyMetrics, WeightLogEntry } from "../types";
 import { todayStr } from "../utils/date";
 
 const storageKey = (uid: string) => `user_${uid}:body:v1`;
+
+function pickCirc(
+  c: BodyCircumferences | undefined
+): BodyCircumferences | undefined {
+  if (!c) return undefined;
+  const out: BodyCircumferences = {};
+  if (
+    c.waistCm != null &&
+    Number.isFinite(c.waistCm) &&
+    c.waistCm > 0
+  ) {
+    out.waistCm = c.waistCm;
+  }
+  if (
+    c.hipsCm != null &&
+    Number.isFinite(c.hipsCm) &&
+    c.hipsCm > 0
+  ) {
+    out.hipsCm = c.hipsCm;
+  }
+  if (
+    c.chestCm != null &&
+    Number.isFinite(c.chestCm) &&
+    c.chestCm > 0
+  ) {
+    out.chestCm = c.chestCm;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** ערכים חדשים דורסים; אם לא הוזנו היקפים בעדכון — נשמרים מהמדידה הקודמת לאותו יום. */
+function normalizeCircumferences(
+  prev?: BodyCircumferences,
+  next?: BodyCircumferences
+): BodyCircumferences | undefined {
+  const n = pickCirc(next);
+  const p = pickCirc(prev);
+  if (n && Object.keys(n).length) return { ...p, ...n };
+  return p;
+}
 
 function load(uid: string): BodyMetrics | null {
   try {
@@ -49,7 +89,11 @@ export interface UseBodyMetricsResult {
   updateMetrics: (
     patch: Partial<Omit<BodyMetrics, "log" | "createdAt">>
   ) => void;
-  addWeight: (weightKg: number, date?: string) => void;
+  addWeight: (
+    weightKg: number,
+    date?: string,
+    circumferences?: BodyCircumferences
+  ) => void;
   removeWeight: (date: string) => void;
   reset: () => void;
 }
@@ -133,13 +177,23 @@ export function useBodyMetrics(userId: string): UseBodyMetricsResult {
   );
 
   const addWeight = useCallback(
-    (weightKg: number, date?: string) => {
+    (weightKg: number, date?: string, circumferences?: BodyCircumferences) => {
       if (!Number.isFinite(weightKg) || weightKg <= 0) return;
       const current = load(userId);
       if (!current) return;
       const isoDate = date ?? todayStr();
+      const prevEntry = current.log.find((e) => e.date === isoDate);
+      const mergedCirc = normalizeCircumferences(
+        prevEntry?.circumferences,
+        circumferences
+      );
       const filtered = current.log.filter((e) => e.date !== isoDate);
-      const log = [...filtered, { date: isoDate, weightKg }].sort((a, b) =>
+      const entry: WeightLogEntry = {
+        date: isoDate,
+        weightKg,
+        ...(mergedCirc ? { circumferences: mergedCirc } : {}),
+      };
+      const log = [...filtered, entry].sort((a, b) =>
         a.date.localeCompare(b.date)
       );
       const last = log[log.length - 1];

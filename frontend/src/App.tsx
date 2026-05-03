@@ -113,10 +113,11 @@ function AppShell({
     };
   }, []);
 
+  /** הדרכה מוצגת רק אחרי הרשמה מוצלחת (לא אחרי התחברות). */
   useEffect(() => {
     try {
-      const alreadySeen = localStorage.getItem(onboardingSeenKey(userId));
-      if (!alreadySeen) {
+      if (sessionStorage.getItem("auth:showOnboarding") === "1") {
+        sessionStorage.removeItem("auth:showOnboarding");
         setShowOnboarding(true);
         setOnboardingStep(0);
         setDontShowOnboardingAgain(false);
@@ -408,6 +409,16 @@ function AppShell({
             removeEntry={daily.removeEntry}
             resetDay={daily.resetDay}
             personalProducts={userProducts.products}
+            goalTipsContext={
+              body.metrics
+                ? {
+                    goal: body.metrics.goal,
+                    currentWeightKg: body.metrics.currentWeightKg,
+                    goalWeightKg: body.metrics.goalWeightKg ?? null,
+                    heightCm: body.metrics.heightCm,
+                  }
+                : null
+            }
           />
         )}
 

@@ -166,9 +166,17 @@ export interface UserProduct {
 export type Sex = "male" | "female" | "other";
 export type Goal = "lose" | "cut" | "maintain" | "gain";
 
+/** היקפי גוף בס״מ — אופציונלי, לפי בחירת המשתמש יחד עם מדידת משקל. */
+export interface BodyCircumferences {
+  waistCm?: number;
+  hipsCm?: number;
+  chestCm?: number;
+}
+
 export interface WeightLogEntry {
   date: string;     // YYYY-MM-DD
   weightKg: number;
+  circumferences?: BodyCircumferences;
 }
 
 export interface BodyMetrics {

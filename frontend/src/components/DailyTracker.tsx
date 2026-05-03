@@ -9,6 +9,8 @@ import type {
   NutritionSource,
   UserProduct,
 } from "../types";
+import type { GoalTipsInput } from "../utils/goalTips";
+import { GoalTipsCard } from "./GoalTipsCard";
 import { UNITS } from "../types";
 import {
   findPersonalProductByName,
@@ -34,6 +36,8 @@ interface Props {
   resetDay: () => void;
   /** Personal library — shown as quick-add chips when non-empty. */
   personalProducts?: UserProduct[];
+  /** טיפים יומיים לפי מטרה/משקל — רק אם הוגדר פרופיל בהתקדמות */
+  goalTipsContext?: GoalTipsInput | null;
 }
 
 /**
@@ -126,6 +130,7 @@ export function DailyTracker({
   removeEntry,
   resetDay,
   personalProducts = [],
+  goalTipsContext = null,
 }: Props) {
   // Manual entry state
   const [mName, setMName] = useState("");
@@ -384,6 +389,10 @@ export function DailyTracker({
           <p className="page-subtitle">עקוב אחרי מה שאכלת היום</p>
         </div>
       </div>
+
+      {goalTipsContext && (
+        <GoalTipsCard input={goalTipsContext} variant="compact" />
+      )}
 
       {personalProducts.length > 0 && (
         <div className="section tracker-quick-products">

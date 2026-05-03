@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DailyEntry, DailyTrackerState, DayLog } from "../types";
 
 interface Props {
@@ -23,6 +23,13 @@ function formatDate(dateStr: string): string {
     month: "long",
   });
 }
+
+function formatMonthTitle(d: Date): string {
+  return d.toLocaleDateString("he-IL", { month: "long", year: "numeric" });
+}
+
+/** יום ראשון עד שבת — תואם ל-getDay() */
+const WEEKDAY_LABELS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 
 function DayTotals({ entries }: { entries: DailyEntry[] }) {
   const t = entries.reduce(
@@ -148,7 +155,6 @@ function DayBlock({
         </div>
       </div>
 
-      {/* progress bar */}
       <div className="journal-day-bar">
         <div
           className={`journal-day-fill${over ? " over" : ""}`}
@@ -175,9 +181,82 @@ function DayBlock({
   );
 }
 
+function resolveDayLog(
+  dateStr: string,
+  today: DailyTrackerState,
+  history: DayLog[]
+): DayLog | null {
+  if (dateStr === today.date) {
+    return {
+      date: today.date,
+      targetCalories: today.targetCalories,
+      entries: today.entries,
+    };
+  }
+  return history.find((h) => h.date === dateStr) ?? null;
+}
+
+function isoDateInMonth(year: number, month0: number, day: number): string {
+  const m = String(month0 + 1).padStart(2, "0");
+  const d = String(day).padStart(2, "0");
+  return `${year}-${m}-${d}`;
+}
+
 export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props) {
-  const todayInHistory = history.find((h) => h.date === today.date);
-  const pastDays = history.filter((h) => h.date !== today.date);
+  const [viewMonth, setViewMonth] = useState(() => {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const datesWithData = useMemo(() => {
+    const set = new Set<string>();
+    for (const h of history) {
+      if (h.entries.length > 0) set.add(h.date);
+    }
+    if (today.entries.length > 0) set.add(today.date);
+    return set;
+  }, [history, today.date, today.entries.length]);
+
+  const year = viewMonth.getFullYear();
+  const monthIndex = viewMonth.getMonth();
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  const firstWeekday = new Date(year, monthIndex, 1).getDay();
+
+  const calendarCells = useMemo(() => {
+    const cells: Array<{ dateStr: string | null; inMonth: boolean }> = [];
+    for (let i = 0; i < firstWeekday; i++) {
+      cells.push({ dateStr: null, inMonth: false });
+    }
+    for (let day = 1; day <= lastDay; day++) {
+      cells.push({
+        dateStr: isoDateInMonth(year, monthIndex, day),
+        inMonth: true,
+      });
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push({ dateStr: null, inMonth: false });
+    }
+    return cells;
+  }, [year, monthIndex, lastDay, firstWeekday]);
+
+  const goPrevMonth = () => {
+    setViewMonth(new Date(year, monthIndex - 1, 1));
+  };
+
+  const goNextMonth = () => {
+    setViewMonth(new Date(year, monthIndex + 1, 1));
+  };
+
+  const goThisMonth = () => {
+    const t = new Date();
+    setViewMonth(new Date(t.getFullYear(), t.getMonth(), 1));
+  };
+
+  const selectedLog =
+    selectedDate != null ? resolveDayLog(selectedDate, today, history) : null;
+
+  const hasArchivedMeals = history.some((h) => h.entries.length > 0);
 
   return (
     <div className="page-container">
@@ -185,7 +264,7 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
         <span className="material-symbols-outlined page-hero-icon">menu_book</span>
         <div>
           <h2 className="page-title">יומן ארוחות</h2>
-          <p className="page-subtitle">מעקב אחרי כל מה שאכלת, יום אחר יום</p>
+          <p className="page-subtitle">היום בפירוט — ימים קודמים בלוח השנה</p>
         </div>
       </div>
 
@@ -198,23 +277,111 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
         onResetDay={onResetDay}
       />
 
-      {/* Today already in history (archived duplicate) is skipped via todayInHistory */}
-      {todayInHistory === undefined && pastDays.length === 0 && (
-        <div className="journal-no-history">
-          <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.3 }}>history</span>
-          <p>אין היסטוריה קודמת. היא תיבנה אוטומטית כל יום.</p>
+      <section className="section journal-calendar-section">
+        <h2>
+          <span className="material-symbols-outlined">calendar_month</span>
+          לוח שנה
+        </h2>
+        <p className="hint journal-calendar-hint">
+          ימים עם רשומות מסומנים. לחצו על יום כדי לראות מה נאכל.
+        </p>
+
+        <div className="journal-cal-nav">
+          <button type="button" className="ghost journal-cal-nav-btn" onClick={goPrevMonth} aria-label="חודש קודם">
+            <span className="material-symbols-outlined">chevron_right</span>
+          </button>
+          <div className="journal-cal-title-wrap">
+            <strong className="journal-cal-title">{formatMonthTitle(viewMonth)}</strong>
+            <button type="button" className="ghost journal-cal-today-link" onClick={goThisMonth}>
+              חודש נוכחי
+            </button>
+          </div>
+          <button type="button" className="ghost journal-cal-nav-btn" onClick={goNextMonth} aria-label="חודש הבא">
+            <span className="material-symbols-outlined">chevron_left</span>
+          </button>
+        </div>
+
+        <div className="journal-cal-weekdays" aria-hidden="true">
+          {WEEKDAY_LABELS.map((l) => (
+            <div key={l} className="journal-cal-weekday">
+              {l}
+            </div>
+          ))}
+        </div>
+
+        <div className="journal-cal-grid" role="grid" aria-label="לוח שנה">
+          {calendarCells.map((cell, idx) => {
+            if (!cell.dateStr) {
+              return <div key={`pad-${idx}`} className="journal-cal-day journal-cal-day--empty" />;
+            }
+            const hasData = datesWithData.has(cell.dateStr);
+            const isTodayCell = cell.dateStr === today.date;
+            return (
+              <button
+                key={cell.dateStr}
+                type="button"
+                className={`journal-cal-day${hasData ? " journal-cal-day--data" : ""}${isTodayCell ? " journal-cal-day--today" : ""}`}
+                onClick={() => setSelectedDate(cell.dateStr)}
+              >
+                <span className="journal-cal-day-num">
+                  {Number(cell.dateStr.slice(8, 10))}
+                </span>
+                {hasData && <span className="journal-cal-dot" aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+
+        {!hasArchivedMeals && (
+          <p className="journal-no-history journal-calendar-empty-msg">
+            אין עדיין ימים קודמים בארכיון. היסטוריה נצברת אוטומטית מדי לילה.
+          </p>
+        )}
+      </section>
+
+      {selectedDate && (
+        <div
+          className="onboarding-overlay journal-day-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="פירוט יום"
+          onClick={() => setSelectedDate(null)}
+        >
+          <div
+            className="onboarding-card journal-day-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="onboarding-head">
+              <strong>
+                {selectedDate === today.date ? "היום" : formatDate(selectedDate)}
+              </strong>
+              <button type="button" className="ghost onboarding-close" onClick={() => setSelectedDate(null)}>
+                סגור
+              </button>
+            </div>
+            {selectedLog ? (
+              <div className="journal-modal-body">
+                <DayBlock
+                  dateStr={selectedLog.date}
+                  entries={selectedLog.entries}
+                  targetCalories={selectedLog.targetCalories}
+                  isToday={selectedDate === today.date}
+                  onRemoveEntry={
+                    selectedDate === today.date ? onRemoveEntry : undefined
+                  }
+                  onResetDay={
+                    selectedDate === today.date ? onResetDay : undefined
+                  }
+                />
+              </div>
+            ) : (
+              <p className="journal-empty" style={{ margin: "12px 0 0" }}>
+                אין נתונים ליום זה.
+              </p>
+            )}
+          </div>
         </div>
       )}
-
-      {pastDays.map((day) => (
-        <DayBlock
-          key={day.date}
-          dateStr={day.date}
-          entries={day.entries}
-          targetCalories={day.targetCalories}
-          isToday={false}
-        />
-      ))}
     </div>
   );
 }

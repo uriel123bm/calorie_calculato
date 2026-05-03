@@ -148,7 +148,7 @@ export function AuthPage() {
                 id="auth-username"
                 type="text"
                 autoComplete="username"
-                placeholder="לדוגמה: uriel123"
+                placeholder="לדוגמה: user"
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setError(""); }}
                 required
