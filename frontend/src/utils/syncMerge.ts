@@ -15,7 +15,8 @@ import { todayStr } from "./date";
 import { generateId } from "./id";
 
 const DEFAULT_TARGET = 2000;
-export const HISTORY_RETENTION_DAYS = 365;
+export const HISTORY_RETENTION_DAYS = 3650;
+export const MAX_HISTORY_DAYS = HISTORY_RETENTION_DAYS;
 
 function isIsoDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -115,6 +116,42 @@ export function mergeHistoryBlobs(localRaw: unknown, remoteRaw: unknown): DayLog
   const parse = (raw: unknown): DayLog[] =>
     Array.isArray(raw) ? (raw.filter((x) => x?.date) as DayLog[]) : [];
   return mergeDayLogs(parse(localRaw), parse(remoteRaw)).slice(0, HISTORY_RETENTION_DAYS);
+}
+
+type WorkoutSyncBlob = {
+  targetSessions?: number;
+  lastPromptWeek?: string | null;
+  weeklyFeatureSeen?: boolean;
+  plannedDays?: string[];
+  entries?: Array<{
+    id: string;
+    type: string;
+    durationMin: number;
+    date: string;
+    addedAt: number;
+  }>;
+};
+
+export function mergeWorkoutBlobs(localRaw: unknown, remoteRaw: unknown): WorkoutSyncBlob {
+  const parse = (raw: unknown): WorkoutSyncBlob => {
+    if (!raw || typeof raw !== "object") return {};
+    return raw as WorkoutSyncBlob;
+  };
+  const L = parse(localRaw);
+  const R = parse(remoteRaw);
+  const map = new Map<string, NonNullable<WorkoutSyncBlob["entries"]>[number]>();
+  for (const e of [...(L.entries ?? []), ...(R.entries ?? [])]) {
+    if (!e?.id || !e?.date) continue;
+    const cur = map.get(e.id);
+    if (!cur || (e.addedAt ?? 0) >= (cur.addedAt ?? 0)) map.set(e.id, e);
+  }
+  return {
+    targetSessions: Math.max(1, Math.floor((R.targetSessions ?? L.targetSessions ?? 3))),
+    lastPromptWeek: R.lastPromptWeek ?? L.lastPromptWeek ?? null,
+    weeklyFeatureSeen: Boolean(R.weeklyFeatureSeen ?? L.weeklyFeatureSeen),
+    plannedDays: Array.isArray(R.plannedDays) ? R.plannedDays : Array.isArray(L.plannedDays) ? L.plannedDays : [],
+    entries: Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date)),
+  };
 }
 
 export function mergeRecipeBlobs(localRaw: unknown, remoteRaw: unknown): SavedRecipe[] {

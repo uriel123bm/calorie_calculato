@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function Meal({
-  id: _mealId,
+  id: mealId,
   name,
   onUpdateName,
   onRemove,
@@ -31,6 +31,7 @@ export function Meal({
 }: Props) {
   const {
     rows,
+    hydrateRows,
     patchRow,
     addRow,
     removeRow,
@@ -39,6 +40,30 @@ export function Meal({
     total,
     totalGrams,
   } = useIngredientRows(3);
+  const mealDraftKey = `meal_draft:${mealId}`;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(mealDraftKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as typeof rows;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        hydrateRows(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+    // one-time hydrate per meal card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mealDraftKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(mealDraftKey, JSON.stringify(rows));
+    } catch {
+      /* ignore */
+    }
+  }, [mealDraftKey, rows]);
 
   const pendingChipProductRef = useRef<UserProduct | null>(null);
 

@@ -1678,6 +1678,58 @@ button.pill {
 .meals-section .section-header { margin-bottom: 12px; }
 .section-subtitle { margin: 0; font-size: 13px; color: var(--on-surface-var); line-height: 1.5; }
 
+.meals-create-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  margin-bottom: 14px;
+}
+.meals-create-label {
+  display: block;
+  font-size: 12px;
+  color: var(--on-surface-var);
+  margin-bottom: 6px;
+}
+.meals-create-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.meals-create-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+}
+.meals-create-input:focus {
+  outline: none;
+  border-color: var(--primary-strong);
+  box-shadow: 0 0 0 3px rgba(46,166,107,.14);
+}
+.meals-existing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 2px 8px;
+}
+.meals-existing-head h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--on-surface);
+}
+.meals-existing-head span {
+  min-width: 28px;
+  text-align: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--primary-deep);
+  background: var(--primary-soft);
+  font-weight: 700;
+}
+
 .meals-list {
   display: flex;
   flex-direction: column;
@@ -1793,19 +1845,18 @@ button.pill {
 .meal-add-to-daily:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 
 .meal-add-btn {
-  background: rgba(255,255,255,.85);
-  border: 2px dashed rgba(93,184,118,.7);
-  color: var(--primary-strong);
+  background: linear-gradient(160deg, var(--primary-strong) 0%, var(--primary) 100%);
+  border: 0;
+  color: #fff;
   font-weight: 700;
-  padding: 12px 18px;
-  width: 100%;
-  border-radius: var(--radius);
-  transition: background .15s, border-color .15s;
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: var(--shadow-primary);
 }
 .meal-add-btn:hover:not(:disabled) {
-  background: var(--primary-soft);
-  border-color: var(--primary-strong);
-  color: var(--primary-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(15,82,56,.3);
 }
 
 .meal-card .ingredient-table { font-size: 13px; }
@@ -2043,6 +2094,36 @@ button.pill {
   font-size: 1rem;
   opacity: .85;
   margin: 0;
+}
+
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 86px;
+  transform: translateX(-50%);
+  z-index: 1400;
+  min-width: 220px;
+  max-width: min(92vw, 460px);
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+  border: 1px solid transparent;
+  backdrop-filter: blur(4px);
+}
+.app-toast--success {
+  background: rgba(46, 166, 107, 0.95);
+  color: #fff;
+}
+.app-toast--info {
+  background: rgba(35, 49, 66, 0.92);
+  color: #fff;
+}
+.app-toast--error {
+  background: rgba(181, 53, 66, 0.95);
+  color: #fff;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -2470,6 +2551,35 @@ button.pill {
   font-size: 14px;
   font-weight: 700;
   color: var(--primary-deep);
+}
+
+.journal-workouts-block {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(21, 101, 192, 0.2);
+  border-radius: var(--radius-xs);
+  background: rgba(232, 244, 255, 0.7);
+}
+
+.journal-workouts-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #17477a;
+}
+
+.journal-workouts-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.journal-workout-item {
+  font-size: 12px;
+  color: #17477a;
 }
 
 .journal-timeline {
@@ -3550,6 +3660,110 @@ html, body {
   background: var(--primary);
 }
 
+.weekly-planner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.weekly-planner-pane {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.72);
+  padding: 10px 12px;
+}
+
+.weekly-planner-pane h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--primary-deep);
+}
+
+.weekly-balance-ring-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.weekly-balance-ring {
+  --weekly-progress: 0%;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary-strong) var(--weekly-progress), rgba(93,184,118,.16) 0);
+  display: grid;
+  place-items: center;
+}
+.weekly-balance-ring--small {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+}
+
+.weekly-balance-ring-inner {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.weekly-balance-ring-inner--small {
+  width: 62px;
+  height: 62px;
+}
+
+.weekly-ring-center-value {
+  font-size: 12px;
+  color: var(--primary-deep);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+  padding: 0 4px;
+}
+
+.weekly-balance-card-ring-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.weekly-balance-inline-value {
+  font-size: 20px;
+  color: var(--primary-deep);
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.weekly-balance-ring-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weekly-balance-ring-text strong {
+  color: var(--primary-deep);
+  font-size: 16px;
+}
+
+.weekly-balance-ring-text span {
+  font-size: 12px;
+  color: var(--on-surface-var);
+}
+
+.product-form-actions .ghost.active {
+  border-color: var(--primary-strong);
+  color: var(--primary-deep);
+  background: var(--primary-soft);
+}
+
 .onboarding-actions {
   margin-top: 10px;
   display: flex;
@@ -3892,6 +4106,53 @@ html, body {
   align-items: center;
   gap: 8px;
   font-weight: 700;
+}
+
+.scan-target-box {
+  border: 1px solid rgba(93,184,118,.35);
+  border-radius: 12px;
+  background: rgba(177,240,206,.14);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.scan-target-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-deep);
+  margin-bottom: 8px;
+}
+
+.scan-target-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 8px;
+}
+
+.scan-target-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--on-surface);
+}
+
+.scan-target-meal-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,82,56,0.18);
+  background: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.scan-target-action-btn {
+  width: 100%;
 }
 
 .product-scan-manual-bc {

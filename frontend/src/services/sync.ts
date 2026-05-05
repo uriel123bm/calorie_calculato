@@ -16,6 +16,7 @@ import {
   mergeMealBlobs,
   mergeProductBlobs,
   mergeRecipeBlobs,
+  mergeWorkoutBlobs,
 } from "../utils/syncMerge";
 import { client } from "./api";
 
@@ -26,7 +27,8 @@ export type SyncKey =
   | "recipes"
   | "meals"
   | "products"
-  | "body";
+  | "body"
+  | "workouts";
 
 const TRACKER_KEY  = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const HISTORY_KEY  = (uid: string) => `user_${uid}:dailyHistory:v1`;
@@ -34,6 +36,7 @@ const RECIPES_KEY  = (uid: string) => `user_${uid}:savedRecipes:v1`;
 const MEALS_KEY    = (uid: string) => `user_${uid}:meals:v1`;
 const PRODUCTS_KEY = (uid: string) => `user_${uid}:products:v1`;
 const BODY_KEY     = (uid: string) => `user_${uid}:body:v1`;
+const WORKOUTS_KEY = (uid: string) => `user_${uid}:workouts_sync:v1`;
 
 function localKey(uid: string, key: SyncKey): string {
   switch (key) {
@@ -43,6 +46,7 @@ function localKey(uid: string, key: SyncKey): string {
     case "meals":    return MEALS_KEY(uid);
     case "products": return PRODUCTS_KEY(uid);
     case "body":     return BODY_KEY(uid);
+    case "workouts": return WORKOUTS_KEY(uid);
   }
 }
 
@@ -85,10 +89,11 @@ interface SyncResponse {
   settings: unknown | null;
   products: unknown | null;
   body:     unknown | null;
+  workouts: unknown | null;
   updated_at: string | null;
 }
 
-let _pullInFlight: Promise<void> | null = null;
+const _pullInFlightByUid = new Map<string, Promise<void>>();
 let _activeUid: string | null = null;
 
 /** Call when the logged-in user changes (login / logout). */
@@ -97,8 +102,9 @@ export function setSyncUserId(uid: string | null): void {
 }
 
 export function pullSync(uid: string): Promise<void> {
-  if (_pullInFlight) return _pullInFlight;
-  _pullInFlight = (async () => {
+  const inFlight = _pullInFlightByUid.get(uid);
+  if (inFlight) return inFlight;
+  const task = (async () => {
     try {
       const { data } = await client.get<SyncResponse>("/sync");
       const localTrackerRaw = readLocal(uid, "tracker");
@@ -129,16 +135,19 @@ export function pullSync(uid: string): Promise<void> {
 
       const mergedBody = mergeBodyBlobs(readLocal(uid, "body"), data.body);
       if (mergedBody) writeLocal(uid, "body", mergedBody);
+      const mergedWorkouts = mergeWorkoutBlobs(readLocal(uid, "workouts"), data.workouts);
+      writeLocal(uid, "workouts", mergedWorkouts);
 
       notifyRefreshed(uid);
       schedulePush(uid);
     } catch {
       // 401, network — keep working offline; next visibility or edit retries.
     } finally {
-      _pullInFlight = null;
+      _pullInFlightByUid.delete(uid);
     }
   })();
-  return _pullInFlight;
+  _pullInFlightByUid.set(uid, task);
+  return task;
 }
 
 // ── Push (local → server) ──────────────────────────────────
@@ -150,6 +159,7 @@ function readAllBuckets(uid: string): Record<SyncKey, unknown | null> {
     meals:    readLocal(uid, "meals"),
     products: readLocal(uid, "products"),
     body:     readLocal(uid, "body"),
+    workouts: readLocal(uid, "workouts"),
   };
 }
 
@@ -161,7 +171,8 @@ export async function pushSyncNow(uid: string): Promise<void> {
     !buckets.recipes &&
     !buckets.meals &&
     !buckets.products &&
-    !buckets.body;
+    !buckets.body &&
+    !buckets.workouts;
   if (empty) return;
   try {
     await client.put("/sync", buckets);
@@ -171,25 +182,25 @@ export async function pushSyncNow(uid: string): Promise<void> {
 }
 
 const PUSH_DEBOUNCE_MS = 1500;
-let _pushTimer: ReturnType<typeof setTimeout> | null = null;
-let _pushUid: string | null = null;
+const _pushTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 export function schedulePush(uid: string): void {
-  _pushUid = uid;
-  if (_pushTimer) clearTimeout(_pushTimer);
-  _pushTimer = setTimeout(() => {
-    _pushTimer = null;
-    if (_pushUid) void pushSyncNow(_pushUid);
+  const existing = _pushTimers.get(uid);
+  if (existing) clearTimeout(existing);
+  const timer = setTimeout(() => {
+    _pushTimers.delete(uid);
+    void pushSyncNow(uid);
   }, PUSH_DEBOUNCE_MS);
+  _pushTimers.set(uid, timer);
 }
 
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", () => {
-    if (_pushTimer && _pushUid) {
-      clearTimeout(_pushTimer);
-      _pushTimer = null;
-      void pushSyncNow(_pushUid);
-    }
+    _pushTimers.forEach((timer, uid) => {
+      clearTimeout(timer);
+      void pushSyncNow(uid);
+    });
+    _pushTimers.clear();
   });
 
   document.addEventListener("visibilitychange", () => {

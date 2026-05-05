@@ -1,12 +1,14 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ProductInput, ProductSaveResult } from "../hooks/useUserProducts";
 import type { ProductFormDraft } from "../services/productFormDraft";
+import { subscribeSyncRefreshed } from "../services/sync";
 import type { DailyEntryInput, UserProduct } from "../types";
 import { scaleServingMacros } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 import { ProductCaptureModal } from "./ProductCaptureModal";
 
 interface Props {
+  userId: string;
   products: UserProduct[];
   onAddProduct: (input: ProductInput) => ProductSaveResult;
   onDeleteProduct: (id: string) => void;
@@ -15,10 +17,18 @@ interface Props {
 
 // ── Add-product form ──────────────────────────────────────
 function AddProductForm({
+  userId,
+  meals,
   onAdd,
+  onAddToDaily,
 }: {
+  userId: string;
+  meals: string[];
   onAdd: (input: ProductInput) => ProductSaveResult;
+  onAddToDaily: (input: DailyEntryInput) => void;
 }) {
+  type ScanTarget = "daily" | "meal" | "library";
+  const targetPrefKey = `user_${userId}:scan_target_pref:v1`;
   const [captureOpen, setCaptureOpen] = useState(false);
   const [name, setName]                   = useState("");
   const [unitDescription, setUnitDescription] = useState("");
@@ -28,6 +38,15 @@ function AddProductForm({
   const [carbohydrates, setCarbohydrates] = useState<number | "">("");
   const [fat, setFat]                     = useState<number | "">("");
   const [feedback, setFeedback]           = useState<"" | "saved" | "duplicate" | "invalid">("");
+  const [scanTarget, setScanTarget] = useState<ScanTarget>(() => {
+    try {
+      const raw = localStorage.getItem(targetPrefKey);
+      return raw === "meal" || raw === "library" ? raw : "daily";
+    } catch {
+      return "daily";
+    }
+  });
+  const [selectedMealName, setSelectedMealName] = useState<string>(() => meals[0] ?? "");
   const portions = typeof servingsCount === "number" ? servingsCount : 0;
   const safePortions = portions > 0 ? portions : 1;
   const totalCalories = typeof calories === "number" ? calories : 0;
@@ -40,6 +59,13 @@ function AddProductForm({
     carbohydrates: totalCarbs / safePortions,
     fat: totalFat / safePortions,
   };
+  const canQuickAdd = name.trim().length > 0 && totalCalories > 0;
+
+  useEffect(() => {
+    if (!selectedMealName && meals.length > 0) {
+      setSelectedMealName(meals[0]);
+    }
+  }, [meals, selectedMealName]);
 
   const reset = () => {
     setName("");
@@ -99,6 +125,73 @@ function AddProductForm({
     setCarbohydrates(draft.carbohydrates > 0 ? draft.carbohydrates : "");
     setFat(draft.fat > 0 ? draft.fat : "");
   }, []);
+
+  const rememberTarget = useCallback(
+    (target: ScanTarget) => {
+      setScanTarget(target);
+      try {
+        localStorage.setItem(targetPrefKey, target);
+      } catch {
+        /* ignore */
+      }
+    },
+    [targetPrefKey]
+  );
+
+  const quickAddFromScan = useCallback(() => {
+    if (!canQuickAdd) return;
+    const productName = name.trim();
+    const perUnit = {
+      calories: Math.max(0, perUnitPreview.calories),
+      protein: Math.max(0, perUnitPreview.protein),
+      carbohydrates: Math.max(0, perUnitPreview.carbohydrates),
+      fat: Math.max(0, perUnitPreview.fat),
+    };
+
+    if (scanTarget === "library") {
+      const result = onAdd({
+        name: productName,
+        servingValue: 1,
+        servingUnit: "יחידה",
+        unitDescription: unitDescription.trim() || undefined,
+        servingsCount: safePortions,
+        calories: perUnit.calories,
+        protein: perUnit.protein,
+        carbohydrates: perUnit.carbohydrates,
+        fat: perUnit.fat,
+      });
+      setFeedback(result === "saved" ? "saved" : "duplicate");
+      if (result === "saved") reset();
+      return;
+    }
+
+    const entryName =
+      scanTarget === "meal" && selectedMealName.trim()
+        ? `${selectedMealName.trim()} • ${productName}`
+        : `${productName} (1 יח׳)`;
+    onAddToDaily({
+      name: entryName,
+      calories: roundCalories(perUnit.calories),
+      protein: roundMacro(perUnit.protein),
+      carbohydrates: roundMacro(perUnit.carbohydrates),
+      fat: roundMacro(perUnit.fat),
+    });
+    setFeedback("saved");
+    setTimeout(() => setFeedback(""), 2500);
+  }, [
+    canQuickAdd,
+    name,
+    onAdd,
+    onAddToDaily,
+    perUnitPreview.calories,
+    perUnitPreview.carbohydrates,
+    perUnitPreview.fat,
+    perUnitPreview.protein,
+    safePortions,
+    scanTarget,
+    selectedMealName,
+    unitDescription,
+  ]);
 
   return (
     <>
@@ -213,6 +306,65 @@ function AddProductForm({
             photo_camera
           </span>
           סריקת ברקוד מהאריזה
+        </button>
+      </div>
+
+      <div className="scan-target-box">
+        <span className="scan-target-title">אחרי סריקה/מילוי - לאן להוסיף?</span>
+        <div className="scan-target-options">
+          <label>
+            <input
+              type="radio"
+              name="scan-target"
+              checked={scanTarget === "daily"}
+              onChange={() => rememberTarget("daily")}
+            />
+            הוסף מיד ליום
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="scan-target"
+              checked={scanTarget === "meal"}
+              onChange={() => rememberTarget("meal")}
+            />
+            הוסף תחת ארוחה
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="scan-target"
+              checked={scanTarget === "library"}
+              onChange={() => rememberTarget("library")}
+            />
+            שמור למוצרים שלי
+          </label>
+        </div>
+        {scanTarget === "meal" && (
+          <select
+            className="scan-target-meal-select"
+            value={selectedMealName}
+            onChange={(e) => setSelectedMealName(e.target.value)}
+            aria-label="בחירת ארוחה להוספה"
+          >
+            {meals.length === 0 ? (
+              <option value="">אין ארוחות מוגדרות</option>
+            ) : (
+              meals.map((mealName) => (
+                <option key={mealName} value={mealName}>
+                  {mealName}
+                </option>
+              ))
+            )}
+          </select>
+        )}
+        <button
+          type="button"
+          className="primary scan-target-action-btn"
+          disabled={!canQuickAdd || (scanTarget === "meal" && !selectedMealName)}
+          onClick={quickAddFromScan}
+        >
+          בצע פעולה מהירה
         </button>
       </div>
 
@@ -365,12 +517,55 @@ function ProductCard({
 
 // ── Section ───────────────────────────────────────────────
 export function MyProductsSection({
+  userId,
   products,
   onAddProduct,
   onDeleteProduct,
   onAddToDaily,
 }: Props) {
   const [libraryQuery, setLibraryQuery] = useState("");
+  const readMealNames = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(`user_${userId}:meals:v1`);
+      if (!raw) return ["ארוחה כללית"];
+      const parsed = JSON.parse(raw) as Array<{ name?: unknown }>;
+      const names = parsed
+        .map((m) => (typeof m?.name === "string" ? m.name.trim() : ""))
+        .filter(Boolean);
+      return names.length > 0 ? names : ["ארוחה כללית"];
+    } catch {
+      return ["ארוחה כללית"];
+    }
+  }, [userId]);
+  const [mealNames, setMealNames] = useState<string[]>(() => readMealNames());
+
+  useEffect(() => {
+    setMealNames(readMealNames());
+  }, [readMealNames]);
+
+  useEffect(() => {
+    const onMealsUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (!detail?.userId || detail.userId === userId) {
+        setMealNames(readMealNames());
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.storageArea !== localStorage || e.key !== `user_${userId}:meals:v1`) return;
+      setMealNames(readMealNames());
+    };
+    const unsub = subscribeSyncRefreshed((uid) => {
+      if (uid === userId) setMealNames(readMealNames());
+    });
+    window.addEventListener("meals:updated", onMealsUpdated as EventListener);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      unsub();
+      window.removeEventListener("meals:updated", onMealsUpdated as EventListener);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [readMealNames, userId]);
+
   const filteredProducts = useMemo(() => {
     const q = libraryQuery.trim().toLowerCase();
     if (!q) return products;
@@ -394,7 +589,12 @@ export function MyProductsSection({
           <span className="material-symbols-outlined">add_box</span>
           הוספת מוצר חדש
         </h2>
-        <AddProductForm onAdd={onAddProduct} />
+        <AddProductForm
+          userId={userId}
+          meals={mealNames}
+          onAdd={onAddProduct}
+          onAddToDaily={onAddToDaily}
+        />
       </section>
 
       <section className="section">

@@ -67,6 +67,7 @@ function AppShell({
   username: string;
   onLogout: () => Promise<void>;
 }) {
+  type ToastTone = "success" | "info" | "error";
   type DeletedRowUndo = {
     row: IngredientRowState;
     index: number;
@@ -81,6 +82,7 @@ function AppShell({
   const [dontShowOnboardingAgain, setDontShowOnboardingAgain] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [toast, setToast] = useState<{ id: number; text: string; tone: ToastTone } | null>(null);
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
@@ -93,6 +95,7 @@ function AppShell({
   const undoTimeoutRef = useRef<number | null>(null);
   const [deletedRowUndo, setDeletedRowUndo] = useState<DeletedRowUndo | null>(null);
   const onboardingEndRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
 
   const onboardingSteps = useMemo(
     () => [
@@ -111,7 +114,18 @@ function AppShell({
       if (onboardingEndRef.current !== null) {
         window.clearTimeout(onboardingEndRef.current);
       }
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
     };
+  }, []);
+
+  const pushToast = useCallback((text: string, tone: ToastTone = "success") => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast({ id: Date.now(), text, tone });
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 2400);
   }, []);
 
   /** הדרכה מוצגת רק אחרי הרשמה מוצלחת (לא אחרי התחברות). */
@@ -305,12 +319,61 @@ function AppShell({
     const result = savedRecipes.saveRecipe(recipeName, recipe.totalGrams, recipe.per100g, servings);
     if (result === "duplicate") {
       setSaveDuplicate(true);
+      pushToast("מתכון בשם הזה כבר קיים", "info");
       setTimeout(() => setSaveDuplicate(false), 4000);
       return;
     }
     setRecipeSaved(true);
+    pushToast("המתכון נשמר בהצלחה", "success");
     setTimeout(() => setRecipeSaved(false), 3000);
-  }, [hasFilledRows, recipe, recipeName, servings, savedRecipes]);
+  }, [hasFilledRows, pushToast, recipe, recipeName, servings, savedRecipes]);
+
+  const addEntryWithToast = useCallback(
+    (input: Parameters<typeof daily.addEntry>[0]) => {
+      daily.addEntry(input);
+      pushToast("נוסף ליומן היומי", "success");
+    },
+    [daily, pushToast]
+  );
+
+  const removeEntryWithToast = useCallback(
+    (id: string) => {
+      daily.removeEntry(id);
+      pushToast("הרשומה נמחקה", "info");
+    },
+    [daily, pushToast]
+  );
+
+  const resetDayWithToast = useCallback(() => {
+    daily.resetDay();
+    pushToast("היום אופס ונשמר בארכיון", "info");
+  }, [daily, pushToast]);
+
+  const deleteRecipeWithToast = useCallback(
+    (id: string) => {
+      savedRecipes.deleteRecipe(id);
+      pushToast("המתכון נמחק", "info");
+    },
+    [pushToast, savedRecipes]
+  );
+
+  const addProductWithToast = useCallback(
+    (...args: Parameters<typeof userProducts.addProduct>) => {
+      const result = userProducts.addProduct(...args);
+      if (result === "saved") pushToast("המוצר נוסף לספרייה", "success");
+      else pushToast("מוצר בשם הזה כבר קיים", "info");
+      return result;
+    },
+    [pushToast, userProducts]
+  );
+
+  const deleteProductWithToast = useCallback(
+    (id: string) => {
+      userProducts.deleteProduct(id);
+      pushToast("המוצר נמחק", "info");
+    },
+    [pushToast, userProducts]
+  );
 
   const handleCheckUpdates = useCallback(() => {
     window.dispatchEvent(new CustomEvent("pwa:check-update"));
@@ -406,9 +469,9 @@ function AppShell({
           <DailyTracker
             state={daily.state}
             setTarget={daily.setTarget}
-            addEntry={daily.addEntry}
-            removeEntry={daily.removeEntry}
-            resetDay={daily.resetDay}
+            addEntry={addEntryWithToast}
+            removeEntry={removeEntryWithToast}
+            resetDay={resetDayWithToast}
             personalProducts={userProducts.products}
             goalTipsContext={
               body.metrics
@@ -536,38 +599,48 @@ function AppShell({
             {/* My saved recipes — pick grams → add to daily */}
             <MyRecipesSection
               recipes={savedRecipes.recipes}
-              onDeleteRecipe={savedRecipes.deleteRecipe}
-              onAddToDaily={daily.addEntry}
+              onDeleteRecipe={deleteRecipeWithToast}
+              onAddToDaily={addEntryWithToast}
             />
 
             {/* Freestyle meals */}
-            <MealsSection userId={userId} onAddToDaily={daily.addEntry} personalProducts={userProducts.products} />
+            <MealsSection userId={userId} onAddToDaily={addEntryWithToast} personalProducts={userProducts.products} />
           </div>
         )}
 
         {/* ── PRODUCTS ── */}
         {activeTab === "products" && (
           <MyProductsSection
+            userId={userId}
             products={userProducts.products}
-            onAddProduct={userProducts.addProduct}
-            onDeleteProduct={userProducts.deleteProduct}
-            onAddToDaily={daily.addEntry}
+            onAddProduct={addProductWithToast}
+            onDeleteProduct={deleteProductWithToast}
+            onAddToDaily={addEntryWithToast}
           />
         )}
 
         {/* ── PROGRESS ── */}
-        {activeTab === "progress" && <ProgressPage body={body} />}
+        {activeTab === "progress" && (
+          <ProgressPage userId={userId} body={body} today={daily.state} history={daily.history} />
+        )}
 
         {/* ── JOURNAL ── */}
         {activeTab === "journal" && (
           <JournalPage
+            userId={userId}
             today={daily.state}
             history={daily.history}
-            onRemoveEntry={daily.removeEntry}
-            onResetDay={daily.resetDay}
+            onRemoveEntry={removeEntryWithToast}
+            onResetDay={resetDayWithToast}
           />
         )}
       </main>
+
+      {toast && (
+        <div className={`app-toast app-toast--${toast.tone}`} key={toast.id} role="status" aria-live="polite">
+          {toast.text}
+        </div>
+      )}
 
       {showOnboarding && (
         <div className="onboarding-overlay" role="dialog" aria-live="polite" aria-label="הדרכה קצרה">

@@ -1,7 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DailyEntry, DailyTrackerState, DayLog } from "../types";
+import { subscribeSyncRefreshed } from "../services/sync";
+
+interface WorkoutEntry {
+  id: string;
+  type: string;
+  durationMin: number;
+  date: string;
+  addedAt: number;
+}
 
 interface Props {
+  userId: string;
   today: DailyTrackerState;
   history: DayLog[];
   onRemoveEntry: (id: string) => void;
@@ -123,6 +133,7 @@ function DayBlock({
   isToday,
   onRemoveEntry,
   onResetDay,
+  workouts,
 }: {
   dateStr: string;
   entries: DailyEntry[];
@@ -130,6 +141,7 @@ function DayBlock({
   isToday: boolean;
   onRemoveEntry?: (id: string) => void;
   onResetDay?: () => void;
+  workouts?: WorkoutEntry[];
 }) {
   const totalCal = entries.reduce((s, e) => s + e.calories, 0);
   const pct = targetCalories > 0 ? Math.min(100, (totalCal / targetCalories) * 100) : 0;
@@ -163,6 +175,21 @@ function DayBlock({
       </div>
 
       <DayTotals entries={entries} />
+
+      {workouts && workouts.length > 0 && (
+        <div className="journal-workouts-block">
+          <h4 className="journal-workouts-title">אימונים ביום זה</h4>
+          <ul className="journal-workouts-list">
+            {[...workouts]
+              .sort((a, b) => b.addedAt - a.addedAt)
+              .map((w) => (
+                <li key={w.id} className="journal-workout-item">
+                  בוצע אימון {w.type} ({w.durationMin} דק׳)
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
 
       {entries.length === 0 ? (
         <p className="journal-empty">אין רשומות ליום זה.</p>
@@ -202,12 +229,64 @@ function isoDateInMonth(year: number, month0: number, day: number): string {
   return `${year}-${m}-${d}`;
 }
 
-export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props) {
+export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay }: Props) {
   const [viewMonth, setViewMonth] = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [workouts, setWorkouts] = useState<WorkoutEntry[]>(() => {
+    try {
+      const raw = localStorage.getItem(`user_${userId}:workouts_sync:v1`);
+      const parsed = raw ? (JSON.parse(raw) as { entries?: WorkoutEntry[] } | WorkoutEntry[]) : [];
+      if (Array.isArray(parsed)) return parsed;
+      return Array.isArray(parsed?.entries) ? parsed.entries : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`user_${userId}:workouts_sync:v1`);
+      const parsed = raw ? (JSON.parse(raw) as { entries?: WorkoutEntry[] } | WorkoutEntry[]) : [];
+      if (Array.isArray(parsed)) setWorkouts(parsed);
+      else setWorkouts(Array.isArray(parsed?.entries) ? parsed.entries : []);
+    } catch {
+      setWorkouts([]);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    return subscribeSyncRefreshed((uid) => {
+      if (uid !== userId) return;
+      try {
+        const raw = localStorage.getItem(`user_${userId}:workouts_sync:v1`);
+        const parsed = raw ? (JSON.parse(raw) as { entries?: WorkoutEntry[] } | WorkoutEntry[]) : [];
+        if (Array.isArray(parsed)) setWorkouts(parsed);
+        else setWorkouts(Array.isArray(parsed?.entries) ? parsed.entries : []);
+      } catch {
+        setWorkouts([]);
+      }
+    });
+  }, [userId]);
+
+  useEffect(() => {
+    const key = `user_${userId}:workouts_sync:v1`;
+    const onStorage = (e: StorageEvent) => {
+      if (e.storageArea !== localStorage || e.key !== key) return;
+      try {
+        const raw = localStorage.getItem(key);
+        const parsed = raw ? (JSON.parse(raw) as { entries?: WorkoutEntry[] } | WorkoutEntry[]) : [];
+        if (Array.isArray(parsed)) setWorkouts(parsed);
+        else setWorkouts(Array.isArray(parsed?.entries) ? parsed.entries : []);
+      } catch {
+        setWorkouts([]);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [userId]);
 
   const datesWithData = useMemo(() => {
     const set = new Set<string>();
@@ -215,8 +294,11 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
       if (h.entries.length > 0) set.add(h.date);
     }
     if (today.entries.length > 0) set.add(today.date);
+    for (const w of workouts) {
+      if (w.date) set.add(w.date);
+    }
     return set;
-  }, [history, today.date, today.entries.length]);
+  }, [history, today.date, today.entries.length, workouts]);
 
   const year = viewMonth.getFullYear();
   const monthIndex = viewMonth.getMonth();
@@ -255,6 +337,15 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
 
   const selectedLog =
     selectedDate != null ? resolveDayLog(selectedDate, today, history) : null;
+  const workoutsByDate = useMemo(() => {
+    const map = new Map<string, WorkoutEntry[]>();
+    for (const w of workouts) {
+      const arr = map.get(w.date) ?? [];
+      arr.push(w);
+      map.set(w.date, arr);
+    }
+    return map;
+  }, [workouts]);
 
   const hasArchivedMeals = history.some((h) => h.entries.length > 0);
 
@@ -275,6 +366,7 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
         isToday={true}
         onRemoveEntry={onRemoveEntry}
         onResetDay={onResetDay}
+        workouts={workoutsByDate.get(today.date) ?? []}
       />
 
       <section className="section journal-calendar-section">
@@ -359,12 +451,12 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
                 סגור
               </button>
             </div>
-            {selectedLog ? (
+            {selectedLog || (selectedDate && (workoutsByDate.get(selectedDate)?.length ?? 0) > 0) ? (
               <div className="journal-modal-body">
                 <DayBlock
-                  dateStr={selectedLog.date}
-                  entries={selectedLog.entries}
-                  targetCalories={selectedLog.targetCalories}
+                  dateStr={selectedDate!}
+                  entries={selectedLog?.entries ?? []}
+                  targetCalories={selectedLog?.targetCalories ?? today.targetCalories}
                   isToday={selectedDate === today.date}
                   onRemoveEntry={
                     selectedDate === today.date ? onRemoveEntry : undefined
@@ -372,6 +464,7 @@ export function JournalPage({ today, history, onRemoveEntry, onResetDay }: Props
                   onResetDay={
                     selectedDate === today.date ? onResetDay : undefined
                   }
+                  workouts={workoutsByDate.get(selectedDate!) ?? []}
                 />
               </div>
             ) : (

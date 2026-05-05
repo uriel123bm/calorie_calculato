@@ -55,6 +55,9 @@ def get_settings() -> Settings:
     import secrets as _s
     default_secret = _s.token_hex(32)
     environment = (os.getenv("SENTRY_ENVIRONMENT", "development").strip() or "development").lower()
+    jwt_secret_raw = os.getenv("JWT_SECRET", "").strip()
+    if (bool(os.getenv("VERCEL")) or environment == "production") and not jwt_secret_raw:
+        raise RuntimeError("JWT_SECRET is required in production environments.")
     default_cookie_secure = bool(os.getenv("VERCEL")) or environment == "production"
     return Settings(
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
@@ -66,7 +69,7 @@ def get_settings() -> Settings:
             )
         ),
         data_dir=_BACKEND_ROOT / "app" / "data",
-        jwt_secret=os.getenv("JWT_SECRET", default_secret).strip(),
+        jwt_secret=jwt_secret_raw or default_secret,
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256").strip(),
         access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120")),
         refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),

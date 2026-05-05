@@ -34,6 +34,7 @@ ALLOWED_KEYS: set[str] = {
     "settings",
     "products",  # personal products library
     "body",      # body metrics + weight log
+    "workouts",  # workouts + weekly planning
 }
 
 # Hard cap per blob to keep DB rows small (50 KB is plenty for years of usage).
@@ -146,6 +147,23 @@ def _coerce_meals(value: Any) -> list[dict[str, str]] | None:
     return meals
 
 
+def _coerce_recipes(value: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(value, list):
+        return None
+    recipes: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        recipe_id = item.get("id")
+        name = item.get("name")
+        if not isinstance(recipe_id, str) or not recipe_id.strip():
+            continue
+        if not isinstance(name, str):
+            continue
+        recipes.append(item)
+    return recipes
+
+
 def _coerce_products(value: Any) -> list[dict[str, Any]] | None:
     if not isinstance(value, list):
         return None
@@ -187,6 +205,37 @@ def _coerce_body(value: Any) -> dict[str, Any] | None:
     return cleaned
 
 
+def _coerce_workouts(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    entries = value.get("entries")
+    clean_entries: list[dict[str, Any]] = []
+    if isinstance(entries, list):
+        for item in entries:
+            if not isinstance(item, dict):
+                continue
+            if not isinstance(item.get("id"), str) or not isinstance(item.get("date"), str):
+                continue
+            clean_entries.append(
+                {
+                    "id": item["id"],
+                    "type": str(item.get("type") or "אימון").strip() or "אימון",
+                    "durationMin": max(1, int(_coerce_number(item.get("durationMin"), 1))),
+                    "date": item["date"],
+                    "addedAt": int(_coerce_number(item.get("addedAt"), 0)),
+                }
+            )
+    planned = value.get("plannedDays")
+    planned_days = [str(x) for x in planned] if isinstance(planned, list) else []
+    return {
+        "targetSessions": max(1, int(_coerce_number(value.get("targetSessions"), 3))),
+        "lastPromptWeek": value.get("lastPromptWeek"),
+        "weeklyFeatureSeen": bool(value.get("weeklyFeatureSeen")),
+        "plannedDays": planned_days[:7],
+        "entries": clean_entries,
+    }
+
+
 class SyncBuckets(BaseModel):
     tracker: Any | None = None
     history: Any | None = None
@@ -195,6 +244,7 @@ class SyncBuckets(BaseModel):
     settings: Any | None = None
     products: Any | None = None
     body: Any | None = None
+    workouts: Any | None = None
 
     @field_validator("tracker", mode="before")
     @classmethod
@@ -211,6 +261,11 @@ class SyncBuckets(BaseModel):
     def _validate_meals(cls, value: Any) -> Any:
         return _coerce_meals(value)
 
+    @field_validator("recipes", mode="before")
+    @classmethod
+    def _validate_recipes(cls, value: Any) -> Any:
+        return _coerce_recipes(value)
+
     @field_validator("products", mode="before")
     @classmethod
     def _validate_products(cls, value: Any) -> Any:
@@ -221,6 +276,11 @@ class SyncBuckets(BaseModel):
     def _validate_body(cls, value: Any) -> Any:
         return _coerce_body(value)
 
+    @field_validator("workouts", mode="before")
+    @classmethod
+    def _validate_workouts(cls, value: Any) -> Any:
+        return _coerce_workouts(value)
+
 
 class SyncResponse(BaseModel):
     tracker: Any | None = None
@@ -230,6 +290,7 @@ class SyncResponse(BaseModel):
     settings: Any | None = None
     products: Any | None = None
     body: Any | None = None
+    workouts: Any | None = None
     updated_at: datetime | None = None
 
 
@@ -263,6 +324,7 @@ def get_sync(
         settings=_decode(by_key["settings"].value_json) if "settings" in by_key else None,
         products=_decode(by_key["products"].value_json) if "products" in by_key else None,
         body=_decode(by_key["body"].value_json) if "body" in by_key else None,
+        workouts=_decode(by_key["workouts"].value_json) if "workouts" in by_key else None,
         updated_at=latest,
     )
 

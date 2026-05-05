@@ -47,11 +47,13 @@ function loadMeals(uid: string): MealType[] {
 function saveMeals(uid: string, meals: MealType[]): void {
   try {
     localStorage.setItem(storageKey(uid), JSON.stringify(meals));
+    window.dispatchEvent(new CustomEvent("meals:updated", { detail: { userId: uid } }));
   } catch { /* ignore */ }
 }
 
 export function MealsSection({ userId, onAddToDaily, personalProducts }: Props) {
   const [meals, setMeals] = useState<MealType[]>(() => loadMeals(userId));
+  const [newMealName, setNewMealName] = useState("");
 
   useEffect(() => {
     setMeals(loadMeals(userId));
@@ -83,15 +85,23 @@ export function MealsSection({ userId, onAddToDaily, personalProducts }: Props) 
   const handleAddMeal = useCallback(() => {
     setMeals((prev) => {
       const fallback = DEFAULT_NAMES[prev.length % DEFAULT_NAMES.length];
-      return [...prev, { id: makeMealId(), name: fallback }];
+      const trimmed = newMealName.trim();
+      const name = trimmed || fallback;
+      return [...prev, { id: makeMealId(), name }];
     });
-  }, []);
+    setNewMealName("");
+  }, [newMealName]);
 
   const handleUpdateName = useCallback((id: string, name: string) => {
     setMeals((prev) => prev.map((m) => (m.id === id ? { ...m, name } : m)));
   }, []);
 
   const handleRemoveMeal = useCallback((id: string) => {
+    try {
+      localStorage.removeItem(`meal_draft:${id}`);
+    } catch {
+      /* ignore */
+    }
     setMeals((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
@@ -100,14 +110,44 @@ export function MealsSection({ userId, onAddToDaily, personalProducts }: Props) 
       <div className="section-header">
         <h2>ארוחות</h2>
         <p className="section-subtitle">
-          הגדירו ארוחה (כמו ארוחת בוקר), הוסיפו את המצרכים שלה והוסיפו אותה
-          בלחיצה ליעד היומי שלכם.
+          צרו ארוחה חדשה למטה, ואז הוסיפו לה מצרכים ותלחצו ״הוסף ליום שלי״.
         </p>
+      </div>
+
+      <div className="meals-create-box">
+        <label htmlFor="new-meal-name" className="meals-create-label">
+          ארוחה חדשה
+        </label>
+        <div className="meals-create-row">
+          <input
+            id="new-meal-name"
+            className="meals-create-input"
+            type="text"
+            value={newMealName}
+            onChange={(e) => setNewMealName(e.target.value)}
+            placeholder="למשל: ארוחת בוקר"
+            aria-label="שם ארוחה חדשה"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddMeal();
+              }
+            }}
+          />
+          <button type="button" onClick={handleAddMeal} className="meal-add-btn">
+            הוסף ארוחה
+          </button>
+        </div>
+      </div>
+
+      <div className="meals-existing-head">
+        <h3>ארוחות קיימות</h3>
+        <span>{meals.length}</span>
       </div>
 
       <div className="meals-list">
         {meals.length === 0 ? (
-          <div className="meals-empty">עדיין לא הגדרתם ארוחה. לחצו &quot;הוסף ארוחה&quot; כדי להתחיל.</div>
+          <div className="meals-empty">עדיין לא הגדרתם ארוחה. התחילו מהתיבה למעלה.</div>
         ) : (
           meals.map((meal) => (
             <Meal
@@ -121,12 +161,6 @@ export function MealsSection({ userId, onAddToDaily, personalProducts }: Props) 
             />
           ))
         )}
-      </div>
-
-      <div className="toolbar">
-        <button type="button" onClick={handleAddMeal} className="meal-add-btn">
-          ➕ הוסף ארוחה
-        </button>
       </div>
     </section>
   );
