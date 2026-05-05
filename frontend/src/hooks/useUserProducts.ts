@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import type { UserProduct } from "../types";
+import { generateId } from "../utils/id";
 
 const storageKey = (uid: string) => `user_${uid}:products:v1`;
 
@@ -80,7 +81,7 @@ export function useUserProducts(userId: string): UseUserProductsResult {
       const entry: UserProduct = {
         ...input,
         name: trimmed,
-        id: Math.random().toString(36).slice(2, 11),
+        id: generateId("prd_"),
         addedAt: Date.now(),
       };
       const updated = [entry, ...current];

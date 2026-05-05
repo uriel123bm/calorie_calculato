@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
@@ -40,6 +40,153 @@ ALLOWED_KEYS: set[str] = {
 MAX_BLOB_BYTES = 50_000
 
 
+def _coerce_number(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _coerce_daily_entry(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    entry_id = value.get("id")
+    name = value.get("name")
+    if not isinstance(entry_id, str) or not entry_id.strip():
+        return None
+    if not isinstance(name, str):
+        name = "פריט"
+    cleaned: dict[str, Any] = {
+        "id": entry_id,
+        "name": name.strip() or "פריט",
+        "calories": max(0.0, _coerce_number(value.get("calories"), 0.0)),
+        "protein": max(0.0, _coerce_number(value.get("protein"), 0.0)),
+        "carbohydrates": max(0.0, _coerce_number(value.get("carbohydrates"), 0.0)),
+        "fat": max(0.0, _coerce_number(value.get("fat"), 0.0)),
+        "addedAt": int(_coerce_number(value.get("addedAt"), 0)),
+    }
+    lines = value.get("lines")
+    if isinstance(lines, list):
+        clean_lines: list[dict[str, Any]] = []
+        for line in lines:
+            if not isinstance(line, dict):
+                continue
+            line_name = line.get("name")
+            if not isinstance(line_name, str) or not line_name.strip():
+                continue
+            clean_lines.append(
+                {
+                    "name": line_name.strip(),
+                    "calories": max(0.0, _coerce_number(line.get("calories"), 0.0)),
+                    "protein": max(0.0, _coerce_number(line.get("protein"), 0.0)),
+                    "carbohydrates": max(0.0, _coerce_number(line.get("carbohydrates"), 0.0)),
+                    "fat": max(0.0, _coerce_number(line.get("fat"), 0.0)),
+                    "detail": str(line.get("detail", "")).strip() or None,
+                }
+            )
+        if clean_lines:
+            cleaned["lines"] = clean_lines
+    return cleaned
+
+
+def _coerce_tracker(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    date = value.get("date")
+    if not isinstance(date, str):
+        return None
+    entries = value.get("entries")
+    clean_entries: list[dict[str, Any]] = []
+    if isinstance(entries, list):
+        for entry in entries:
+            cleaned = _coerce_daily_entry(entry)
+            if cleaned:
+                clean_entries.append(cleaned)
+    return {
+        "date": date,
+        "targetCalories": max(0, int(_coerce_number(value.get("targetCalories"), 0))),
+        "entries": clean_entries,
+    }
+
+
+def _coerce_history(value: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(value, list):
+        return None
+    logs: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict) or not isinstance(item.get("date"), str):
+            continue
+        entries: list[dict[str, Any]] = []
+        if isinstance(item.get("entries"), list):
+            for entry in item["entries"]:
+                cleaned = _coerce_daily_entry(entry)
+                if cleaned:
+                    entries.append(cleaned)
+        logs.append(
+            {
+                "date": item["date"],
+                "targetCalories": max(0, int(_coerce_number(item.get("targetCalories"), 0))),
+                "entries": entries,
+            }
+        )
+    return logs
+
+
+def _coerce_meals(value: Any) -> list[dict[str, str]] | None:
+    if not isinstance(value, list):
+        return None
+    meals: list[dict[str, str]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        meal_id = item.get("id")
+        name = item.get("name")
+        if isinstance(meal_id, str) and meal_id.strip() and isinstance(name, str) and name.strip():
+            meals.append({"id": meal_id, "name": name.strip()})
+    return meals
+
+
+def _coerce_products(value: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(value, list):
+        return None
+    products: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        product_id = item.get("id")
+        name = item.get("name")
+        if not isinstance(product_id, str) or not isinstance(name, str):
+            continue
+        products.append(item)
+    return products
+
+
+def _coerce_body(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    if not all(k in value for k in ("heightCm", "startWeightKg", "currentWeightKg")):
+        return None
+    cleaned = dict(value)
+    log = value.get("log")
+    if isinstance(log, list):
+        cleaned_log: list[dict[str, Any]] = []
+        for entry in log:
+            if not isinstance(entry, dict):
+                continue
+            date = entry.get("date")
+            weight = entry.get("weightKg")
+            if isinstance(date, str):
+                cleaned_log.append(
+                    {
+                        "date": date,
+                        "weightKg": _coerce_number(weight, 0.0),
+                        "circumferences": entry.get("circumferences"),
+                    }
+                )
+        cleaned["log"] = cleaned_log
+    return cleaned
+
+
 class SyncBuckets(BaseModel):
     tracker: Any | None = None
     history: Any | None = None
@@ -48,6 +195,31 @@ class SyncBuckets(BaseModel):
     settings: Any | None = None
     products: Any | None = None
     body: Any | None = None
+
+    @field_validator("tracker", mode="before")
+    @classmethod
+    def _validate_tracker(cls, value: Any) -> Any:
+        return _coerce_tracker(value)
+
+    @field_validator("history", mode="before")
+    @classmethod
+    def _validate_history(cls, value: Any) -> Any:
+        return _coerce_history(value)
+
+    @field_validator("meals", mode="before")
+    @classmethod
+    def _validate_meals(cls, value: Any) -> Any:
+        return _coerce_meals(value)
+
+    @field_validator("products", mode="before")
+    @classmethod
+    def _validate_products(cls, value: Any) -> Any:
+        return _coerce_products(value)
+
+    @field_validator("body", mode="before")
+    @classmethod
+    def _validate_body(cls, value: Any) -> Any:
+        return _coerce_body(value)
 
 
 class SyncResponse(BaseModel):

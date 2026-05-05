@@ -68,7 +68,7 @@ def get_settings() -> Settings:
         data_dir=_BACKEND_ROOT / "app" / "data",
         jwt_secret=os.getenv("JWT_SECRET", default_secret).strip(),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256").strip(),
-        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200")),
+        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120")),
         refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE", ""), default=default_cookie_secure),
         cookie_samesite=_parse_samesite(os.getenv("COOKIE_SAMESITE", "lax")),

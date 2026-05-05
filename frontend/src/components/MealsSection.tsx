@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import type { DailyEntryInput, Meal as MealType, UserProduct } from "../types";
+import { generateId } from "../utils/id";
 import { Meal } from "./Meal";
 
 interface Props {
@@ -14,7 +15,7 @@ const DEFAULT_NAMES = ["ארוחת בוקר", "ארוחת צהריים", "ארו
 const storageKey = (uid: string) => `user_${uid}:meals:v1`;
 
 function makeMealId(): string {
-  return Math.random().toString(36).slice(2, 11);
+  return generateId("meal_");
 }
 
 function defaultMeals(): MealType[] {

@@ -12,8 +12,10 @@ import type {
   WeightLogEntry,
 } from "../types";
 import { todayStr } from "./date";
+import { generateId } from "./id";
 
 const DEFAULT_TARGET = 2000;
+export const HISTORY_RETENTION_DAYS = 365;
 
 function isIsoDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -95,7 +97,7 @@ function mergeDayLogs(a: DayLog[], b: DayLog[]): DayLog[] {
 export function mergeHistoryBlobs(localRaw: unknown, remoteRaw: unknown): DayLog[] {
   const parse = (raw: unknown): DayLog[] =>
     Array.isArray(raw) ? (raw.filter((x) => x?.date) as DayLog[]) : [];
-  return mergeDayLogs(parse(localRaw), parse(remoteRaw)).slice(0, 30);
+  return mergeDayLogs(parse(localRaw), parse(remoteRaw)).slice(0, HISTORY_RETENTION_DAYS);
 }
 
 export function mergeRecipeBlobs(localRaw: unknown, remoteRaw: unknown): SavedRecipe[] {
@@ -119,7 +121,7 @@ function isMeal(x: unknown): x is Meal {
 }
 
 function defaultMeals(): Meal[] {
-  return [{ id: `m_${Math.random().toString(36).slice(2, 11)}`, name: "ארוחת בוקר" }];
+  return [{ id: generateId("meal_"), name: "ארוחת בוקר" }];
 }
 
 export function mergeMealBlobs(localRaw: unknown, remoteRaw: unknown): Meal[] {

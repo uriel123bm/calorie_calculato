@@ -2,20 +2,19 @@ import { useCallback, useEffect, useState } from "react";
 import { trackEvent } from "../services/analytics";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import { todayStr } from "../utils/date";
-import { coerceDailyTrackerState } from "../utils/syncMerge";
+import { generateId } from "../utils/id";
+import { coerceDailyTrackerState, HISTORY_RETENTION_DAYS } from "../utils/syncMerge";
 import type { DailyEntry, DailyEntryInput, DailyTrackerState, DayLog } from "../types";
 
 const storageKey = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const historyKey = (uid: string) => `user_${uid}:dailyHistory:v1`;
 export { todayStr };
-const MAX_HISTORY_DAYS = 30;
-
 function journalActivationKey(uid: string): string {
   return `user_${uid}:journal_activation_sent:v1`;
 }
 
 function makeEntryId(): string {
-  return Math.random().toString(36).slice(2, 11);
+  return generateId("de_");
 }
 
 function loadState(uid: string): DailyTrackerState {
@@ -48,6 +47,12 @@ function loadHistory(uid: string): DayLog[] {
   }
 }
 
+function writeHistory(uid: string, logs: DayLog[]): DayLog[] {
+  const normalized = logs.slice(0, HISTORY_RETENTION_DAYS);
+  saveHistory(uid, normalized);
+  return normalized;
+}
+
 function saveHistory(uid: string, logs: DayLog[]): void {
   try {
     localStorage.setItem(historyKey(uid), JSON.stringify(logs));
@@ -56,15 +61,34 @@ function saveHistory(uid: string, logs: DayLog[]): void {
   }
 }
 
-function archiveDay(uid: string, state: DailyTrackerState): void {
-  if (state.entries.length === 0) return;
-  const history = loadHistory(uid);
-  const without = history.filter((h) => h.date !== state.date);
+function archiveDay(uid: string, state: DailyTrackerState, history?: DayLog[]): DayLog[] {
+  if (state.entries.length === 0) return history ?? loadHistory(uid);
+  const current = history ?? loadHistory(uid);
+  const without = current.filter((h) => h.date !== state.date);
   const updated = [
     { date: state.date, targetCalories: state.targetCalories, entries: state.entries },
     ...without,
-  ].slice(0, MAX_HISTORY_DAYS);
-  saveHistory(uid, updated);
+  ];
+  return writeHistory(uid, updated);
+}
+
+function migratePreviousDayIfNeeded(uid: string): { state: DailyTrackerState; history: DayLog[] } {
+  const state = loadState(uid);
+  let history = loadHistory(uid);
+  const today = todayStr();
+  if (state.date < today && state.entries.length > 0) {
+    history = archiveDay(uid, state, history);
+  }
+  if (state.date !== today) {
+    const migrated: DailyTrackerState = {
+      date: today,
+      targetCalories: state.targetCalories,
+      entries: [],
+    };
+    saveState(uid, migrated);
+    return { state: migrated, history };
+  }
+  return { state, history };
 }
 
 export interface UseDailyTrackerResult {
@@ -77,19 +101,21 @@ export interface UseDailyTrackerResult {
 }
 
 export function useDailyTracker(userId: string): UseDailyTrackerResult {
-  const [state, setState] = useState<DailyTrackerState>(() => loadState(userId));
-  const [history, setHistory] = useState<DayLog[]>(() => loadHistory(userId));
+  const [state, setState] = useState<DailyTrackerState>(() => migratePreviousDayIfNeeded(userId).state);
+  const [history, setHistory] = useState<DayLog[]>(() => migratePreviousDayIfNeeded(userId).history);
 
   useEffect(() => {
-    setState(loadState(userId));
-    setHistory(loadHistory(userId));
+    const migrated = migratePreviousDayIfNeeded(userId);
+    setState(migrated.state);
+    setHistory(migrated.history);
   }, [userId]);
 
   useEffect(() => {
     return subscribeSyncRefreshed((uid) => {
       if (uid !== userId) return;
-      setState(loadState(userId));
-      setHistory(loadHistory(userId));
+      const migrated = migratePreviousDayIfNeeded(userId);
+      setState(migrated.state);
+      setHistory(migrated.history);
     });
   }, [userId]);
 
@@ -100,8 +126,9 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
     const onStorage = (e: StorageEvent) => {
       if (e.storageArea !== localStorage) return;
       if (e.key !== key && e.key !== histKey) return;
-      setState(loadState(userId));
-      setHistory(loadHistory(userId));
+      const migrated = migratePreviousDayIfNeeded(userId);
+      setState(migrated.state);
+      setHistory(migrated.history);
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -117,8 +144,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
       const today = todayStr();
       setState((prev) => {
         if (prev.date === today) return prev;
-        archiveDay(userId, prev);
-        const newLogs = loadHistory(userId);
+        const newLogs = archiveDay(userId, prev);
         setHistory(newLogs);
         schedulePush(userId);
         return { date: today, targetCalories: prev.targetCalories, entries: [] };
@@ -177,8 +203,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
 
   const resetDay = useCallback(() => {
     setState((prev) => {
-      archiveDay(userId, prev);
-      setHistory(loadHistory(userId));
+      setHistory(archiveDay(userId, prev));
       schedulePush(userId);
       return { ...prev, entries: [] };
     });

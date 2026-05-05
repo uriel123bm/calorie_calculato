@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import type { NutritionPer100g, SavedRecipe } from "../types";
+import { generateId } from "../utils/id";
 
 const storageKey = (uid: string) => `user_${uid}:savedRecipes:v1`;
 
@@ -62,7 +63,7 @@ export function useSavedRecipes(userId: string): UseSavedRecipesResult {
       if (current.some((r) => r.name.toLowerCase() === normalised)) return "duplicate";
 
       const entry: SavedRecipe = {
-        id: Math.random().toString(36).slice(2, 11),
+        id: generateId("rcp_"),
         name: trimmed,
         savedAt: Date.now(),
         totalWeightG,

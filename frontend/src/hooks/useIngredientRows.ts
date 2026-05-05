@@ -31,6 +31,7 @@ import {
 } from "../types";
 
 import { isOfflineError } from "../utils/network";
+import { generateId } from "../utils/id";
 
 
 
@@ -103,8 +104,7 @@ const PLACEHOLDERS = [
 
 
 function makeRowId(): string {
-
-  return Math.random().toString(36).slice(2, 11);
+  return generateId("row_");
 
 }
 
