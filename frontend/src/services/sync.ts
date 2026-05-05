@@ -9,6 +9,7 @@
  * - When the tab becomes visible again we pull+push to pick up other devices.
  */
 import {
+  extractHistoricalDayLogFromTracker,
   mergeBodyBlobs,
   mergeDailyTrackerBlobs,
   mergeHistoryBlobs,
@@ -100,11 +101,21 @@ export function pullSync(uid: string): Promise<void> {
   _pullInFlight = (async () => {
     try {
       const { data } = await client.get<SyncResponse>("/sync");
+      const localTrackerRaw = readLocal(uid, "tracker");
+      const remoteTrackerRaw = data.tracker;
+      const localCarryLog = extractHistoricalDayLogFromTracker(localTrackerRaw);
+      const remoteCarryLog = extractHistoricalDayLogFromTracker(remoteTrackerRaw);
 
-      const mergedTracker = mergeDailyTrackerBlobs(readLocal(uid, "tracker"), data.tracker);
+      const mergedTracker = mergeDailyTrackerBlobs(localTrackerRaw, remoteTrackerRaw);
       writeLocal(uid, "tracker", mergedTracker);
 
-      const mergedHistory = mergeHistoryBlobs(readLocal(uid, "history"), data.history);
+      const historyWithCarry = [
+        ...(Array.isArray(readLocal(uid, "history")) ? (readLocal(uid, "history") as unknown[]) : []),
+        ...(Array.isArray(data.history) ? data.history : []),
+        ...(localCarryLog ? [localCarryLog] : []),
+        ...(remoteCarryLog ? [remoteCarryLog] : []),
+      ];
+      const mergedHistory = mergeHistoryBlobs(historyWithCarry, []);
       writeLocal(uid, "history", mergedHistory);
 
       const mergedRecipes = mergeRecipeBlobs(readLocal(uid, "recipes"), data.recipes);

@@ -72,6 +72,23 @@ export function mergeDailyTrackerBlobs(localRaw: unknown, remoteRaw: unknown): D
   };
 }
 
+export function extractHistoricalDayLogFromTracker(raw: unknown): DayLog | null {
+  const today = todayStr();
+  if (!raw || typeof raw !== "object") return null;
+  const payload = raw as Partial<DailyTrackerState>;
+  if (typeof payload.date !== "string" || payload.date >= today) return null;
+  if (!Array.isArray(payload.entries) || payload.entries.length === 0) return null;
+  const target =
+    typeof payload.targetCalories === "number" && payload.targetCalories > 0
+      ? Math.floor(payload.targetCalories)
+      : DEFAULT_TARGET;
+  return {
+    date: payload.date,
+    targetCalories: target,
+    entries: payload.entries.filter((e) => e && typeof e.id === "string"),
+  };
+}
+
 function mergeDayLogs(a: DayLog[], b: DayLog[]): DayLog[] {
   const byDate = new Map<string, DayLog>();
   for (const log of [...a, ...b]) {

@@ -17,19 +17,6 @@ function makeEntryId(): string {
   return generateId("de_");
 }
 
-function loadState(uid: string): DailyTrackerState {
-  if (typeof window === "undefined") {
-    return coerceDailyTrackerState(null);
-  }
-  try {
-    const raw = localStorage.getItem(storageKey(uid));
-    if (!raw) return coerceDailyTrackerState(null);
-    return coerceDailyTrackerState(JSON.parse(raw));
-  } catch {
-    return coerceDailyTrackerState(null);
-  }
-}
-
 function loadRawTracker(uid: string): unknown {
   if (typeof window === "undefined") return null;
   try {
