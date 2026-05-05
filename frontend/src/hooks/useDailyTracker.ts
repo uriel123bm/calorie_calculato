@@ -30,6 +30,16 @@ function loadState(uid: string): DailyTrackerState {
   }
 }
 
+function loadRawTracker(uid: string): unknown {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(storageKey(uid));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function saveState(uid: string, state: DailyTrackerState): void {
   try {
     localStorage.setItem(storageKey(uid), JSON.stringify(state));
@@ -73,16 +83,34 @@ function archiveDay(uid: string, state: DailyTrackerState, history?: DayLog[]): 
 }
 
 function migratePreviousDayIfNeeded(uid: string): { state: DailyTrackerState; history: DayLog[] } {
-  const state = loadState(uid);
+  const raw = loadRawTracker(uid);
+  const state = coerceDailyTrackerState(raw);
   let history = loadHistory(uid);
   const today = todayStr();
-  if (state.date < today && state.entries.length > 0) {
-    history = archiveDay(uid, state, history);
+  const rawDate =
+    raw && typeof raw === "object" && typeof (raw as { date?: unknown }).date === "string"
+      ? ((raw as { date: string }).date)
+      : today;
+  const rawEntries =
+    raw && typeof raw === "object" && Array.isArray((raw as { entries?: unknown }).entries)
+      ? ((raw as { entries: DailyEntry[] }).entries)
+      : [];
+  const rawTarget =
+    raw && typeof raw === "object" && typeof (raw as { targetCalories?: unknown }).targetCalories === "number"
+      ? Math.max(0, Math.floor((raw as { targetCalories: number }).targetCalories))
+      : state.targetCalories;
+
+  if (rawDate < today && rawEntries.length > 0) {
+    history = archiveDay(
+      uid,
+      { date: rawDate, targetCalories: rawTarget, entries: rawEntries },
+      history
+    );
   }
-  if (state.date !== today) {
+  if (rawDate !== today) {
     const migrated: DailyTrackerState = {
       date: today,
-      targetCalories: state.targetCalories,
+      targetCalories: rawTarget,
       entries: [],
     };
     saveState(uid, migrated);
