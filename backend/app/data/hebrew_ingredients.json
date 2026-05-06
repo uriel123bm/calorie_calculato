@@ -2099,6 +2099,638 @@
         "fat": 0,
         "sodium": 3
       }
+    },
+    {
+      "name": "נוטלה",
+      "aliases": [
+        "Nutella"
+      ],
+      "nutrition_per_100g": {
+        "calories": 533.3,
+        "protein": 6.0,
+        "carbohydrates": 57.3,
+        "sugar": 56.0,
+        "fat": 30.7,
+        "sodium": 428.0
+      }
+    },
+    {
+      "name": "קרקרים קריט",
+      "aliases": [
+        "Krit krititas galletas saladas"
+      ],
+      "nutrition_per_100g": {
+        "calories": 505.0,
+        "protein": 6.5,
+        "carbohydrates": 60.0,
+        "sugar": 8.7,
+        "fat": 26.0,
+        "sodium": 680.0
+      }
+    },
+    {
+      "name": "רוטב עגבניות עם בזיליקום",
+      "aliases": [
+        "Tomate y Badilico"
+      ],
+      "nutrition_per_100g": {
+        "calories": 64.0,
+        "protein": 1.6,
+        "carbohydrates": 7.6,
+        "sugar": 5.9,
+        "fat": 2.6,
+        "sodium": 354.0
+      }
+    },
+    {
+      "name": "tic tac סוכריות דחוסות בטעם מנטה",
+      "aliases": [
+        "Tic tac"
+      ],
+      "nutrition_per_100g": {
+        "calories": 397.0,
+        "protein": 0.1,
+        "carbohydrates": 97.5,
+        "sugar": 94.5,
+        "fat": 0.5,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "tic tac סוכריות דחוסות בטעם תפוז",
+      "aliases": [
+        "Tic Tac Fresh Orange"
+      ],
+      "nutrition_per_100g": {
+        "calories": 400.0,
+        "protein": 0.1,
+        "carbohydrates": 96.7,
+        "sugar": 93.3,
+        "fat": 0.7,
+        "sodium": 11.2
+      }
+    },
+    {
+      "name": "קורנפלקס צהוב",
+      "aliases": [
+        "Cornflakes Of Champions - Toasted Corn Flakes"
+      ],
+      "nutrition_per_100g": {
+        "calories": 375.0,
+        "protein": 7.0,
+        "carbohydrates": 83.3,
+        "sugar": 2.1,
+        "fat": 0.9,
+        "sodium": 113.0
+      }
+    },
+    {
+      "name": "וופל במילוי קרם חלבי",
+      "aliases": [
+        "ВАФЛЕНИ ПУРИ С МЛЕЧЕН КРЕМ"
+      ],
+      "nutrition_per_100g": {
+        "calories": 525.0,
+        "protein": 4.3,
+        "carbohydrates": 64.4,
+        "sugar": 0.0,
+        "fat": 27.5,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "קטשופ רוברה ללא גלוטן",
+      "aliases": [
+        "Salsa Rubra Il ketchup all’italiana"
+      ],
+      "nutrition_per_100g": {
+        "calories": 108.0,
+        "protein": 1.6,
+        "carbohydrates": 23.4,
+        "sugar": 20.4,
+        "fat": 0.1,
+        "sodium": 800.0
+      }
+    },
+    {
+      "name": "קוטג שטראוס",
+      "aliases": [
+        "Strauss Ski and Cottage"
+      ],
+      "nutrition_per_100g": {
+        "calories": 97.0,
+        "protein": 10.2,
+        "carbohydrates": 2.4,
+        "sugar": 2.4,
+        "fat": 5.0,
+        "sodium": 320.0
+      }
+    },
+    {
+      "name": "מתבל עגבניות",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 102.0,
+        "protein": 1.2,
+        "carbohydrates": 23.2,
+        "sugar": 22.8,
+        "fat": 0.1,
+        "sodium": 720.0
+      }
+    },
+    {
+      "name": "שיבולת שועל להכנה מהירה",
+      "aliases": [
+        "quaker"
+      ],
+      "nutrition_per_100g": {
+        "calories": 392.5,
+        "protein": 13.0,
+        "carbohydrates": 65.0,
+        "sugar": 1.0,
+        "fat": 8.0,
+        "sodium": 7.0
+      }
+    },
+    {
+      "name": "מיונז אמיתי",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 698.0,
+        "protein": 1.2,
+        "carbohydrates": 2.3,
+        "sugar": 1.4,
+        "fat": 76.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "חמאת בוטנים טבעית",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 617.0,
+        "protein": 28.0,
+        "carbohydrates": 12.4,
+        "sugar": 5.1,
+        "fat": 49.0,
+        "sodium": 6.0
+      }
+    },
+    {
+      "name": "שמנת 15%",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 78.5,
+        "protein": 1.4,
+        "carbohydrates": 1.4,
+        "sugar": 0.0,
+        "fat": 7.5,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "קרם מובחר למריחה",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 504.0,
+        "protein": 3.6,
+        "carbohydrates": 65.0,
+        "sugar": 57.0,
+        "fat": 25.5,
+        "sodium": 2400.0
+      }
+    },
+    {
+      "name": "אפּרוֹפּוֹ",
+      "aliases": [
+        "Apropo"
+      ],
+      "nutrition_per_100g": {
+        "calories": 268.0,
+        "protein": 2.3,
+        "carbohydrates": 31.0,
+        "sugar": 0.0,
+        "fat": 15.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "משקה סויה מועשר אלטרנטיב",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 46.0,
+        "protein": 3.3,
+        "carbohydrates": 4.0,
+        "sugar": 3.8,
+        "fat": 1.6,
+        "sodium": 50.0
+      }
+    },
+    {
+      "name": "3%גבינה קוטג",
+      "aliases": [
+        "3% Cottage Cheese"
+      ],
+      "nutrition_per_100g": {
+        "calories": 77.0,
+        "protein": 11.0,
+        "carbohydrates": 1.5,
+        "sugar": 1.5,
+        "fat": 3.0,
+        "sodium": 350.0
+      }
+    },
+    {
+      "name": "תפוציפס קאנצ בטעם גריל",
+      "aliases": [
+        "טפוצ׳יפס קראנץ׳ גריל"
+      ],
+      "nutrition_per_100g": {
+        "calories": 538.0,
+        "protein": 6.2,
+        "carbohydrates": 54.0,
+        "sugar": 3.0,
+        "fat": 33.0,
+        "sodium": 396.0
+      }
+    },
+    {
+      "name": "חטיף שיבולת עם שוקולד מריר",
+      "aliases": [
+        "Crunchy"
+      ],
+      "nutrition_per_100g": {
+        "calories": 473.8,
+        "protein": 8.8,
+        "carbohydrates": 61.4,
+        "sugar": 26.9,
+        "fat": 19.8,
+        "sodium": 259.5
+      }
+    },
+    {
+      "name": "קוטג' 9%",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 128.0,
+        "protein": 10.5,
+        "carbohydrates": 1.2,
+        "sugar": 1.2,
+        "fat": 9.0,
+        "sodium": 350.0
+      }
+    },
+    {
+      "name": "Whipping Cream 38% שמנת להקצפה",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 366.0,
+        "protein": 2.0,
+        "carbohydrates": 3.3,
+        "sugar": 3.3,
+        "fat": 38.0,
+        "sodium": 85.0
+      }
+    },
+    {
+      "name": "יוגורט גו במרקם סמיך תות",
+      "aliases": [
+        "GO by Yoplait"
+      ],
+      "nutrition_per_100g": {
+        "calories": 54.0,
+        "protein": 10.0,
+        "carbohydrates": 3.4,
+        "sugar": 3.1,
+        "fat": 0.0,
+        "sodium": 30.0
+      }
+    },
+    {
+      "name": "School Snack שוגי",
+      "aliases": [
+        "שוגי תלמה"
+      ],
+      "nutrition_per_100g": {
+        "calories": 476.9,
+        "protein": 6.5,
+        "carbohydrates": 61.2,
+        "sugar": 30.0,
+        "fat": 22.3,
+        "sodium": 334.6
+      }
+    },
+    {
+      "name": "לחם שחור אחיד",
+      "aliases": [
+        "דגנית עין בר"
+      ],
+      "nutrition_per_100g": {
+        "calories": 298.0,
+        "protein": 10.3,
+        "carbohydrates": 56.5,
+        "sugar": 0.0,
+        "fat": 2.5,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "גרנולה דבש פיטנס",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 429.0,
+        "protein": 8.7,
+        "carbohydrates": 65.0,
+        "sugar": 18.0,
+        "fat": 13.3,
+        "sodium": 36.0
+      }
+    },
+    {
+      "name": "חלב דל לקטוז",
+      "aliases": [
+        "חלב נטול לקטוז מפוסטר"
+      ],
+      "nutrition_per_100g": {
+        "calories": 52.0,
+        "protein": 3.4,
+        "carbohydrates": 5.0,
+        "sugar": 5.0,
+        "fat": 2.0,
+        "sodium": 40.0
+      }
+    },
+    {
+      "name": "חלב 1 אחוז",
+      "aliases": [
+        "חלב טרי"
+      ],
+      "nutrition_per_100g": {
+        "calories": 43.0,
+        "protein": 3.4,
+        "carbohydrates": 5.1,
+        "sugar": 5.1,
+        "fat": 1.0,
+        "sodium": 50.0
+      }
+    },
+    {
+      "name": "דנונה PRO יוגורט 20 גר׳ חלבון 1.5% שומן",
+      "aliases": [
+        "Danone - Pro Yogurt"
+      ],
+      "nutrition_per_100g": {
+        "calories": 70.0,
+        "protein": 20.0,
+        "carbohydrates": 6.8,
+        "sugar": 6.8,
+        "fat": 3.0,
+        "sodium": 69.0
+      }
+    },
+    {
+      "name": "קבנוס",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 364.0,
+        "protein": 20.0,
+        "carbohydrates": 8.0,
+        "sugar": 0.0,
+        "fat": 28.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "סקי 5%",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 96.0,
+        "protein": 7.9,
+        "carbohydrates": 3.9,
+        "sugar": 3.9,
+        "fat": 5.0,
+        "sodium": 240.0
+      }
+    },
+    {
+      "name": "ממולדה",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 472.0,
+        "protein": 6.9,
+        "carbohydrates": 61.0,
+        "sugar": 59.0,
+        "fat": 22.0,
+        "sodium": 95.0
+      }
+    },
+    {
+      "name": "קוטג' 12%",
+      "aliases": [
+        "קוטג' תנובה 12%"
+      ],
+      "nutrition_per_100g": {
+        "calories": 153.0,
+        "protein": 10.0,
+        "carbohydrates": 1.2,
+        "sugar": 0.0,
+        "fat": 12.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "בננה קרמל",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 50.0,
+        "protein": 8.0,
+        "carbohydrates": 3.2,
+        "sugar": 2.6,
+        "fat": 0.5,
+        "sodium": 49.0
+      }
+    },
+    {
+      "name": "חטיף חלבון בטעם דאבל שוקולד",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 372.0,
+        "protein": 31.0,
+        "carbohydrates": 35.6,
+        "sugar": 4.2,
+        "fat": 15.7,
+        "sodium": 155.0
+      }
+    },
+    {
+      "name": "צ׳יטוס Crunchy בטעם גבינה",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 550.0,
+        "protein": 5.4,
+        "carbohydrates": 57.0,
+        "sugar": 0.5,
+        "fat": 33.0,
+        "sodium": 390.0
+      }
+    },
+    {
+      "name": "קטשופ דל סוכר",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 64.0,
+        "protein": 2.0,
+        "carbohydrates": 14.0,
+        "sugar": 9.9,
+        "fat": 0.0,
+        "sodium": 395.0
+      }
+    },
+    {
+      "name": "וניל 2%",
+      "aliases": [
+        "Pro 25 Vanilla"
+      ],
+      "nutrition_per_100g": {
+        "calories": 89.0,
+        "protein": 11.6,
+        "carbohydrates": 4.3,
+        "sugar": 3.9,
+        "fat": 2.0,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "עד חצות",
+      "aliases": [
+        "עד חצות סגול"
+      ],
+      "nutrition_per_100g": {
+        "calories": 485.0,
+        "protein": 7.2,
+        "carbohydrates": 59.9,
+        "sugar": 41.9,
+        "fat": 23.4,
+        "sodium": 155.7
+      }
+    },
+    {
+      "name": "ריקוטה למריחה",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 87.0,
+        "protein": 6.0,
+        "carbohydrates": 3.0,
+        "sugar": 3.0,
+        "fat": 5.0,
+        "sodium": 320.0
+      }
+    },
+    {
+      "name": "קראנצ'י שיבולת שועל עם שוקולד מריר",
+      "aliases": [
+        "Nature valley chocolat"
+      ],
+      "nutrition_per_100g": {
+        "calories": 473.8,
+        "protein": 8.8,
+        "carbohydrates": 61.4,
+        "sugar": 26.9,
+        "fat": 19.8,
+        "sodium": 259.0
+      }
+    },
+    {
+      "name": "ממרח",
+      "aliases": [
+        "Spread Mayonnaise"
+      ],
+      "nutrition_per_100g": {
+        "calories": 644.0,
+        "protein": 0.8,
+        "carbohydrates": 3.0,
+        "sugar": 1.5,
+        "fat": 70.0,
+        "sodium": 400.0
+      }
+    },
+    {
+      "name": "קוטג׳ 5%",
+      "aliases": [
+        "קוטג' 5%"
+      ],
+      "nutrition_per_100g": {
+        "calories": 97.0,
+        "protein": 10.1,
+        "carbohydrates": 3.0,
+        "sugar": 3.0,
+        "fat": 5.0,
+        "sodium": 350.0
+      }
+    },
+    {
+      "name": "Pro 11 שוקולד",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 100.0,
+        "protein": 8.7,
+        "carbohydrates": 11.4,
+        "sugar": 9.4,
+        "fat": 1.8,
+        "sodium": 223.3
+      }
+    },
+    {
+      "name": "גרנולה שוקולד",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 436.0,
+        "protein": 9.0,
+        "carbohydrates": 62.7,
+        "sugar": 17.9,
+        "fat": 14.9,
+        "sodium": 0.0
+      }
+    },
+    {
+      "name": "עגבניות מרוסקות",
+      "aliases": [
+        "עגבניות מרוסקות ברסק עגבניות"
+      ],
+      "nutrition_per_100g": {
+        "calories": 26.0,
+        "protein": 1.3,
+        "carbohydrates": 4.5,
+        "sugar": 0.0,
+        "fat": 0.0,
+        "sodium": 150.0
+      }
+    },
+    {
+      "name": "פריכיות עם שוקולד",
+      "aliases": [],
+      "nutrition_per_100g": {
+        "calories": 453.0,
+        "protein": 7.6,
+        "carbohydrates": 69.0,
+        "sugar": 28.0,
+        "fat": 15.5,
+        "sodium": 251.0
+      }
+    },
+    {
+      "name": "חמאת בטנים טבעית",
+      "aliases": [
+        "חמאת בוטנים טבעית  (B&D)"
+      ],
+      "nutrition_per_100g": {
+        "calories": 617.0,
+        "protein": 28.0,
+        "carbohydrates": 12.4,
+        "sugar": 5.1,
+        "fat": 49.0,
+        "sodium": 6.0
+      }
     }
   ]
 }
