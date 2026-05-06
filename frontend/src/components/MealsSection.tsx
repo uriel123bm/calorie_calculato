@@ -147,7 +147,11 @@ export function MealsSection({ userId, onAddToDaily, personalProducts }: Props) 
 
       <div className="meals-list">
         {meals.length === 0 ? (
-          <div className="meals-empty">עדיין לא הגדרתם ארוחה. התחילו מהתיבה למעלה.</div>
+          <div className="empty-state">
+            <span className="material-symbols-outlined empty-state-icon">lunch_dining</span>
+            <p className="empty-state-title">אין ארוחות עדיין</p>
+            <p className="empty-state-sub">צרו ארוחה חדשה למעלה והוסיפו לה מצרכים</p>
+          </div>
         ) : (
           meals.map((meal) => (
             <Meal

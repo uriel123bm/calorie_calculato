@@ -493,6 +493,14 @@ export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay,
         workouts={workoutsByDate.get(today.date) ?? []}
       />
 
+      {!hasArchivedMeals && history.length === 0 && (
+        <div className="empty-state" style={{ margin: "8px 0 16px" }}>
+          <span className="material-symbols-outlined empty-state-icon">auto_stories</span>
+          <p className="empty-state-title">היומן ריק</p>
+          <p className="empty-state-sub">לאחר שתתחילו לעקוב אחרי ארוחות, הימים הקודמים יופיעו כאן</p>
+        </div>
+      )}
+
       <section className="section journal-calendar-section">
         <h2>
           <span className="material-symbols-outlined">calendar_month</span>

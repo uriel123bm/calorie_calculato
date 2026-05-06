@@ -36,6 +36,7 @@ ALLOWED_KEYS: set[str] = {
     "products",  # personal products library
     "body",      # body metrics + weight log
     "workouts",  # workouts + weekly planning
+    "water",     # daily water intake tracker
 }
 
 # Hard cap per blob to keep DB rows small (50 KB is plenty for years of usage).

@@ -29,7 +29,8 @@ export type SyncKey =
   | "settings"
   | "products"
   | "body"
-  | "workouts";
+  | "workouts"
+  | "water";
 
 const TRACKER_KEY  = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const HISTORY_KEY  = (uid: string) => `user_${uid}:dailyHistory:v1`;
@@ -39,6 +40,7 @@ const SETTINGS_KEY = (_uid: string) => `app:settings:v1`;
 const PRODUCTS_KEY = (uid: string) => `user_${uid}:products:v1`;
 const BODY_KEY     = (uid: string) => `user_${uid}:body:v1`;
 const WORKOUTS_KEY = (uid: string) => `user_${uid}:workouts_sync:v1`;
+const WATER_KEY    = (uid: string) => `user_${uid}:water:v1`;
 
 function localKey(uid: string, key: SyncKey): string {
   switch (key) {
@@ -50,6 +52,7 @@ function localKey(uid: string, key: SyncKey): string {
     case "products": return PRODUCTS_KEY(uid);
     case "body":     return BODY_KEY(uid);
     case "workouts": return WORKOUTS_KEY(uid);
+    case "water":    return WATER_KEY(uid);
   }
 }
 
@@ -93,6 +96,7 @@ interface SyncResponse {
   products: unknown | null;
   body:     unknown | null;
   workouts: unknown | null;
+  water:    unknown | null;
   updated_at: string | null;
 }
 
@@ -145,6 +149,8 @@ export function pullSync(uid: string): Promise<void> {
       const mergedWorkouts = mergeWorkoutBlobs(readLocal(uid, "workouts"), data.workouts);
       writeLocal(uid, "workouts", mergedWorkouts);
 
+      if (data.water) writeLocal(uid, "water", data.water);
+
       notifyRefreshed(uid);
       schedulePush(uid);
     } catch {
@@ -168,6 +174,7 @@ function readAllBuckets(uid: string): Record<SyncKey, unknown | null> {
     products: readLocal(uid, "products"),
     body:     readLocal(uid, "body"),
     workouts: readLocal(uid, "workouts"),
+    water:    readLocal(uid, "water"),
   };
 }
 

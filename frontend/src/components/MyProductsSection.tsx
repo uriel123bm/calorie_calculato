@@ -621,14 +621,10 @@ export function MyProductsSection({
         )}
 
         {products.length === 0 ? (
-          <div className="my-recipes-empty">
-            <span className="material-symbols-outlined" style={{ fontSize: 44, opacity: 0.3 }}>
-              inventory_2
-            </span>
-            <p>עדיין אין מוצרים אישיים.</p>
-            <p className="hint">
-              הוסיפו מעל את <strong>המוצר הראשון</strong> שלכם — הוא ישמר ויהיה זמין מכאן וגם ב<strong>ארוחות</strong>.
-            </p>
+          <div className="empty-state">
+            <span className="material-symbols-outlined empty-state-icon">inventory_2</span>
+            <p className="empty-state-title">הספרייה ריקה</p>
+            <p className="empty-state-sub">הוסיפו מוצר ראשון למעלה — הוא ישמר ויהיה זמין גם בארוחות וב"הוספה מהירה"</p>
           </div>
         ) : (
           <div className="my-recipes-list">

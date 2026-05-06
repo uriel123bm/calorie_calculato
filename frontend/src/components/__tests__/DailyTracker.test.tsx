@@ -14,6 +14,8 @@ describe("DailyTracker", () => {
     render(
       <DailyTracker
         state={state}
+        history={[]}
+        streak={0}
         setTarget={() => {}}
         addEntry={() => {}}
         removeEntry={() => {}}

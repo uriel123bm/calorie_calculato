@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { trackEvent } from "../services/analytics";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import { todayStr } from "../utils/date";
@@ -106,9 +106,28 @@ function migratePreviousDayIfNeeded(uid: string): { state: DailyTrackerState; hi
   return { state, history };
 }
 
+export function computeStreak(today: DailyTrackerState, history: DayLog[]): number {
+  const todayDate = today.date;
+  const dayMap = new Map<string, boolean>();
+  if (today.entries.length > 0) dayMap.set(todayDate, true);
+  for (const log of history) {
+    if (!dayMap.has(log.date)) dayMap.set(log.date, log.entries.length > 0);
+  }
+  let streak = 0;
+  const d = new Date(todayDate);
+  for (;;) {
+    const ds = d.toISOString().split("T")[0];
+    if (!dayMap.get(ds)) break;
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
 export interface UseDailyTrackerResult {
   state: DailyTrackerState;
   history: DayLog[];
+  streak: number;
   setTarget: (target: number) => void;
   addEntry: (input: DailyEntryInput) => void;
   removeEntry: (id: string) => void;
@@ -190,6 +209,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
         carbohydrates: Math.max(0, input.carbohydrates ?? 0),
         fat: Math.max(0, input.fat ?? 0),
         addedAt: Date.now(),
+        ...(input.mealType ? { mealType: input.mealType } : {}),
         ...(lines ? { lines } : {}),
       };
       try {
@@ -276,5 +296,7 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
     [userId]
   );
 
-  return { state, history, setTarget, addEntry, removeEntry, resetDay, addHistoryEntry, removeHistoryEntry };
+  const streak = useMemo(() => computeStreak(state, history), [state, history]);
+
+  return { state, history, streak, setTarget, addEntry, removeEntry, resetDay, addHistoryEntry, removeHistoryEntry };
 }

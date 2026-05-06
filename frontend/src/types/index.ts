@@ -88,6 +88,7 @@ export interface DailyEntryInput {
   protein?: number;
   carbohydrates?: number;
   fat?: number;
+  mealType?: MealType;
   lines?: DailyEntryLine[];
 }
 
@@ -105,6 +106,22 @@ export interface RecipeSummary {
   }>;
 }
 
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export const MEAL_TYPE_LABELS: Record<MealType, string> = {
+  breakfast: "ארוחת בוקר",
+  lunch:     "ארוחת צהריים",
+  dinner:    "ארוחת ערב",
+  snack:     "נשנוש",
+};
+
+export const MEAL_TYPE_ICONS: Record<MealType, string> = {
+  breakfast: "wb_sunny",
+  lunch:     "lunch_dining",
+  dinner:    "dinner_dining",
+  snack:     "cookie",
+};
+
 export interface DailyEntry {
   id: string;
   name: string;
@@ -113,6 +130,8 @@ export interface DailyEntry {
   carbohydrates: number;
   fat: number;
   addedAt: number;
+  /** סוג ארוחה — אופציונלי, לצורך קיבוץ */
+  mealType?: MealType;
   /** קיים כשנוסף מארוחה עם מצרכים — מאפשר פירוט במסך הבית וביומן */
   lines?: DailyEntryLine[];
 }

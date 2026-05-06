@@ -20,7 +20,7 @@ from pathlib import Path
 import httpx
 
 DATA_FILE = Path(__file__).parent.parent / "app" / "data" / "hebrew_ingredients.json"
-OFF_URL = "https://il.openfoodfacts.org/cgi/search.pl"
+OFF_URL = "https://world.openfoodfacts.org/api/v2/search"
 HEADERS = {"User-Agent": "CalorieCalculatorIL/1.0 (educational; contact via github)"}
 
 _PUNCT = re.compile(r"[\s\u00A0\-_\.,/\\!?\"'״׳`׃]+")
@@ -59,27 +59,23 @@ def build_existing_names(ingredients: list[dict]) -> set[str]:
     return names
 
 
-def fetch_page(page: int, page_size: int = 100, retries: int = 3) -> list[dict]:
+def fetch_page(page: int, page_size: int = 100, retries: int = 4) -> list[dict]:
     params = {
-        "tagtype_0": "countries",
-        "tag_contains_0": "contains",
-        "tag_0": "israel",
-        "action": "process",
-        "json": 1,
+        "categories_tags": "en:kosher",
+        "countries_tags": "en:israel",
+        "fields": "product_name,product_name_he,nutriments",
         "page": page,
         "page_size": page_size,
-        "fields": "product_name,product_name_he,nutriments,quantity",
         "sort_by": "unique_scans_n",
     }
-    urls = [OFF_URL, OFF_URL.replace("il.openfoodfacts", "world.openfoodfacts")]
     for attempt in range(retries):
-        url = urls[attempt % len(urls)]
         try:
-            resp = httpx.get(url, params=params, headers=HEADERS, timeout=25.0)
+            resp = httpx.get(OFF_URL, params=params, headers=HEADERS, timeout=30.0)
             resp.raise_for_status()
-            return resp.json().get("products", [])
+            data = resp.json()
+            return data.get("products", [])
         except Exception as exc:
-            wait = 5 * (attempt + 1)
+            wait = 8 * (attempt + 1)
             print(f"  [!] Page {page} attempt {attempt+1} error: {exc}. Retrying in {wait}s…")
             time.sleep(wait)
     return []

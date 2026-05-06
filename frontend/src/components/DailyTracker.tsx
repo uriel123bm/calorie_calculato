@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { isCancel } from "axios";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { NUTRITION_SOURCE_BADGES } from "../constants/nutritionSourceBadges";
 import { analyzeIngredient } from "../services/api";
 import type {
   DailyEntryInput,
   DailyTrackerState,
+  DayLog,
   HebrewUnit,
+  MealType,
   NutritionSource,
   UserProduct,
 } from "../types";
+import { MEAL_TYPE_ICONS, MEAL_TYPE_LABELS, UNITS } from "../types";
 import type { GoalTipsInput } from "../utils/goalTips";
 import { GoalTipsCard } from "./GoalTipsCard";
 import { HomeHeroIcon } from "./HomeHeroIcon";
-import { UNITS } from "../types";
 import {
   findPersonalProductByName,
   normalizeProductLabel,
@@ -28,9 +31,13 @@ import {
 } from "../utils/exportText";
 import { PdfExportButton } from "./PdfExportButton";
 import { PersonalProductChips } from "./PersonalProductChips";
+import type { UseWaterTrackerResult } from "../hooks/useWaterTracker";
+import { CUP_ML } from "../hooks/useWaterTracker";
 
 interface Props {
   state: DailyTrackerState;
+  history: DayLog[];
+  streak: number;
   setTarget: (target: number) => void;
   addEntry: (input: DailyEntryInput) => void;
   removeEntry: (id: string) => void;
@@ -39,6 +46,7 @@ interface Props {
   personalProducts?: UserProduct[];
   /** טיפים יומיים לפי מטרה/משקל — רק אם הוגדר פרופיל בהתקדמות */
   goalTipsContext?: GoalTipsInput | null;
+  water?: UseWaterTrackerResult;
 }
 
 /**
@@ -124,19 +132,172 @@ function PersonalProductQuickAdd({
   );
 }
 
+const WATER_QUICK = [
+  { label: "כוס",       ml: CUP_ML },
+  { label: "2 כוסות",  ml: CUP_ML * 2 },
+  { label: "חצי ליטר", ml: 500 },
+  { label: "ליטר",     ml: 1000 },
+];
+
+const WATER_GOAL_OPTIONS = [1.5, 2, 2.5, 3, 3.5, 4];
+
+function fmtLiters(ml: number): string {
+  const val = ml / 1000;
+  return (Number.isInteger(val) ? val.toString() : val.toFixed(2).replace(/0+$/, "")) + " ל׳";
+}
+
+function WaterWidget({ water }: { water: UseWaterTrackerResult }) {
+  const { totalMl, pct, state, addWater, removeLastEntry, setGoal } = water;
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [draftGoal, setDraftGoal] = useState<number | "">(state.goalMl / 1000);
+
+  const goalLiters = (state.goalMl / 1000).toFixed(1);
+  const totalLiters = (totalMl / 1000).toFixed(2);
+
+  const handleGoalSave = () => {
+    const val = Number(draftGoal);
+    if (val > 0) setGoal(Math.round(val * 1000));
+    setEditingGoal(false);
+  };
+
+  return (
+    <div className="water-widget">
+      <div className="water-widget-header">
+        <span className="material-symbols-outlined water-icon">water_drop</span>
+        <span className="water-title">שתייה</span>
+        <span className="water-total" dir="ltr">
+          {totalLiters} / {goalLiters} ל׳
+        </span>
+        <button
+          type="button"
+          className="ghost water-goal-edit-btn"
+          onClick={() => { setDraftGoal(state.goalMl / 1000); setEditingGoal((v) => !v); }}
+          title="שנה יעד שתייה"
+          aria-label="שנה יעד שתייה יומי"
+        >
+          <span className="material-symbols-outlined">edit</span>
+        </button>
+      </div>
+
+      {editingGoal && (
+        <div className="water-goal-editor">
+          <span className="water-goal-editor-label">יעד יומי (ליטרים):</span>
+          <div className="water-goal-chips">
+            {WATER_GOAL_OPTIONS.map((l) => (
+              <button
+                key={l}
+                type="button"
+                className={`water-goal-chip${state.goalMl === l * 1000 ? " active" : ""}`}
+                onClick={() => { setGoal(l * 1000); setDraftGoal(l); setEditingGoal(false); }}
+              >
+                {l} ל׳
+              </button>
+            ))}
+          </div>
+          <div className="water-goal-custom-row">
+            <input
+              type="number"
+              className="water-custom-input"
+              min={0.5}
+              step={0.5}
+              value={draftGoal === "" ? "" : draftGoal}
+              onChange={(e) => setDraftGoal(e.target.value === "" ? "" : Number(e.target.value))}
+              aria-label="יעד מותאם אישית בליטרים"
+              placeholder="ל׳ מותאם"
+            />
+            <button type="button" className="primary water-btn" onClick={handleGoalSave}>
+              שמור
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="water-progress-bar">
+        <div className="water-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+      {pct >= 100 && (
+        <p className="water-goal-reached">🎉 הגעת ליעד השתייה היומי!</p>
+      )}
+      <div className="water-actions">
+        {WATER_QUICK.map(({ label, ml }) => (
+          <button key={ml} type="button" className="ghost water-btn" onClick={() => addWater(ml)}>
+            +{label}
+          </button>
+        ))}
+        {state.entries.length > 0 && (
+          <button type="button" className="ghost water-btn water-undo" onClick={removeLastEntry} title="בטל אחרון">
+            ↩ {fmtLiters(state.entries[state.entries.length - 1].amountMl)}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyChart({ today, history }: { today: DailyTrackerState; history: DayLog[] }) {
+  const data = useMemo(() => {
+    const days: { label: string; cal: number; target: number; isToday: boolean }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today.date);
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split("T")[0];
+      const isToday = ds === today.date;
+      const dayData = isToday
+        ? today
+        : history.find((h) => h.date === ds);
+      const cal = dayData ? Math.round(dayData.entries.reduce((s, e) => s + e.calories, 0)) : 0;
+      const target = dayData?.targetCalories ?? today.targetCalories;
+      const label = d.toLocaleDateString("he-IL", { weekday: "short" });
+      days.push({ label, cal, target, isToday });
+    }
+    return days;
+  }, [today, history]);
+
+  const hasData = data.some((d) => d.cal > 0);
+  if (!hasData) return null;
+
+  return (
+    <div className="weekly-chart-wrap">
+      <div className="weekly-chart-title">7 ימים אחרונים</div>
+      <ResponsiveContainer width="100%" height={90}>
+        <BarChart data={data} barSize={18} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} />
+          <Tooltip
+            formatter={(v) => [`${Number(v)} קלוריות`, ""]}
+            labelStyle={{ direction: "rtl" }}
+            contentStyle={{ fontSize: 12 }}
+          />
+          <Bar dataKey="cal" radius={[4, 4, 0, 0]}>
+            {data.map((d, i) => (
+              <Cell
+                key={i}
+                fill={d.isToday ? "var(--primary)" : d.cal > d.target ? "var(--error, #e74c3c)" : "var(--primary-light, #a8d5b5)"}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export function DailyTracker({
   state,
+  history,
+  streak,
   setTarget,
   addEntry,
   removeEntry,
   resetDay,
   personalProducts = [],
   goalTipsContext = null,
+  water,
 }: Props) {
   // Manual entry state
   const [mName, setMName] = useState("");
   const [mQty, setMQty] = useState<number | "">(100);
   const [mUnit, setMUnit] = useState<HebrewUnit>("גרם");
+  const [mMealType, setMMealType] = useState<MealType | undefined>(undefined);
   const [mCalories, setMCalories] = useState<number | "">("");
   const [mProtein, setMProtein] = useState<number | "">("");
   const [mDetected, setMDetected] = useState<DetectedMacros | null>(null);
@@ -360,6 +521,7 @@ export function DailyTracker({
       protein: roundMacro(typeof mProtein === "number" ? mProtein : 0),
       carbohydrates: carbs,
       fat,
+      mealType: mMealType,
     });
     setMName(""); setMQty(100); setMUnit("גרם");
     setMCalories(""); setMProtein("");
@@ -374,6 +536,18 @@ export function DailyTracker({
     if (!ok) return;
     resetDay();
   };
+
+  const MEAL_ORDER: (MealType | "none")[] = ["breakfast", "lunch", "dinner", "snack", "none"];
+
+  const groupedEntries = useMemo(() => {
+    const groups: Record<string, typeof state.entries> = {};
+    for (const entry of [...state.entries].reverse()) {
+      const key = entry.mealType ?? "none";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(entry);
+    }
+    return groups;
+  }, [state.entries]);
 
   return (
     <div className="page-container">
@@ -391,11 +565,21 @@ export function DailyTracker({
           <h2 className="page-title">קלוריות היומיות</h2>
           <p className="page-subtitle">עקוב אחרי מה שאכלת היום</p>
         </div>
+        {streak >= 2 && (
+          <div className="streak-badge" title={`${streak} ימים ברצף!`}>
+            <span className="material-symbols-outlined">local_fire_department</span>
+            {streak}
+          </div>
+        )}
       </div>
+
+      <WeeklyChart today={state} history={history} />
 
       {goalTipsContext && (
         <GoalTipsCard input={goalTipsContext} variant="compact" />
       )}
+
+      {water && <WaterWidget water={water} />}
 
       {personalProducts.length > 0 && (
         <div className="section tracker-quick-products">
@@ -649,6 +833,22 @@ export function DailyTracker({
               ))}
             </datalist>
           )}
+          {/* Meal type selector */}
+          <div className="meal-type-selector" role="group" aria-label="סוג ארוחה">
+            {(["breakfast", "lunch", "dinner", "snack"] as MealType[]).map((mt) => (
+              <button
+                key={mt}
+                type="button"
+                className={`meal-type-pill${mMealType === mt ? " active" : ""}`}
+                onClick={() => setMMealType((prev) => (prev === mt ? undefined : mt))}
+                aria-pressed={mMealType === mt}
+              >
+                <span className="material-symbols-outlined">{MEAL_TYPE_ICONS[mt]}</span>
+                {MEAL_TYPE_LABELS[mt]}
+              </button>
+            ))}
+          </div>
+
           {(mStatus === "ready" || mStatus === "none") && mAnalyzeMeta && (
             <div className="manual-analyze-meta" aria-live="polite">
               <span className={`badge ${NUTRITION_SOURCE_BADGES[mAnalyzeMeta.source]?.cls ?? "unknown"}`}>
@@ -713,12 +913,28 @@ export function DailyTracker({
           </div>
         </div>
         {state.entries.length === 0 ? (
-          <p className="tracker-empty">
-            עדיין לא נרשמו ארוחות. הוסיפו מארוחה, מתכון, או ידנית.
-          </p>
+          <div className="tracker-empty-state">
+            <span className="material-symbols-outlined tracker-empty-icon">restaurant</span>
+            <p className="tracker-empty-title">לא נרשמו ארוחות להיום</p>
+            <p className="tracker-empty-sub">הוסיפו ארוחה, מתכון, או פריט ידני למעלה</p>
+          </div>
         ) : (
+          <>
+          {MEAL_ORDER.map((mealKey) => {
+            const entries = groupedEntries[mealKey];
+            if (!entries || entries.length === 0) return null;
+            const label = mealKey === "none" ? "כללי" : MEAL_TYPE_LABELS[mealKey as MealType];
+            const icon  = mealKey === "none" ? "more_horiz" : MEAL_TYPE_ICONS[mealKey as MealType];
+            const groupCal = entries.reduce((s, e) => s + e.calories, 0);
+            return (
+              <div key={mealKey} className="meal-group">
+                <div className="meal-group-header">
+                  <span className="material-symbols-outlined meal-group-icon">{icon}</span>
+                  <span className="meal-group-label">{label}</span>
+                  <span className="meal-group-cal">{Math.round(groupCal)} קל׳</span>
+                </div>
           <ul className="tracker-list">
-            {[...state.entries].reverse().map((entry) => {
+            {entries.map((entry) => {
               const lines = entry.lines?.filter((l) => l.name.trim()) ?? [];
               const hasBreakdown = lines.length > 0;
               const expanded = expandedEntryId === entry.id;
@@ -820,6 +1036,10 @@ export function DailyTracker({
               );
             })}
           </ul>
+              </div>
+            );
+          })}
+          </>
         )}
       </div>
       </div>

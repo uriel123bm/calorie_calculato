@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuthPage } from "./components/AuthPage";
 import { DailyTracker } from "./components/DailyTracker";
+import { InsightsCard } from "./components/InsightsCard";
 import { IngredientTable } from "./components/IngredientTable";
 import { JournalPage } from "./components/JournalPage";
 import { MealsSection } from "./components/MealsSection";
@@ -17,6 +18,7 @@ import { useToast } from "./context/ToastContext";
 import { useBodyMetrics } from "./hooks/useBodyMetrics";
 import { useDailyTracker } from "./hooks/useDailyTracker";
 import { useDarkMode, applyTheme } from "./hooks/useDarkMode";
+import { useWaterTracker } from "./hooks/useWaterTracker";
 import { useUserSettings } from "./hooks/useUserSettings";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useIngredientRows } from "./hooks/useIngredientRows";
@@ -91,6 +93,7 @@ function AppShell({
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
+  const water         = useWaterTracker(userId);
   const savedRecipes  = useSavedRecipes(userId);
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
@@ -493,24 +496,32 @@ function AppShell({
 
         {/* ── HOME ── */}
         {activeTab === "home" && (
-          <DailyTracker
-            state={daily.state}
-            setTarget={daily.setTarget}
-            addEntry={addEntryWithToast}
-            removeEntry={removeEntryWithToast}
-            resetDay={resetDayWithToast}
-            personalProducts={userProducts.products}
-            goalTipsContext={
-              body.metrics
-                ? {
-                    goal: body.metrics.goal,
-                    currentWeightKg: body.metrics.currentWeightKg,
-                    goalWeightKg: body.metrics.goalWeightKg ?? null,
-                    heightCm: body.metrics.heightCm,
-                  }
-                : null
-            }
-          />
+          <>
+            <DailyTracker
+              state={daily.state}
+              history={daily.history}
+              streak={daily.streak}
+              setTarget={daily.setTarget}
+              addEntry={addEntryWithToast}
+              removeEntry={removeEntryWithToast}
+              resetDay={resetDayWithToast}
+              personalProducts={userProducts.products}
+              goalTipsContext={
+                body.metrics
+                  ? {
+                      goal: body.metrics.goal,
+                      currentWeightKg: body.metrics.currentWeightKg,
+                      goalWeightKg: body.metrics.goalWeightKg ?? null,
+                      heightCm: body.metrics.heightCm,
+                    }
+                  : null
+              }
+              water={water}
+            />
+            <div className="page-container" style={{ paddingTop: 0 }}>
+              <InsightsCard today={daily.state} history={daily.history} />
+            </div>
+          </>
         )}
 
         {/* ── RECIPE ── */}
