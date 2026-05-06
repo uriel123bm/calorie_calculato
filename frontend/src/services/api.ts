@@ -8,8 +8,10 @@ import type {
 import { OfflineError } from "../utils/network";
 
 // In dev the Vite proxy forwards /auth, /ingredients, /recipe → backend.
-// In production set VITE_API_BASE to the deployed backend URL.
-const baseURL = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
+// In production the backend runs under /_/backend (Vercel experimentalServices).
+const baseURL =
+  (import.meta.env.VITE_API_BASE as string | undefined) ||
+  (import.meta.env.PROD ? "/_/backend" : "");
 
 export const client = axios.create({
   baseURL,
