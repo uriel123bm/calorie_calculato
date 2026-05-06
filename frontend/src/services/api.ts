@@ -126,7 +126,7 @@ client.interceptors.response.use(
           dispatchSessionExpired();
         }
         flushRefreshFailure(e);
-        return Promise.reject(error);
+        return Promise.reject(e);
       } finally {
         _isRefreshing = false;
       }

@@ -11,15 +11,21 @@ import { ProgressPage } from "./components/ProgressPage";
 import { RecipeNameInput } from "./components/RecipeNameInput";
 import { RecipeSummary } from "./components/RecipeSummary";
 import { HomeHeroIcon } from "./components/HomeHeroIcon";
+import { RecentIngredientChips } from "./components/RecentIngredientChips";
 import { useAuth } from "./context/AuthContext";
+import { useToast } from "./context/ToastContext";
 import { useBodyMetrics } from "./hooks/useBodyMetrics";
 import { useDailyTracker } from "./hooks/useDailyTracker";
+import { useDarkMode, applyTheme } from "./hooks/useDarkMode";
+import { useUserSettings } from "./hooks/useUserSettings";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useIngredientRows } from "./hooks/useIngredientRows";
 import { useSavedRecipes } from "./hooks/useSavedRecipes";
 import { useUserProducts } from "./hooks/useUserProducts";
 import type { IngredientRowState, NutritionPer100g } from "./types";
 import { divideTotalsByServings } from "./utils/nutritionMath";
+import { exportRecipeCsv } from "./utils/exportCsv";
+import { getRecentIngredients } from "./services/recentIngredients";
 
 type TabId = "home" | "recipe" | "meals" | "products" | "progress" | "journal";
 
@@ -67,7 +73,6 @@ function AppShell({
   username: string;
   onLogout: () => Promise<void>;
 }) {
-  type ToastTone = "success" | "info" | "error";
   type DeletedRowUndo = {
     row: IngredientRowState;
     index: number;
@@ -82,7 +87,7 @@ function AppShell({
   const [dontShowOnboardingAgain, setDontShowOnboardingAgain] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
-  const [toast, setToast] = useState<{ id: number; text: string; tone: ToastTone } | null>(null);
+  const { pushToast } = useToast();
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
@@ -90,12 +95,16 @@ function AppShell({
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
   const online        = useOnlineStatus();
+  const { mode: themeMode, setMode: setThemeMode } = useDarkMode();
+  const { settings, patchSettings } = useUserSettings(userId);
+  const [recentIngredients, setRecentIngredients] = useState<string[]>(() => getRecentIngredients());
+
+  const refreshRecent = useCallback(() => setRecentIngredients(getRecentIngredients()), []);
   const exportTargetRef = useRef<HTMLDivElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
   const undoTimeoutRef = useRef<number | null>(null);
   const [deletedRowUndo, setDeletedRowUndo] = useState<DeletedRowUndo | null>(null);
   const onboardingEndRef = useRef<number | null>(null);
-  const toastTimerRef = useRef<number | null>(null);
 
   const onboardingSteps = useMemo(
     () => [
@@ -114,18 +123,7 @@ function AppShell({
       if (onboardingEndRef.current !== null) {
         window.clearTimeout(onboardingEndRef.current);
       }
-      if (toastTimerRef.current !== null) {
-        window.clearTimeout(toastTimerRef.current);
-      }
     };
-  }, []);
-
-  const pushToast = useCallback((text: string, tone: ToastTone = "success") => {
-    if (toastTimerRef.current !== null) {
-      window.clearTimeout(toastTimerRef.current);
-    }
-    setToast({ id: Date.now(), text, tone });
-    toastTimerRef.current = window.setTimeout(() => setToast(null), 2400);
   }, []);
 
   /** הדרכה מוצגת רק אחרי הרשמה מוצלחת (לא אחרי התחברות). */
@@ -357,6 +355,7 @@ function AppShell({
     [pushToast, savedRecipes]
   );
 
+
   const addProductWithToast = useCallback(
     (...args: Parameters<typeof userProducts.addProduct>) => {
       const result = userProducts.addProduct(...args);
@@ -379,6 +378,30 @@ function AppShell({
     window.dispatchEvent(new CustomEvent("pwa:check-update"));
     setSettingsOpen(false);
   }, []);
+
+  const handleExportCsv = useCallback(() => {
+    exportRecipeCsv(recipe.rows, recipe.total, recipe.per100g, perServing, recipeName, servings);
+  }, [recipe.rows, recipe.total, recipe.per100g, perServing, recipeName, servings]);
+
+  useEffect(() => {
+    if (settings.theme && settings.theme !== themeMode) {
+      setThemeMode(settings.theme);
+      applyTheme(settings.theme);
+    }
+    // Only run when synced settings arrive, not on every themeMode change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.theme]);
+
+  const cycleTheme = useCallback(() => {
+    const next = themeMode === "system" ? "dark" : themeMode === "dark" ? "light" : "system";
+    setThemeMode(next);
+    patchSettings({ theme: next });
+  }, [themeMode, setThemeMode, patchSettings]);
+
+  const themeLabel =
+    themeMode === "dark" ? "מצב כהה" : themeMode === "light" ? "מצב בהיר" : "מצב אוטומטי";
+  const themeIcon =
+    themeMode === "dark" ? "dark_mode" : themeMode === "light" ? "light_mode" : "brightness_auto";
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -416,8 +439,12 @@ function AppShell({
           >
             <span className="material-symbols-outlined">settings</span>
           </button>
-          {settingsOpen && (
+            {settingsOpen && (
             <div className="settings-menu" role="menu" aria-label="תפריט הגדרות">
+              <button type="button" className="settings-menu-item" role="menuitem" onClick={cycleTheme}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>{themeIcon}</span>
+                {themeLabel}
+              </button>
               <button type="button" className="settings-menu-item" role="menuitem" onClick={handleCheckUpdates}>
                 בדוק עדכונים
               </button>
@@ -505,12 +532,25 @@ function AppShell({
                   <span className="material-symbols-outlined">format_list_bulleted</span>
                   רשימת מצרכים
                 </h2>
+                <RecentIngredientChips
+                  recent={recentIngredients}
+                  onPick={(name) => {
+                    const emptyIdx = recipe.rows.findIndex((r) => !r.name.trim());
+                    if (emptyIdx >= 0) {
+                      recipe.patchRow(recipe.rows[emptyIdx].id, { name });
+                      setTimeout(() => {
+                        recipe.analyzeRow(recipe.rows[emptyIdx].id);
+                        refreshRecent();
+                      }, 50);
+                    }
+                  }}
+                />
                 <IngredientTable
                   rows={recipe.rows}
                   onPatchRow={recipe.patchRow}
                   onRemoveRow={handleRemoveRowWithUndo}
                   onAddRow={recipe.addRow}
-                  onAnalyzeRow={recipe.analyzeRow}
+                  onAnalyzeRow={(id) => { recipe.analyzeRow(id); setTimeout(refreshRecent, 1500); }}
                   onNutritionEdit={recipe.handleNutritionEdit}
                   onSubmitLastRow={recipe.addRow}
                   nameSuggestions={nameSuggestions}
@@ -557,6 +597,17 @@ function AppShell({
                 filename={`${recipeName.trim() || "מתכון"}.pdf`}
                 disabled={!hasFilledRows}
               />
+
+              <button
+                type="button"
+                className="ghost"
+                onClick={handleExportCsv}
+                disabled={!hasFilledRows}
+                title="ייצוא לקובץ CSV"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>download</span>
+                CSV
+              </button>
             </div>
 
             {recipeSaved && (
@@ -632,15 +683,17 @@ function AppShell({
             history={daily.history}
             onRemoveEntry={removeEntryWithToast}
             onResetDay={resetDayWithToast}
+            onAddHistoryEntry={(date, input) => {
+              daily.addHistoryEntry(date, input);
+              pushToast("הרשומה נוספה ליום " + date.slice(8, 10) + "/" + date.slice(5, 7), "success");
+            }}
+            onRemoveHistoryEntry={(date, id) => {
+              daily.removeHistoryEntry(date, id);
+              pushToast("הרשומה נמחקה", "info");
+            }}
           />
         )}
       </main>
-
-      {toast && (
-        <div className={`app-toast app-toast--${toast.tone}`} key={toast.id} role="status" aria-live="polite">
-          {toast.text}
-        </div>
-      )}
 
       {showOnboarding && (
         <div className="onboarding-overlay" role="dialog" aria-live="polite" aria-label="הדרכה קצרה">

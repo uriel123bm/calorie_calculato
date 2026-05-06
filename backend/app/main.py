@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,11 +33,6 @@ def create_app() -> FastAPI:
     async def lifespan(app_instance: FastAPI):
         init_db()
         logging.info("Database initialised.")
-        if os.getenv("VERCEL") and not os.getenv("JWT_SECRET", "").strip():
-            logging.warning(
-                "VERCEL: JWT_SECRET is unset — access tokens may fail validation across deployments; "
-                "set JWT_SECRET in Vercel Project → Environment Variables."
-            )
         yield
 
     app = FastAPI(

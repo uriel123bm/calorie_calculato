@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import type { DailyEntry, DailyTrackerState, DayLog } from "../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { DailyEntry, DailyEntryInput, DailyTrackerState, DayLog } from "../types";
 import { subscribeSyncRefreshed } from "../services/sync";
 
 interface WorkoutEntry {
@@ -16,6 +16,130 @@ interface Props {
   history: DayLog[];
   onRemoveEntry: (id: string) => void;
   onResetDay: () => void;
+  onAddHistoryEntry?: (date: string, input: DailyEntryInput) => void;
+  onRemoveHistoryEntry?: (date: string, entryId: string) => void;
+}
+
+function PastDayAddForm({
+  onAdd,
+}: {
+  onAdd: (input: DailyEntryInput) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) setTimeout(() => nameRef.current?.focus(), 60);
+  }, [open]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cal = parseFloat(calories);
+    if (!name.trim() || !Number.isFinite(cal) || cal <= 0) return;
+    onAdd({
+      name: name.trim(),
+      calories: cal,
+      protein: parseFloat(protein) || 0,
+      carbohydrates: parseFloat(carbs) || 0,
+      fat: parseFloat(fat) || 0,
+    });
+    setName("");
+    setCalories("");
+    setProtein("");
+    setCarbs("");
+    setFat("");
+    setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="ghost past-day-add-btn"
+        onClick={() => setOpen(true)}
+      >
+        <span className="material-symbols-outlined" aria-hidden="true">add_circle</span>
+        הוסף רשומה ידנית
+      </button>
+    );
+  }
+
+  return (
+    <form className="past-day-add-form" onSubmit={handleSubmit}>
+      <h4 className="past-day-add-title">הוספת רשומה ידנית</h4>
+      <div className="past-day-add-row">
+        <input
+          ref={nameRef}
+          className="past-day-add-input"
+          type="text"
+          placeholder="שם הפריט"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </div>
+      <div className="past-day-add-macros">
+        <label className="past-day-macro-field">
+          <span>קלוריות</span>
+          <input
+            className="past-day-add-input"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="0"
+            value={calories}
+            onChange={(e) => setCalories(e.target.value)}
+            required
+          />
+        </label>
+        <label className="past-day-macro-field">
+          <span>חלבון גרם</span>
+          <input
+            className="past-day-add-input"
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="0"
+            value={protein}
+            onChange={(e) => setProtein(e.target.value)}
+          />
+        </label>
+        <label className="past-day-macro-field">
+          <span>פחמימות גרם</span>
+          <input
+            className="past-day-add-input"
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="0"
+            value={carbs}
+            onChange={(e) => setCarbs(e.target.value)}
+          />
+        </label>
+        <label className="past-day-macro-field">
+          <span>שומן גרם</span>
+          <input
+            className="past-day-add-input"
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="0"
+            value={fat}
+            onChange={(e) => setFat(e.target.value)}
+          />
+        </label>
+      </div>
+      <div className="past-day-add-actions">
+        <button type="submit" className="primary pill">שמור</button>
+        <button type="button" className="ghost pill" onClick={() => setOpen(false)}>ביטול</button>
+      </div>
+    </form>
+  );
 }
 
 function formatTime(ts: number): string {
@@ -199,7 +323,7 @@ function DayBlock({
             <EntryCard
               key={e.id}
               entry={e}
-              onRemove={isToday && onRemoveEntry ? () => onRemoveEntry(e.id) : undefined}
+              onRemove={onRemoveEntry ? () => onRemoveEntry(e.id) : undefined}
             />
           ))}
         </div>
@@ -229,7 +353,7 @@ function isoDateInMonth(year: number, month0: number, day: number): string {
   return `${year}-${m}-${d}`;
 }
 
-export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay }: Props) {
+export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay, onAddHistoryEntry, onRemoveHistoryEntry }: Props) {
   const [viewMonth, setViewMonth] = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
@@ -459,18 +583,34 @@ export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay 
                   targetCalories={selectedLog?.targetCalories ?? today.targetCalories}
                   isToday={selectedDate === today.date}
                   onRemoveEntry={
-                    selectedDate === today.date ? onRemoveEntry : undefined
+                    selectedDate === today.date
+                      ? onRemoveEntry
+                      : onRemoveHistoryEntry
+                        ? (id) => onRemoveHistoryEntry(selectedDate!, id)
+                        : undefined
                   }
                   onResetDay={
                     selectedDate === today.date ? onResetDay : undefined
                   }
                   workouts={workoutsByDate.get(selectedDate!) ?? []}
                 />
+                {selectedDate !== today.date && onAddHistoryEntry && (
+                  <PastDayAddForm
+                    onAdd={(input) => onAddHistoryEntry(selectedDate!, input)}
+                  />
+                )}
               </div>
             ) : (
-              <p className="journal-empty" style={{ margin: "12px 0 0" }}>
-                אין נתונים ליום זה.
-              </p>
+              <div className="journal-modal-body">
+                <p className="journal-empty" style={{ margin: "0 0 12px" }}>
+                  אין נתונים ליום זה.
+                </p>
+                {selectedDate !== today.date && onAddHistoryEntry && (
+                  <PastDayAddForm
+                    onAdd={(input) => onAddHistoryEntry(selectedDate!, input)}
+                  />
+                )}
+              </div>
             )}
           </div>
         </div>

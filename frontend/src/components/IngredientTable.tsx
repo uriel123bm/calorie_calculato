@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { IngredientRowState, NutritionPer100g, UserProduct } from "../types";
 import { IngredientRow } from "./IngredientRow";
+import { SkeletonRow } from "./SkeletonRow";
 
 interface Props {
   rows: IngredientRowState[];
@@ -86,22 +87,26 @@ export function IngredientTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
-            <IngredientRow
-              key={row.id}
-              row={row}
-              onChange={(patch) => onPatchRow(row.id, patch)}
-              onRemove={() => onRemoveRow(row.id)}
-              onAnalyze={() => onAnalyzeRow(row.id)}
-              onNutritionEdit={(next) => onNutritionEdit(row.id, next)}
-              canRemove={rows.length > 1}
-              personalProducts={personalProducts}
-              rowIndex={index}
-              isLastRow={index === rows.length - 1}
-              onSubmitLastRow={onSubmitLastRow}
-              nameSuggestionsId={suggestionsId}
-            />
-          ))}
+          {rows.map((row, index) =>
+            row.status === "loading" ? (
+              <SkeletonRow key={row.id} />
+            ) : (
+              <IngredientRow
+                key={row.id}
+                row={row}
+                onChange={(patch) => onPatchRow(row.id, patch)}
+                onRemove={() => onRemoveRow(row.id)}
+                onAnalyze={() => onAnalyzeRow(row.id)}
+                onNutritionEdit={(next) => onNutritionEdit(row.id, next)}
+                canRemove={rows.length > 1}
+                personalProducts={personalProducts}
+                rowIndex={index}
+                isLastRow={index === rows.length - 1}
+                onSubmitLastRow={onSubmitLastRow}
+                nameSuggestionsId={suggestionsId}
+              />
+            )
+          )}
         </tbody>
       </table>
       <div className="toolbar">

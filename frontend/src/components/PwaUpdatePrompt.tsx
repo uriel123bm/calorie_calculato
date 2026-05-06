@@ -105,7 +105,11 @@ export function PwaUpdatePrompt() {
       void (async () => {
         try {
           const registration = await navigator.serviceWorker.getRegistration();
-          if (!registration || seq !== checkSeqRef.current) return;
+          if (seq !== checkSeqRef.current) return;
+          if (!registration) {
+            setManualCheckState("none");
+            return;
+          }
 
           const waiting = await detectUpdateWaiting(registration);
           if (seq !== checkSeqRef.current) return;

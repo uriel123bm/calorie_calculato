@@ -57,7 +57,7 @@ Calorie_Calculator/
 
 ### Backend
 
-Requires Python 3.11+ (tested on 3.14).
+Requires Python 3.11+ (tested on 3.12).
 
 ```bash
 cd backend

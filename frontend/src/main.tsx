@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/react";
 import App from "./App";
 import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
 import { AuthProvider } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import { initAnalytics } from "./services/analytics";
 import { registerServiceWorkerLifecycle } from "./registerSwLifecycle";
 import "./styles/App.css";
@@ -23,8 +24,10 @@ if (sentryDsn) {
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
-      <PwaUpdatePrompt />
+      <ToastProvider>
+        <App />
+        <PwaUpdatePrompt />
+      </ToastProvider>
     </AuthProvider>
   </React.StrictMode>
 );

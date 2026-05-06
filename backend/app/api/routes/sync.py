@@ -2,8 +2,9 @@
 Cross-device user-data sync.
 
 The frontend mirrors a small set of localStorage buckets ("tracker",
-"history", "recipes", "settings") into the `user_data` table so users
-see the same data on every device they log in from.
+"history", "recipes", "meals", "products", "body", "workouts") into
+the `user_data` table so users see the same data on every device they
+log in from.
 
 GET  /sync         → return all buckets for the current user
 PUT  /sync         → upsert any subset of buckets sent by the client
@@ -31,7 +32,7 @@ ALLOWED_KEYS: set[str] = {
     "history",
     "recipes",
     "meals",
-    "settings",
+    "settings",  # user preferences (theme, etc.)
     "products",  # personal products library
     "body",      # body metrics + weight log
     "workouts",  # workouts + weekly planning
@@ -158,7 +159,7 @@ def _coerce_recipes(value: Any) -> list[dict[str, Any]] | None:
         name = item.get("name")
         if not isinstance(recipe_id, str) or not recipe_id.strip():
             continue
-        if not isinstance(name, str):
+        if not isinstance(name, str) or not name.strip():
             continue
         recipes.append(item)
     return recipes
@@ -203,6 +204,16 @@ def _coerce_body(value: Any) -> dict[str, Any] | None:
                 )
         cleaned["log"] = cleaned_log
     return cleaned
+
+
+def _coerce_settings(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    cleaned: dict[str, Any] = {}
+    theme = value.get("theme")
+    if theme in ("system", "light", "dark"):
+        cleaned["theme"] = theme
+    return cleaned if cleaned else None
 
 
 def _coerce_workouts(value: Any) -> dict[str, Any] | None:
@@ -265,6 +276,11 @@ class SyncBuckets(BaseModel):
     @classmethod
     def _validate_recipes(cls, value: Any) -> Any:
         return _coerce_recipes(value)
+
+    @field_validator("settings", mode="before")
+    @classmethod
+    def _validate_settings(cls, value: Any) -> Any:
+        return _coerce_settings(value)
 
     @field_validator("products", mode="before")
     @classmethod

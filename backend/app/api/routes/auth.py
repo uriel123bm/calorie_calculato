@@ -214,12 +214,17 @@ def _rate_limit_check(key: str) -> None:
     window_start = now - WINDOW_SECONDS
     attempts = [t for t in _rate_attempts.get(key, []) if t >= window_start]
     if len(attempts) >= MAX_ATTEMPTS:
+        _rate_attempts[key] = attempts
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="יותר מדי ניסיונות, נסו שוב בעוד כמה דקות",
         )
     attempts.append(now)
     _rate_attempts[key] = attempts
+    # Evict fully-expired keys to prevent unbounded memory growth.
+    stale = [k for k, v in _rate_attempts.items() if not v or max(v) < window_start]
+    for k in stale:
+        del _rate_attempts[k]
 
 
 def _rate_limit_clear(key: str) -> None:

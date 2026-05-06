@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isCancel } from "axios";
 
 import { analyzeIngredient } from "../services/api";
+import { addRecentIngredient } from "../services/recentIngredients";
 
 import {
 
@@ -422,6 +423,7 @@ export function useIngredientRows(initialCount: number = 4): UseIngredientRowsRe
               ? res.quantity_in_grams / qty
               : undefined;
 
+        addRecentIngredient(target.name.trim());
         patchRow(id, {
           nutritionPer100g: res.nutrition_per_100g,
           nutritionForQuantity: res.nutrition_for_quantity,

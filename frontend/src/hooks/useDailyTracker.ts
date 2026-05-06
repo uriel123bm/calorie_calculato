@@ -113,11 +113,16 @@ export interface UseDailyTrackerResult {
   addEntry: (input: DailyEntryInput) => void;
   removeEntry: (id: string) => void;
   resetDay: () => void;
+  /** Add a calorie entry to a past day in the history archive. */
+  addHistoryEntry: (date: string, input: DailyEntryInput) => void;
+  /** Remove a calorie entry from a past day in the history archive. */
+  removeHistoryEntry: (date: string, entryId: string) => void;
 }
 
 export function useDailyTracker(userId: string): UseDailyTrackerResult {
-  const [state, setState] = useState<DailyTrackerState>(() => migratePreviousDayIfNeeded(userId).state);
-  const [history, setHistory] = useState<DayLog[]>(() => migratePreviousDayIfNeeded(userId).history);
+  const [{ state: initState, history: initHistory }] = useState(() => migratePreviousDayIfNeeded(userId));
+  const [state, setState] = useState<DailyTrackerState>(initState);
+  const [history, setHistory] = useState<DayLog[]>(initHistory);
 
   useEffect(() => {
     const migrated = migratePreviousDayIfNeeded(userId);
@@ -217,12 +222,59 @@ export function useDailyTracker(userId: string): UseDailyTrackerResult {
   }, []);
 
   const resetDay = useCallback(() => {
-    setState((prev) => {
-      setHistory(archiveDay(userId, prev));
-      schedulePush(userId);
-      return { ...prev, entries: [] };
-    });
-  }, [userId]);
+    const newHistory = archiveDay(userId, state);
+    setHistory(newHistory);
+    schedulePush(userId);
+    setState((prev) => ({ ...prev, entries: [] }));
+  }, [userId, state]);
 
-  return { state, history, setTarget, addEntry, removeEntry, resetDay };
+  const addHistoryEntry = useCallback(
+    (date: string, input: DailyEntryInput) => {
+      setHistory((prev) => {
+        const existing = prev.find((h) => h.date === date);
+        const newEntry: DailyEntry = {
+          id: makeEntryId(),
+          name: input.name.trim() || "פריט",
+          calories: Math.max(0, input.calories || 0),
+          protein: Math.max(0, input.protein ?? 0),
+          carbohydrates: Math.max(0, input.carbohydrates ?? 0),
+          fat: Math.max(0, input.fat ?? 0),
+          addedAt: Date.now(),
+          ...(input.lines ? { lines: input.lines } : {}),
+        };
+        let updated: DayLog[];
+        if (existing) {
+          updated = prev.map((h) =>
+            h.date === date ? { ...h, entries: [...h.entries, newEntry] } : h
+          );
+        } else {
+          updated = [
+            { date, targetCalories: state.targetCalories, entries: [newEntry] },
+            ...prev,
+          ];
+        }
+        updated = updated.slice(0, HISTORY_RETENTION_DAYS);
+        saveHistory(userId, updated);
+        schedulePush(userId);
+        return updated;
+      });
+    },
+    [userId, state.targetCalories]
+  );
+
+  const removeHistoryEntry = useCallback(
+    (date: string, entryId: string) => {
+      setHistory((prev) => {
+        const updated = prev.map((h) =>
+          h.date === date ? { ...h, entries: h.entries.filter((e) => e.id !== entryId) } : h
+        );
+        saveHistory(userId, updated);
+        schedulePush(userId);
+        return updated;
+      });
+    },
+    [userId]
+  );
+
+  return { state, history, setTarget, addEntry, removeEntry, resetDay, addHistoryEntry, removeHistoryEntry };
 }

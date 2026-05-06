@@ -26,6 +26,7 @@ export type SyncKey =
   | "history"
   | "recipes"
   | "meals"
+  | "settings"
   | "products"
   | "body"
   | "workouts";
@@ -34,6 +35,7 @@ const TRACKER_KEY  = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const HISTORY_KEY  = (uid: string) => `user_${uid}:dailyHistory:v1`;
 const RECIPES_KEY  = (uid: string) => `user_${uid}:savedRecipes:v1`;
 const MEALS_KEY    = (uid: string) => `user_${uid}:meals:v1`;
+const SETTINGS_KEY = (_uid: string) => `app:settings:v1`;
 const PRODUCTS_KEY = (uid: string) => `user_${uid}:products:v1`;
 const BODY_KEY     = (uid: string) => `user_${uid}:body:v1`;
 const WORKOUTS_KEY = (uid: string) => `user_${uid}:workouts_sync:v1`;
@@ -44,6 +46,7 @@ function localKey(uid: string, key: SyncKey): string {
     case "history":  return HISTORY_KEY(uid);
     case "recipes":  return RECIPES_KEY(uid);
     case "meals":    return MEALS_KEY(uid);
+    case "settings": return SETTINGS_KEY(uid);
     case "products": return PRODUCTS_KEY(uid);
     case "body":     return BODY_KEY(uid);
     case "workouts": return WORKOUTS_KEY(uid);
@@ -133,6 +136,10 @@ export function pullSync(uid: string): Promise<void> {
       const mergedProducts = mergeProductBlobs(readLocal(uid, "products"), data.products);
       writeLocal(uid, "products", mergedProducts);
 
+      if (data.settings && typeof data.settings === "object") {
+        writeLocal(uid, "settings", data.settings);
+      }
+
       const mergedBody = mergeBodyBlobs(readLocal(uid, "body"), data.body);
       if (mergedBody) writeLocal(uid, "body", mergedBody);
       const mergedWorkouts = mergeWorkoutBlobs(readLocal(uid, "workouts"), data.workouts);
@@ -157,6 +164,7 @@ function readAllBuckets(uid: string): Record<SyncKey, unknown | null> {
     history:  readLocal(uid, "history"),
     recipes:  readLocal(uid, "recipes"),
     meals:    readLocal(uid, "meals"),
+    settings: readLocal(uid, "settings"),
     products: readLocal(uid, "products"),
     body:     readLocal(uid, "body"),
     workouts: readLocal(uid, "workouts"),
@@ -170,6 +178,7 @@ export async function pushSyncNow(uid: string): Promise<void> {
     !buckets.history &&
     !buckets.recipes &&
     !buckets.meals &&
+    !buckets.settings &&
     !buckets.products &&
     !buckets.body &&
     !buckets.workouts;
