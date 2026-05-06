@@ -21,6 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install uv (required for FastAPI backend build)
+        uses: astral-sh/setup-uv@v4
+
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
