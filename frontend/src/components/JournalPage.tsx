@@ -280,8 +280,8 @@ function DayBlock({
           ) : formatDate(dateStr)}
         </div>
         <div className="journal-day-right">
-          <span className={`journal-day-cal${over ? " over" : ""}`}>
-            {Math.round(totalCal)} / {targetCalories} קלוריות
+          <span className={`journal-day-cal${over ? " over" : ""}`} dir="ltr">
+            {Math.round(totalCal)} / {targetCalories} <span dir="rtl">קלוריות</span>
           </span>
           {isToday && onResetDay && entries.length > 0 && (
             <button type="button" className="ghost tracker-reset-btn" onClick={onResetDay}>
