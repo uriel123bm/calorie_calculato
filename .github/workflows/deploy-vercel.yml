@@ -1,10 +1,15 @@
-# Production deploy via Vercel CLI (when Git→Vercel auto-deploy is unreliable).
-# Setup: GitHub repo → Settings → Secrets → Actions → add:
+# Deploy to Vercel Production on version tag push.
+#
+# Usage:
+#   git tag v3.1.2 && git push origin v3.1.2
+#
+# That's it — Vercel deploys automatically.
+# Regular `git push` to main does NOT trigger a deploy.
+#
+# Prerequisites (one-time setup in GitHub repo Settings → Secrets → Actions):
 #   VERCEL_TOKEN        https://vercel.com/account/tokens
-#   VERCEL_ORG_ID       Project Settings → General (or .vercel/project.json after `vercel link`)
-#   VERCEL_PROJECT_ID   same
-# Then: Actions → "Vercel Production Deploy" → Run workflow.
-# Ref: https://vercel.com/guides/how-can-i-use-github-actions-with-vercel
+#   VERCEL_ORG_ID       Vercel Team/Account ID
+#   VERCEL_PROJECT_ID   Vercel Project ID (Settings → General)
 
 name: Vercel Production Deploy
 
@@ -13,7 +18,9 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   deploy-production:
