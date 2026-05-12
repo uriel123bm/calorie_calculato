@@ -74,8 +74,8 @@ def _has_entries_today(db: Session, user_id: int) -> bool:
     return False
 
 
-def _has_water_today(db: Session, user_id: int) -> bool:
-    """Return True if the user has logged any water today."""
+def _reached_water_goal_today(db: Session, user_id: int) -> bool:
+    """Return True if the user has reached their daily water goal today."""
     import datetime
     today = datetime.date.today().isoformat()
     bucket = (
@@ -87,9 +87,12 @@ def _has_water_today(db: Session, user_id: int) -> bool:
         return False
     try:
         data = json.loads(bucket.value_json)
-        # water blob: {"date": "YYYY-MM-DD", "totalMl": ..., ...}
-        if isinstance(data, dict):
-            return data.get("date") == today and data.get("totalMl", 0) > 0
+        # water blob: {"date": "YYYY-MM-DD", "entries": [{"amountMl": ...}], "goalMl": ...}
+        if isinstance(data, dict) and data.get("date") == today:
+            entries = data.get("entries", [])
+            total_ml = sum(e.get("amountMl", 0) for e in entries if isinstance(e, dict))
+            goal_ml = data.get("goalMl", 2000)
+            return total_ml >= goal_ml
     except Exception:
         pass
     return False
@@ -226,17 +229,17 @@ def cron_meal_reminder(db: Session = Depends(get_db)) -> dict[str, int]:
 
 @router.get("/cron/water-reminder", dependencies=[Depends(_require_cron)])
 def cron_water_reminder(db: Session = Depends(get_db)) -> dict[str, int]:
-    """16:00 IL — remind users who haven't logged any water today."""
+    """20:30 IL — remind users who haven't reached their daily water goal."""
     subs = db.query(PushSubscription).all()
     sent = failed = skipped = 0
     for sub in subs:
-        if _has_water_today(db, sub.user_id):
+        if _reached_water_goal_today(db, sub.user_id):
             skipped += 1
             continue
         ok = _send_push(
             sub,
-            title="💧 שתית מספיק מים היום?",
-            body="אל תשכח לתעד את השתייה שלך ולהישאר מימי!",
+            title="💧 עוד לא הגעת ליעד המים שלך!",
+            body="שתה עוד קצת לפני השינה — גוף מימי ישן טוב יותר 😴",
             tag="water-reminder",
         )
         if ok:

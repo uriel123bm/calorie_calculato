@@ -22,7 +22,7 @@
     },
     {
       "path": "/_/backend/push/cron/water-reminder",
-      "schedule": "0 13 * * *"
+      "schedule": "30 17 * * *"
     },
     {
       "path": "/_/backend/push/cron/evening-reminder",
