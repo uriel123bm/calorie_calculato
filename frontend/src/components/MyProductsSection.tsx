@@ -47,6 +47,7 @@ function AddProductForm({
     }
   });
   const [selectedMealName, setSelectedMealName] = useState<string>(() => meals[0] ?? "");
+  const [scanQuantity, setScanQuantity] = useState(1);
   const portions = typeof servingsCount === "number" ? servingsCount : 0;
   const safePortions = portions > 0 ? portions : 1;
   const totalCalories = typeof calories === "number" ? calories : 0;
@@ -75,6 +76,7 @@ function AddProductForm({
     setProtein("");
     setCarbohydrates("");
     setFat("");
+    setScanQuantity(1);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -124,6 +126,7 @@ function AddProductForm({
     setProtein(draft.protein > 0 ? draft.protein : "");
     setCarbohydrates(draft.carbohydrates > 0 ? draft.carbohydrates : "");
     setFat(draft.fat > 0 ? draft.fat : "");
+    setScanQuantity(1);
   }, []);
 
   const rememberTarget = useCallback(
@@ -142,10 +145,10 @@ function AddProductForm({
     if (!canQuickAdd) return;
     const productName = name.trim();
     const perUnit = {
-      calories: Math.max(0, perUnitPreview.calories),
-      protein: Math.max(0, perUnitPreview.protein),
-      carbohydrates: Math.max(0, perUnitPreview.carbohydrates),
-      fat: Math.max(0, perUnitPreview.fat),
+      calories:      Math.max(0, perUnitPreview.calories)      * scanQuantity,
+      protein:       Math.max(0, perUnitPreview.protein)       * scanQuantity,
+      carbohydrates: Math.max(0, perUnitPreview.carbohydrates) * scanQuantity,
+      fat:           Math.max(0, perUnitPreview.fat)           * scanQuantity,
     };
 
     if (scanTarget === "library") {
@@ -155,20 +158,21 @@ function AddProductForm({
         servingUnit: "יחידה",
         unitDescription: unitDescription.trim() || undefined,
         servingsCount: safePortions,
-        calories: perUnit.calories,
-        protein: perUnit.protein,
-        carbohydrates: perUnit.carbohydrates,
-        fat: perUnit.fat,
+        calories: perUnitPreview.calories,
+        protein: perUnitPreview.protein,
+        carbohydrates: perUnitPreview.carbohydrates,
+        fat: perUnitPreview.fat,
       });
       setFeedback(result === "saved" ? "saved" : "duplicate");
       if (result === "saved") reset();
       return;
     }
 
+    const unitLabel = scanQuantity === 1 ? "1 יח׳" : `${scanQuantity} יח׳`;
     const entryName =
       scanTarget === "meal" && selectedMealName.trim()
         ? `${selectedMealName.trim()} • ${productName}`
-        : `${productName} (1 יח׳)`;
+        : `${productName} (${unitLabel})`;
     onAddToDaily({
       name: entryName,
       calories: roundCalories(perUnit.calories),
@@ -188,6 +192,7 @@ function AddProductForm({
     perUnitPreview.fat,
     perUnitPreview.protein,
     safePortions,
+    scanQuantity,
     scanTarget,
     selectedMealName,
     unitDescription,
@@ -357,6 +362,30 @@ function AddProductForm({
               ))
             )}
           </select>
+        )}
+        {canQuickAdd && scanTarget !== "library" && (
+          <div className="scan-quantity-row">
+            <span className="scan-quantity-label">כמה יחידות אכלת?</span>
+            <div className="scan-quantity-stepper">
+              <button
+                type="button"
+                className="scan-quantity-btn"
+                onClick={() => setScanQuantity((q) => Math.max(1, q - 1))}
+                aria-label="הפחת יחידה"
+                disabled={scanQuantity <= 1}
+              >−</button>
+              <span className="scan-quantity-value">{scanQuantity}</span>
+              <button
+                type="button"
+                className="scan-quantity-btn"
+                onClick={() => setScanQuantity((q) => q + 1)}
+                aria-label="הוסף יחידה"
+              >+</button>
+            </div>
+            <span className="scan-quantity-preview">
+              = <strong>{Math.round(perUnitPreview.calories * scanQuantity)}</strong> קלוריות
+            </span>
+          </div>
         )}
         <button
           type="button"

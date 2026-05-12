@@ -4461,6 +4461,67 @@ html[data-theme="light"] body {
   width: 100%;
 }
 
+.scan-quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 4px;
+  flex-wrap: wrap;
+}
+
+.scan-quantity-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.scan-quantity-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.scan-quantity-btn {
+  background: var(--surface-low);
+  border: none;
+  padding: 4px 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--primary);
+  line-height: 1;
+  transition: background 0.15s;
+  min-width: 36px;
+}
+
+.scan-quantity-btn:hover:not(:disabled) {
+  background: var(--primary-light, rgba(39,174,96,.15));
+}
+
+.scan-quantity-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.scan-quantity-value {
+  padding: 4px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 32px;
+  text-align: center;
+  background: var(--surface);
+}
+
+.scan-quantity-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: auto;
+}
+
 .product-scan-manual-bc {
   margin-top: 14px;
   padding-top: 12px;
