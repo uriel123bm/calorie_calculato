@@ -5001,3 +5001,233 @@ html[data-theme="light"] body {
 
 .insight-trend.down { color: #27ae60; }
 .insight-trend.up   { color: #e67e22; }
+
+/* ══════════════════════════════════════════════════════════
+   VITAMINS SECTION
+   ══════════════════════════════════════════════════════════ */
+.vitamins-section {
+  margin-top: 0;
+}
+
+.vitamins-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 8px;
+}
+
+.vitamins-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vitamins-title h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.vitamins-icon {
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.vitamins-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+
+.vitamins-badge--done {
+  background: rgba(39, 174, 96, 0.15);
+  color: #27ae60;
+}
+
+.vitamins-badge--pending {
+  background: var(--surface-low);
+  color: var(--text-secondary);
+}
+
+.vitamins-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.vitamins-btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius);
+  transition: background 0.15s, color 0.15s;
+}
+.vitamins-btn-icon:hover {
+  background: var(--surface-low);
+  color: var(--primary);
+}
+
+.vitamins-add-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.vitamins-add-form input {
+  flex: 1 1 130px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.vitamins-add-form input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+
+.vitamins-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 8px 0 4px;
+  margin: 0;
+}
+
+.vitamins-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vitamins-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-low);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  transition: background 0.2s;
+}
+
+.vitamins-item--taken {
+  background: rgba(39, 174, 96, 0.07);
+  border-color: rgba(39, 174, 96, 0.25);
+}
+
+.vitamins-check {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  color: var(--text-secondary);
+  font-size: 22px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.vitamins-item--taken .vitamins-check {
+  color: #27ae60;
+}
+
+.vitamins-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vitamins-dose {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.vitamins-btn-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+  font-size: 18px;
+}
+
+.vitamins-btn-remove:hover {
+  opacity: 1;
+  color: var(--danger, #e74c3c);
+}
+
+/* weekly grid */
+.vitamins-grid-wrap {
+  overflow-x: auto;
+  margin-top: 6px;
+}
+
+.vitamins-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.vitamins-grid th,
+.vitamins-grid td {
+  padding: 5px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.vitamins-grid-name-col {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vitamins-grid-today {
+  background: rgba(var(--primary-rgb, 15, 82, 56), 0.06);
+  font-weight: 700;
+}
+
+.vitamins-grid-cell {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: background 0.15s;
+}
+
+.vitamins-grid-cell--taken {
+  background: rgba(39, 174, 96, 0.18);
+  border-color: rgba(39, 174, 96, 0.35);
+  color: #27ae60;
+  font-weight: 700;
+}

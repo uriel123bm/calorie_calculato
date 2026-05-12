@@ -8,8 +8,11 @@ export default defineConfig({
     react(),
     basicSsl(),
     VitePWA({
-      // autoUpdate + skipWaiting: גרסה חדשה מופעלת ללא כפתור "עדכן";
-      // הריענון בפועל נעשה ב-registerSwLifecycle ב-controllerchange (לא צריך למחוק מהמסך הבית).
+      // injectManifest: we supply src/sw.ts which handles push events in addition
+      // to the standard Workbox precaching injected by the plugin.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       includeAssets: ["icon.svg", "apple-touch-icon.png", "favicon-32.png"],
       manifest: {
@@ -39,19 +42,20 @@ export default defineConfig({
         ],
         categories: ["health", "food"],
       },
+      injectManifest: {
+        // Keep all the same Workbox runtime caching the old generateSW config had.
+        injectionPoint: "self.__WB_MANIFEST",
+        rollupFormat: "iife",
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+      },
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         // Avoid serving the SPA shell when the URL is the API prefix (Vercel mounts FastAPI here).
         navigateFallbackDenylist: [/^\/_\/?backend\b/],
-        // API calls must not go through workbox cache strategies. Caching
-        // cross-origin /auth, /sync, POST /ingredients can break 401 handling
-        // and has caused runtime errors in the minified service worker
-        // (e.g. reading .payload on failed responses).
+        // API calls must not go through workbox cache strategies.
         runtimeCaching: [
-          // Same-origin FastAPI under Vercel experimentalServices — must never be cached
-          // by Workbox (stale 401/500 bodies or opaque errors in the SW have caused 500s in DevTools).
           {
             urlPattern: /\/_\/?backend\//,
             handler: "NetworkOnly",
@@ -81,6 +85,7 @@ export default defineConfig({
       "/recipe":      "http://127.0.0.1:8000",
       "/auth":        "http://127.0.0.1:8000",
       "/sync":        "http://127.0.0.1:8000",
+      "/push":        "http://127.0.0.1:8000",
     },
   },
   test: {

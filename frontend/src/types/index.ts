@@ -181,6 +181,23 @@ export interface UserProduct {
   addedAt: number;            // Date.now()
 }
 
+// ── Vitamins / Supplements ────────────────────────────────────────────────────
+
+/** A supplement/vitamin the user has configured (name + optional dose). */
+export interface VitaminConfig {
+  id: string;
+  name: string;
+  dose?: string; // e.g. "500mg", "1 כמוסה"
+}
+
+/** Daily record of which vitamins were taken (keyed by YYYY-MM-DD). */
+export interface VitaminLog {
+  date: string;   // YYYY-MM-DD
+  taken: string[]; // VitaminConfig ids taken that day
+}
+
+// ── Body metrics ──────────────────────────────────────────────────────────────
+
 /** Onboarding profile + history for the progress page. */
 export type Sex = "male" | "female" | "other";
 export type Goal = "lose" | "cut" | "maintain" | "gain";

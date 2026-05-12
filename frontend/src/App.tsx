@@ -9,6 +9,7 @@ import { MyProductsSection } from "./components/MyProductsSection";
 import { MyRecipesSection } from "./components/MyRecipesSection";
 import { PdfExportButton } from "./components/PdfExportButton";
 import { ProgressPage } from "./components/ProgressPage";
+import { VitaminsSection } from "./components/VitaminsSection";
 import { RecipeNameInput } from "./components/RecipeNameInput";
 import { RecipeSummary } from "./components/RecipeSummary";
 import { HomeHeroIcon } from "./components/HomeHeroIcon";
@@ -17,6 +18,8 @@ import { useAuth } from "./context/AuthContext";
 import { useToast } from "./context/ToastContext";
 import { useBodyMetrics } from "./hooks/useBodyMetrics";
 import { useDailyTracker } from "./hooks/useDailyTracker";
+import { useVitamins } from "./hooks/useVitamins";
+import { usePushNotifications } from "./hooks/usePushNotifications";
 import { useDarkMode, applyTheme } from "./hooks/useDarkMode";
 import { useWaterTracker } from "./hooks/useWaterTracker";
 import { useUserSettings } from "./hooks/useUserSettings";
@@ -94,6 +97,8 @@ function AppShell({
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
   const daily         = useDailyTracker(userId);
   const water         = useWaterTracker(userId);
+  const vitamins      = useVitamins(userId);
+  const push          = usePushNotifications();
   const savedRecipes  = useSavedRecipes(userId);
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
@@ -470,6 +475,31 @@ function AppShell({
               >
                 הדרכה
               </button>
+              {push.permission !== "unsupported" && (
+                <button
+                  type="button"
+                  className="settings-menu-item"
+                  role="menuitem"
+                  disabled={push.requesting || push.permission === "denied"}
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    if (push.subscribed) void push.unsubscribe();
+                    else void push.subscribe();
+                  }}
+                  title={push.permission === "denied" ? "ההתראות חסומות בדפדפן" : undefined}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>
+                    {push.subscribed ? "notifications_off" : "notifications"}
+                  </span>
+                  {push.requesting
+                    ? "מאשר..."
+                    : push.subscribed
+                      ? "בטל התראות"
+                      : push.permission === "denied"
+                        ? "התראות חסומות"
+                        : "הפעל התראות"}
+                </button>
+              )}
               <button
                 type="button"
                 className="settings-menu-item settings-menu-item-danger"
@@ -521,6 +551,7 @@ function AppShell({
             <div className="page-container" style={{ paddingTop: 0 }}>
               <InsightsCard today={daily.state} history={daily.history} />
             </div>
+            <VitaminsSection hook={vitamins} />
           </>
         )}
 

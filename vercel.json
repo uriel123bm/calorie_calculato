@@ -10,5 +10,15 @@
       "routePrefix": "/_/backend",
       "framework": "fastapi"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/_/backend/push/cron/vitamin-reminder",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/_/backend/push/cron/weekly-summary",
+      "schedule": "0 5 * * 0"
+    }
+  ]
 }

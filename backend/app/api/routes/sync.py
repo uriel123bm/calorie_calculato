@@ -32,11 +32,13 @@ ALLOWED_KEYS: set[str] = {
     "history",
     "recipes",
     "meals",
-    "settings",  # user preferences (theme, etc.)
-    "products",  # personal products library
-    "body",      # body metrics + weight log
-    "workouts",  # workouts + weekly planning
-    "water",     # daily water intake tracker
+    "settings",         # user preferences (theme, etc.)
+    "products",         # personal products library
+    "body",             # body metrics + weight log
+    "workouts",         # workouts + weekly planning
+    "water",            # daily water intake tracker
+    "vitamins_config",  # list of VitaminConfig objects
+    "vitamins_log",     # list of VitaminLog objects (per-day taken status)
 }
 
 # Hard cap per blob to keep DB rows small (50 KB is plenty for years of usage).

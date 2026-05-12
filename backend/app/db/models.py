@@ -50,6 +50,25 @@ class UserData(Base):
     )
 
 
+class PushSubscription(Base):
+    """Web Push subscription endpoint per user device."""
+
+    __tablename__ = "push_subscriptions"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    endpoint: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
+    p256dh: Mapped[str] = mapped_column(String(256), nullable=False)
+    auth: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False
+    )
+
+
 class RefreshToken(Base):
     """Server-side refresh token sessions for rotation + revocation."""
 

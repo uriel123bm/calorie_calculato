@@ -35,6 +35,12 @@ class Settings:
     # PostHog (optional) — same project as frontend VITE_POSTHOG_KEY
     posthog_api_key: str
     posthog_host: str
+    # Web Push / VAPID (optional — push notifications off if unset)
+    vapid_private_key: str
+    vapid_public_key: str
+    vapid_subject: str   # mailto: or https: used in VAPID claims
+    # Cron endpoints secret — Vercel sends this in X-Cron-Secret header
+    cron_secret: str
 
 
 def _parse_origins(raw: str) -> list[str]:
@@ -83,6 +89,12 @@ def get_settings() -> Settings:
         posthog_host=(
             os.getenv("POSTHOG_HOST", "").strip() or "https://eu.i.posthog.com"
         ),
+        vapid_private_key=os.getenv("VAPID_PRIVATE_KEY", "").strip(),
+        vapid_public_key=os.getenv("VAPID_PUBLIC_KEY", "").strip(),
+        vapid_subject=(
+            os.getenv("VAPID_SUBJECT", "").strip() or "mailto:admin@example.com"
+        ),
+        cron_secret=os.getenv("CRON_SECRET", "").strip(),
     )
 
 
