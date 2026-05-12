@@ -547,11 +547,11 @@ function AppShell({
                   : null
               }
               water={water}
+              afterWater={<VitaminsSection hook={vitamins} />}
             />
             <div className="page-container" style={{ paddingTop: 0 }}>
               <InsightsCard today={daily.state} history={daily.history} />
             </div>
-            <VitaminsSection hook={vitamins} />
           </>
         )}
 

@@ -4,6 +4,13 @@ import { todayStr } from "../hooks/useDailyTracker";
 
 const DAY_NAMES = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 
+const PRESET_VITAMINS: { name: string; dose?: string }[] = [
+  { name: "Pre-Workout"              },
+  { name: "מגנזיום",   dose: "400mg" },
+  { name: "קריאטין",   dose: "5g"    },
+  { name: "אומגה 3",   dose: "1g"    },
+];
+
 function dayLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   return DAY_NAMES[new Date(y, m - 1, d).getDay()];
@@ -71,25 +78,41 @@ export function VitaminsSection({ hook }: Props) {
 
       {/* ── Add form ── */}
       {showAdd && (
-        <form className="vitamins-add-form" onSubmit={handleAdd}>
-          <input
-            type="text"
-            placeholder="שם הויטמין / תוסף"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            required
-          />
-          <input
-            type="text"
-            placeholder="מינון (אופציונלי)"
-            value={dose}
-            onChange={(e) => setDose(e.target.value)}
-          />
-          <button type="submit" className="primary" disabled={!name.trim()}>
-            הוסף
-          </button>
-        </form>
+        <>
+          <div className="vitamins-suggestions">
+            {PRESET_VITAMINS.filter(
+              (s) => !vitamins.some((v) => v.name.toLowerCase() === s.name.toLowerCase())
+            ).map((s) => (
+              <button
+                key={s.name}
+                type="button"
+                className="vitamins-suggestion-chip"
+                onClick={() => { addVitamin(s.name, s.dose); setShowAdd(false); }}
+              >
+                + {s.name}
+                {s.dose && <span className="vitamins-suggestion-dose">{s.dose}</span>}
+              </button>
+            ))}
+          </div>
+          <form className="vitamins-add-form" onSubmit={handleAdd}>
+            <input
+              type="text"
+              placeholder="שם ויטמין / תוסף מותאם אישית"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+            <input
+              type="text"
+              placeholder="מינון (אופציונלי)"
+              value={dose}
+              onChange={(e) => setDose(e.target.value)}
+            />
+            <button type="submit" className="primary" disabled={!name.trim()}>
+              הוסף
+            </button>
+          </form>
+        </>
       )}
 
       {/* ── Empty state ── */}

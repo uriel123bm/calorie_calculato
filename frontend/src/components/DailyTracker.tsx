@@ -47,6 +47,7 @@ interface Props {
   /** טיפים יומיים לפי מטרה/משקל — רק אם הוגדר פרופיל בהתקדמות */
   goalTipsContext?: GoalTipsInput | null;
   water?: UseWaterTrackerResult;
+  afterWater?: React.ReactNode;
 }
 
 /**
@@ -292,6 +293,7 @@ export function DailyTracker({
   personalProducts = [],
   goalTipsContext = null,
   water,
+  afterWater,
 }: Props) {
   // Manual entry state
   const [mName, setMName] = useState("");
@@ -580,6 +582,8 @@ export function DailyTracker({
       )}
 
       {water && <WaterWidget water={water} />}
+
+      {afterWater}
 
       {personalProducts.length > 0 && (
         <div className="section tracker-quick-products">

@@ -5072,6 +5072,44 @@ html[data-theme="light"] body {
   color: var(--primary);
 }
 
+.vitamins-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.vitamins-suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-low);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.vitamins-suggestion-chip:hover {
+  background: var(--primary-light, rgba(39,174,96,.12));
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.vitamins-suggestion-dose {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.vitamins-suggestion-chip:hover .vitamins-suggestion-dose {
+  color: var(--primary);
+}
+
 .vitamins-add-form {
   display: flex;
   gap: 6px;

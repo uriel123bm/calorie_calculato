@@ -1,11 +1,14 @@
 """
 Web Push notification endpoints.
 
-POST   /push/subscribe         — save / update subscription for the authenticated user
-DELETE /push/unsubscribe       — remove subscription by endpoint
-GET    /push/vapid-public-key  — return the VAPID public key for the client
-GET    /push/cron/vitamin-reminder  — (Vercel Cron, secured) send reminder to all subscribers
-GET    /push/cron/weekly-summary    — (Vercel Cron, secured) send weekly summary
+POST   /push/subscribe              — save / update subscription for the authenticated user
+DELETE /push/unsubscribe            — remove subscription by endpoint
+GET    /push/vapid-public-key       — return the VAPID public key for the client
+GET    /push/cron/vitamin-reminder  — 08:00 IL — remind users to take vitamins
+GET    /push/cron/meal-reminder     — 12:00 IL — remind users to log meals if empty
+GET    /push/cron/water-reminder    — 16:00 IL — remind users to log water if empty
+GET    /push/cron/evening-reminder  — 20:00 IL — evening nudge to complete the journal
+GET    /push/cron/weekly-summary    — Sunday 08:00 IL — weekly activity summary
 """
 from __future__ import annotations
 
@@ -50,7 +53,49 @@ def _require_cron(x_cron_secret: Annotated[str | None, Header()] = None) -> None
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid cron secret")
 
 
-def _send_push(sub: PushSubscription, title: str, body: str) -> bool:
+def _has_entries_today(db: Session, user_id: int) -> bool:
+    """Return True if the user has at least one food entry logged for today."""
+    import datetime
+    today = datetime.date.today().isoformat()
+    bucket = (
+        db.query(UserData)
+        .filter(UserData.user_id == user_id, UserData.key == "tracker")
+        .first()
+    )
+    if not bucket:
+        return False
+    try:
+        data = json.loads(bucket.value_json)
+        # tracker blob: {"date": "YYYY-MM-DD", "entries": [...], ...}
+        if isinstance(data, dict):
+            return data.get("date") == today and len(data.get("entries", [])) > 0
+    except Exception:
+        pass
+    return False
+
+
+def _has_water_today(db: Session, user_id: int) -> bool:
+    """Return True if the user has logged any water today."""
+    import datetime
+    today = datetime.date.today().isoformat()
+    bucket = (
+        db.query(UserData)
+        .filter(UserData.user_id == user_id, UserData.key == "water")
+        .first()
+    )
+    if not bucket:
+        return False
+    try:
+        data = json.loads(bucket.value_json)
+        # water blob: {"date": "YYYY-MM-DD", "totalMl": ..., ...}
+        if isinstance(data, dict):
+            return data.get("date") == today and data.get("totalMl", 0) > 0
+    except Exception:
+        pass
+    return False
+
+
+def _send_push(sub: PushSubscription, title: str, body: str, tag: str = "calorie-reminder") -> bool:
     """Send a single web push. Returns True on success."""
     if not settings.vapid_private_key or not settings.vapid_subject:
         logger.warning("VAPID not configured — skipping push")
@@ -61,7 +106,7 @@ def _send_push(sub: PushSubscription, title: str, body: str) -> bool:
                 "endpoint": sub.endpoint,
                 "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
             },
-            data=json.dumps({"title": title, "body": body}),
+            data=json.dumps({"title": title, "body": body, "tag": tag}),
             vapid_private_key=settings.vapid_private_key,
             vapid_claims={"sub": settings.vapid_subject},
         )
@@ -154,6 +199,78 @@ def cron_vitamin_reminder(db: Session = Depends(get_db)) -> dict[str, int]:
         else:
             failed += 1
 
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+@router.get("/cron/meal-reminder", dependencies=[Depends(_require_cron)])
+def cron_meal_reminder(db: Session = Depends(get_db)) -> dict[str, int]:
+    """12:00 IL — remind users who have not logged any food today."""
+    subs = db.query(PushSubscription).all()
+    sent = failed = skipped = 0
+    for sub in subs:
+        if _has_entries_today(db, sub.user_id):
+            skipped += 1
+            continue
+        ok = _send_push(
+            sub,
+            title="🍽️ זכרת לרשום את הארוחות?",
+            body="פתח את היומן והוסף את מה שאכלת היום — זה לוקח שניות!",
+            tag="meal-reminder",
+        )
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+@router.get("/cron/water-reminder", dependencies=[Depends(_require_cron)])
+def cron_water_reminder(db: Session = Depends(get_db)) -> dict[str, int]:
+    """16:00 IL — remind users who haven't logged any water today."""
+    subs = db.query(PushSubscription).all()
+    sent = failed = skipped = 0
+    for sub in subs:
+        if _has_water_today(db, sub.user_id):
+            skipped += 1
+            continue
+        ok = _send_push(
+            sub,
+            title="💧 שתית מספיק מים היום?",
+            body="אל תשכח לתעד את השתייה שלך ולהישאר מימי!",
+            tag="water-reminder",
+        )
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+    return {"sent": sent, "failed": failed, "skipped": skipped}
+
+
+@router.get("/cron/evening-reminder", dependencies=[Depends(_require_cron)])
+def cron_evening_reminder(db: Session = Depends(get_db)) -> dict[str, int]:
+    """20:00 IL — evening nudge to complete the daily journal."""
+    subs = db.query(PushSubscription).all()
+    sent = failed = skipped = 0
+    for sub in subs:
+        # Only remind users who have started tracking (have at least some history)
+        has_tracker = (
+            db.query(UserData)
+            .filter(UserData.user_id == sub.user_id, UserData.key == "tracker")
+            .first()
+        )
+        if not has_tracker:
+            skipped += 1
+            continue
+        ok = _send_push(
+            sub,
+            title="🌙 סיכום יום — הוספת הכל?",
+            body="לפני שישנים — האם סיימת לרשום את כל הארוחות של היום?",
+            tag="evening-reminder",
+        )
+        if ok:
+            sent += 1
+        else:
+            failed += 1
     return {"sent": sent, "failed": failed, "skipped": skipped}
 
 

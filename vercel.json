@@ -17,6 +17,18 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/_/backend/push/cron/meal-reminder",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/_/backend/push/cron/water-reminder",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/_/backend/push/cron/evening-reminder",
+      "schedule": "0 17 * * *"
+    },
+    {
       "path": "/_/backend/push/cron/weekly-summary",
       "schedule": "0 5 * * 0"
     }

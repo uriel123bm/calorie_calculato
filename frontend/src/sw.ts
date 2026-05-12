@@ -15,7 +15,7 @@ self.addEventListener("message", (event) => {
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
-  let payload: { title?: string; body?: string } = {};
+  let payload: { title?: string; body?: string; tag?: string } = {};
   try {
     payload = event.data.json() as typeof payload;
   } catch {
@@ -24,6 +24,7 @@ self.addEventListener("push", (event) => {
 
   const title = payload.title ?? "מחשבון קלוריות";
   const body  = payload.body  ?? "";
+  const tag   = payload.tag   ?? "calorie-reminder";
 
   event.waitUntil(
     self.registration.showNotification(title, {
@@ -32,7 +33,7 @@ self.addEventListener("push", (event) => {
       badge:  "/icon-192.png",
       dir:    "rtl",
       lang:   "he",
-      tag:    "calorie-reminder",
+      tag,
     })
   );
 });
