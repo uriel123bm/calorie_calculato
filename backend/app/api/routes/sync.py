@@ -251,14 +251,17 @@ def _coerce_workouts(value: Any) -> dict[str, Any] | None:
 
 
 class SyncBuckets(BaseModel):
-    tracker: Any | None = None
-    history: Any | None = None
-    recipes: Any | None = None
-    meals: Any | None = None
-    settings: Any | None = None
-    products: Any | None = None
-    body: Any | None = None
-    workouts: Any | None = None
+    tracker:        Any | None = None
+    history:        Any | None = None
+    recipes:        Any | None = None
+    meals:          Any | None = None
+    settings:       Any | None = None
+    products:       Any | None = None
+    body:           Any | None = None
+    workouts:       Any | None = None
+    water:          Any | None = None
+    vitamins_config: Any | None = None
+    vitamins_log:   Any | None = None
 
     @field_validator("tracker", mode="before")
     @classmethod
@@ -302,15 +305,18 @@ class SyncBuckets(BaseModel):
 
 
 class SyncResponse(BaseModel):
-    tracker: Any | None = None
-    history: Any | None = None
-    recipes: Any | None = None
-    meals: Any | None = None
-    settings: Any | None = None
-    products: Any | None = None
-    body: Any | None = None
-    workouts: Any | None = None
-    updated_at: datetime | None = None
+    tracker:        Any | None = None
+    history:        Any | None = None
+    recipes:        Any | None = None
+    meals:          Any | None = None
+    settings:       Any | None = None
+    products:       Any | None = None
+    body:           Any | None = None
+    workouts:       Any | None = None
+    water:          Any | None = None
+    vitamins_config: Any | None = None
+    vitamins_log:   Any | None = None
+    updated_at:     datetime | None = None
 
 
 def _decode(value_json: str) -> Any:
@@ -335,15 +341,21 @@ def get_sync(
 
     latest = max((r.updated_at for r in rows), default=None)
 
+    def _get(key: str) -> Any:
+        return _decode(by_key[key].value_json) if key in by_key else None
+
     return SyncResponse(
-        tracker=_decode(by_key["tracker"].value_json) if "tracker" in by_key else None,
-        history=_decode(by_key["history"].value_json) if "history" in by_key else None,
-        recipes=_decode(by_key["recipes"].value_json) if "recipes" in by_key else None,
-        meals=_decode(by_key["meals"].value_json) if "meals" in by_key else None,
-        settings=_decode(by_key["settings"].value_json) if "settings" in by_key else None,
-        products=_decode(by_key["products"].value_json) if "products" in by_key else None,
-        body=_decode(by_key["body"].value_json) if "body" in by_key else None,
-        workouts=_decode(by_key["workouts"].value_json) if "workouts" in by_key else None,
+        tracker=_get("tracker"),
+        history=_get("history"),
+        recipes=_get("recipes"),
+        meals=_get("meals"),
+        settings=_get("settings"),
+        products=_get("products"),
+        body=_get("body"),
+        workouts=_get("workouts"),
+        water=_get("water"),
+        vitamins_config=_get("vitamins_config"),
+        vitamins_log=_get("vitamins_log"),
         updated_at=latest,
     )
 

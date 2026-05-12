@@ -30,7 +30,9 @@ export type SyncKey =
   | "products"
   | "body"
   | "workouts"
-  | "water";
+  | "water"
+  | "vitamins_config"
+  | "vitamins_log";
 
 const TRACKER_KEY  = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const HISTORY_KEY  = (uid: string) => `user_${uid}:dailyHistory:v1`;
@@ -40,7 +42,9 @@ const SETTINGS_KEY = (_uid: string) => `app:settings:v1`;
 const PRODUCTS_KEY = (uid: string) => `user_${uid}:products:v1`;
 const BODY_KEY     = (uid: string) => `user_${uid}:body:v1`;
 const WORKOUTS_KEY = (uid: string) => `user_${uid}:workouts_sync:v1`;
-const WATER_KEY    = (uid: string) => `user_${uid}:water:v1`;
+const WATER_KEY          = (uid: string) => `user_${uid}:water:v1`;
+const VITAMINS_CONFIG_KEY = (uid: string) => `user_${uid}:vitamins_config:v1`;
+const VITAMINS_LOG_KEY    = (uid: string) => `user_${uid}:vitamins_log:v1`;
 
 function localKey(uid: string, key: SyncKey): string {
   switch (key) {
@@ -52,7 +56,9 @@ function localKey(uid: string, key: SyncKey): string {
     case "products": return PRODUCTS_KEY(uid);
     case "body":     return BODY_KEY(uid);
     case "workouts": return WORKOUTS_KEY(uid);
-    case "water":    return WATER_KEY(uid);
+    case "water":           return WATER_KEY(uid);
+    case "vitamins_config": return VITAMINS_CONFIG_KEY(uid);
+    case "vitamins_log":    return VITAMINS_LOG_KEY(uid);
   }
 }
 
@@ -88,16 +94,18 @@ function notifyRefreshed(uid: string): void {
 
 // ── Pull (server → local) ──────────────────────────────────
 interface SyncResponse {
-  tracker:  unknown | null;
-  history:  unknown | null;
-  recipes:  unknown | null;
-  meals:    unknown | null;
-  settings: unknown | null;
-  products: unknown | null;
-  body:     unknown | null;
-  workouts: unknown | null;
-  water:    unknown | null;
-  updated_at: string | null;
+  tracker:         unknown | null;
+  history:         unknown | null;
+  recipes:         unknown | null;
+  meals:           unknown | null;
+  settings:        unknown | null;
+  products:        unknown | null;
+  body:            unknown | null;
+  workouts:        unknown | null;
+  water:           unknown | null;
+  vitamins_config: unknown | null;
+  vitamins_log:    unknown | null;
+  updated_at:      string | null;
 }
 
 const _pullInFlightByUid = new Map<string, Promise<void>>();
@@ -149,7 +157,9 @@ export function pullSync(uid: string): Promise<void> {
       const mergedWorkouts = mergeWorkoutBlobs(readLocal(uid, "workouts"), data.workouts);
       writeLocal(uid, "workouts", mergedWorkouts);
 
-      if (data.water) writeLocal(uid, "water", data.water);
+      if (data.water)           writeLocal(uid, "water",           data.water);
+      if (data.vitamins_config) writeLocal(uid, "vitamins_config", data.vitamins_config);
+      if (data.vitamins_log)    writeLocal(uid, "vitamins_log",    data.vitamins_log);
 
       notifyRefreshed(uid);
       schedulePush(uid);
@@ -174,7 +184,9 @@ function readAllBuckets(uid: string): Record<SyncKey, unknown | null> {
     products: readLocal(uid, "products"),
     body:     readLocal(uid, "body"),
     workouts: readLocal(uid, "workouts"),
-    water:    readLocal(uid, "water"),
+    water:           readLocal(uid, "water"),
+    vitamins_config: readLocal(uid, "vitamins_config"),
+    vitamins_log:    readLocal(uid, "vitamins_log"),
   };
 }
 
