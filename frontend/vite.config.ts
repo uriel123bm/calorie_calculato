@@ -48,6 +48,10 @@ export default defineConfig({
         rollupFormat: "iife",
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
+      // הפעלה ב-dev: Web Push צריך Service Worker רשום; בלי זה navigator.serviceWorker.ready לא נפתח
+      devOptions: {
+        enabled: true,
+      },
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
@@ -79,6 +83,7 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    strictPort: true,    // fail if busy — avoids silent fallback to another port
     host: true,          // expose on 0.0.0.0 — reachable from phone on same WiFi
     proxy: {
       "/ingredients": "http://127.0.0.1:8000",

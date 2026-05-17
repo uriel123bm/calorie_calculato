@@ -6,6 +6,7 @@ import type { DailyEntryInput, UserProduct } from "../types";
 import { scaleServingMacros } from "../utils/nutritionMath";
 import { roundCalories, roundMacro } from "../utils/nutritionRounding";
 import { ProductCaptureModal } from "./ProductCaptureModal";
+import { SwipeDeleteRow } from "./SwipeDeleteRow";
 
 interface Props {
   userId: string;
@@ -38,6 +39,8 @@ function AddProductForm({
   const [carbohydrates, setCarbohydrates] = useState<number | "">("");
   const [fat, setFat]                     = useState<number | "">("");
   const [feedback, setFeedback]           = useState<"" | "saved" | "duplicate" | "invalid">("");
+  const [draftPer100g, setDraftPer100g] = useState<{ calories: number; protein: number; carbohydrates: number; fat: number } | undefined>(undefined);
+  const [draftPackageGrams, setDraftPackageGrams] = useState<number | undefined>(undefined);
   const [scanTarget, setScanTarget] = useState<ScanTarget>(() => {
     try {
       const raw = localStorage.getItem(targetPrefKey);
@@ -77,6 +80,8 @@ function AddProductForm({
     setCarbohydrates("");
     setFat("");
     setScanQuantity(1);
+    setDraftPer100g(undefined);
+    setDraftPackageGrams(undefined);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,6 +104,8 @@ function AddProductForm({
       protein:       (typeof protein       === "number" ? protein       : 0) * perUnitFactor,
       carbohydrates: (typeof carbohydrates === "number" ? carbohydrates : 0) * perUnitFactor,
       fat:           (typeof fat           === "number" ? fat           : 0) * perUnitFactor,
+      per100g: draftPer100g,
+      packageGrams: draftPackageGrams,
     });
     setFeedback(result === "saved" ? "saved" : "duplicate");
     if (result === "saved") reset();
@@ -127,6 +134,8 @@ function AddProductForm({
     setCarbohydrates(draft.carbohydrates > 0 ? draft.carbohydrates : "");
     setFat(draft.fat > 0 ? draft.fat : "");
     setScanQuantity(1);
+    setDraftPer100g(draft.per100g);
+    setDraftPackageGrams(draft.packageGrams);
   }, []);
 
   const rememberTarget = useCallback(
@@ -419,6 +428,7 @@ function AddProductForm({
       open={captureOpen}
       onClose={() => setCaptureOpen(false)}
       onApplyDraft={applyDraftFromCapture}
+      onAddToDaily={onAddToDaily}
     />
     </>
   );
@@ -458,6 +468,7 @@ function ProductCard({
   });
 
   return (
+    <SwipeDeleteRow onDelete={onDelete} deleteLabel={`מחק ${product.name}`}>
     <div className="my-recipe-card">
       <div className="my-recipe-header">
         <div className="my-recipe-title-row">
@@ -541,6 +552,7 @@ function ProductCard({
         </button>
       </div>
     </div>
+    </SwipeDeleteRow>
   );
 }
 
@@ -632,20 +644,23 @@ export function MyProductsSection({
           הספרייה שלי {products.length > 0 ? `(${products.length})` : ""}
         </h2>
 
-        {products.length > 5 && (
+        {products.length >= 3 && (
           <div className="library-toolbar">
             <label htmlFor="my-products-filter" className="library-filter-label">
               חיפוש
             </label>
-            <input
-              id="my-products-filter"
-              type="search"
-              className="library-filter-input"
-              placeholder="סינון לפי שם מוצר…"
-              value={libraryQuery}
-              onChange={(e) => setLibraryQuery(e.target.value)}
-              aria-label="סינון מוצרים לפי שם"
-            />
+            <div className="library-filter-input-wrap">
+              <span className="material-symbols-outlined library-filter-icon" aria-hidden="true">search</span>
+              <input
+                id="my-products-filter"
+                type="search"
+                className="library-filter-input"
+                placeholder="סינון לפי שם מוצר…"
+                value={libraryQuery}
+                onChange={(e) => setLibraryQuery(e.target.value)}
+                aria-label="סינון מוצרים לפי שם"
+              />
+            </div>
           </div>
         )}
 

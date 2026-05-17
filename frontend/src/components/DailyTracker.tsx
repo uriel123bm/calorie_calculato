@@ -31,8 +31,15 @@ import {
 } from "../utils/exportText";
 import { PdfExportButton } from "./PdfExportButton";
 import { PersonalProductChips } from "./PersonalProductChips";
+import { SwipeDeleteRow } from "./SwipeDeleteRow";
 import type { UseWaterTrackerResult } from "../hooks/useWaterTracker";
 import { CUP_ML } from "../hooks/useWaterTracker";
+
+export interface MacroTargets {
+  protein: number;
+  carbs: number;
+  fat: number;
+}
 
 interface Props {
   state: DailyTrackerState;
@@ -48,6 +55,12 @@ interface Props {
   goalTipsContext?: GoalTipsInput | null;
   water?: UseWaterTrackerResult;
   afterWater?: React.ReactNode;
+  /** לחיצה על עמודה בגרף — מועברת ל-WeeklyChart לניווט ליומן */
+  onDayClick?: (date: string) => void;
+  /** יעדי מאקרו יומיים — לתצוגת פרוגרס-בר */
+  macroTargets?: MacroTargets;
+  /** עדכון יעדי מאקרו מתוך ממשק הבנטו */
+  onMacroTargetsChange?: (targets: MacroTargets) => void;
 }
 
 /**
@@ -69,16 +82,38 @@ function PersonalProductQuickAdd({
 }) {
   const [productId, setProductId] = useState("");
   const [qty, setQty] = useState<number | "">("");
+  const [mode, setMode] = useState<"units" | "grams">("units");
 
   const selected = products.find((p) => p.id === productId);
   const qNum = typeof qty === "number" ? qty : 0;
-  const preview =
-    selected && qNum > 0 ? scaleServingMacros(selected, qNum) : null;
+  const hasGramData = !!(selected?.per100g);
+
+  const preview = useMemo(() => {
+    if (!selected || qNum <= 0) return null;
+    if (mode === "grams" && selected.per100g) {
+      const f = qNum / 100;
+      return {
+        calories: selected.per100g.calories * f,
+        protein: selected.per100g.protein * f,
+        carbohydrates: selected.per100g.carbohydrates * f,
+        fat: selected.per100g.fat * f,
+      };
+    }
+    return scaleServingMacros(selected, qNum);
+  }, [selected, qNum, mode]);
+
+  const handleProductChange = (id: string) => {
+    setProductId(id);
+    setQty("");
+    const p = products.find((pr) => pr.id === id);
+    setMode(p?.per100g ? "grams" : "units");
+  };
 
   const handleAdd = () => {
     if (!selected || !preview || qNum <= 0) return;
+    const label = mode === "grams" ? `${qNum} גרם` : `${qNum} יח׳`;
     onAdd({
-      name: `${selected.name} (${qNum} יח׳)`,
+      name: `${selected.name} (${label})`,
       calories: roundCalories(preview.calories),
       protein: roundMacro(preview.protein),
       carbohydrates: roundMacro(preview.carbohydrates),
@@ -89,46 +124,67 @@ function PersonalProductQuickAdd({
   };
 
   return (
-    <div className="tracker-quick-product-row">
-      <select
-        className="tracker-quick-select"
-        value={productId}
-        onChange={(e) => setProductId(e.target.value)}
-        aria-label="בחר מוצר אישי"
-      >
-        <option value="">— בחרו מוצר —</option>
-        {products.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-      <input
-        type="number"
-        className="tracker-quick-qty"
-        min={0}
-        step="any"
-        placeholder="כמות"
-        value={qty === "" ? "" : qty}
-        onChange={(e) =>
-          setQty(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))
-        }
-        aria-label="כמות יחידות"
-      />
-      <span className="tracker-quick-unit-label">יח׳</span>
+    <div className="tracker-quick-product-wrap">
+      <div className="tracker-quick-product-row">
+        <select
+          className="tracker-quick-select"
+          value={productId}
+          onChange={(e) => handleProductChange(e.target.value)}
+          aria-label="בחר מוצר אישי"
+        >
+          <option value="">— בחרו מוצר —</option>
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          className="tracker-quick-qty"
+          min={0}
+          step="any"
+          placeholder="כמות"
+          value={qty === "" ? "" : qty}
+          onChange={(e) =>
+            setQty(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))
+          }
+          aria-label={mode === "grams" ? "כמות בגרמים" : "כמות יחידות"}
+        />
+        {hasGramData && (
+          <div className="tracker-quick-mode-toggle" role="group" aria-label="שיטת מדידה">
+            <button
+              type="button"
+              className={`tracker-quick-mode-btn${mode === "grams" ? " active" : ""}`}
+              onClick={() => setMode("grams")}
+              title="הזן גרמים"
+            >גרם</button>
+            <button
+              type="button"
+              className={`tracker-quick-mode-btn${mode === "units" ? " active" : ""}`}
+              onClick={() => setMode("units")}
+              title="הזן יחידות"
+            >יח׳</button>
+          </div>
+        )}
+        {!hasGramData && <span className="tracker-quick-unit-label">יח׳</span>}
+        <button
+          type="button"
+          className="primary"
+          disabled={!preview || qNum <= 0}
+          onClick={handleAdd}
+        >
+          הוסף ליום
+        </button>
+      </div>
       {preview && qNum > 0 && (
-        <span className="tracker-quick-preview">
-          ≈ {Math.round(preview.calories)} קלוריות
-        </span>
+        <div className="tracker-quick-preview-row">
+          <span className="tracker-quick-preview">≈ {Math.round(preview.calories)} קלוריות</span>
+          {preview.protein > 0 && <span className="tracker-quick-preview-macro">חלבון {roundMacro(preview.protein)}גרם</span>}
+          {preview.carbohydrates > 0 && <span className="tracker-quick-preview-macro">פחמימות {roundMacro(preview.carbohydrates)}גרם</span>}
+          {preview.fat > 0 && <span className="tracker-quick-preview-macro">שומן {roundMacro(preview.fat)}גרם</span>}
+        </div>
       )}
-      <button
-        type="button"
-        className="primary"
-        disabled={!preview || qNum <= 0}
-        onClick={handleAdd}
-      >
-        הוסף ליום
-      </button>
     </div>
   );
 }
@@ -235,9 +291,17 @@ function WaterWidget({ water }: { water: UseWaterTrackerResult }) {
   );
 }
 
-function WeeklyChart({ today, history }: { today: DailyTrackerState; history: DayLog[] }) {
+function WeeklyChart({
+  today,
+  history,
+  onDayClick,
+}: {
+  today: DailyTrackerState;
+  history: DayLog[];
+  onDayClick?: (date: string) => void;
+}) {
   const data = useMemo(() => {
-    const days: { label: string; cal: number; target: number; isToday: boolean }[] = [];
+    const days: { label: string; cal: number; target: number; isToday: boolean; date: string }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today.date);
       d.setDate(d.getDate() - i);
@@ -249,7 +313,7 @@ function WeeklyChart({ today, history }: { today: DailyTrackerState; history: Da
       const cal = dayData ? Math.round(dayData.entries.reduce((s, e) => s + e.calories, 0)) : 0;
       const target = dayData?.targetCalories ?? today.targetCalories;
       const label = d.toLocaleDateString("he-IL", { weekday: "short" });
-      days.push({ label, cal, target, isToday });
+      days.push({ label, cal, target, isToday, date: ds });
     }
     return days;
   }, [today, history]);
@@ -257,18 +321,38 @@ function WeeklyChart({ today, history }: { today: DailyTrackerState; history: Da
   const hasData = data.some((d) => d.cal > 0);
   if (!hasData) return null;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleBarClick = (barData: any) => {
+    if (onDayClick && barData?.date) {
+      onDayClick(barData.date as string);
+    }
+  };
+
   return (
     <div className="weekly-chart-wrap">
       <div className="weekly-chart-title">7 ימים אחרונים</div>
+      {onDayClick && (
+        <p className="weekly-chart-hint">לחצו על עמודה כדי לעבור ליום ביומן</p>
+      )}
       <ResponsiveContainer width="100%" height={90}>
-        <BarChart data={data} barSize={18} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+        <BarChart
+          data={data}
+          barSize={18}
+          margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
+        >
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} />
           <Tooltip
             formatter={(v) => [`${Number(v)} קלוריות`, ""]}
             labelStyle={{ direction: "rtl" }}
             contentStyle={{ fontSize: 12 }}
           />
-          <Bar dataKey="cal" radius={[4, 4, 0, 0]}>
+          <Bar
+            dataKey="cal"
+            radius={[4, 4, 0, 0]}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onClick={onDayClick ? (barData: any) => handleBarClick(barData) : undefined}
+            style={onDayClick ? { cursor: "pointer" } : undefined}
+          >
             {data.map((d, i) => (
               <Cell
                 key={i}
@@ -282,6 +366,8 @@ function WeeklyChart({ today, history }: { today: DailyTrackerState; history: Da
   );
 }
 
+const DEFAULT_MACRO_TARGETS: MacroTargets = { protein: 120, carbs: 250, fat: 70 };
+
 export function DailyTracker({
   state,
   history,
@@ -294,6 +380,9 @@ export function DailyTracker({
   goalTipsContext = null,
   water,
   afterWater,
+  onDayClick,
+  macroTargets,
+  onMacroTargetsChange,
 }: Props) {
   // Manual entry state
   const [mName, setMName] = useState("");
@@ -324,6 +413,8 @@ export function DailyTracker({
   const MANUAL_DEBOUNCE_MS = 420;
   const [exportFlash, setExportFlash] = useState<string | null>(null);
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+  const [editingMacros, setEditingMacros] = useState(false);
+  const [draftMacros, setDraftMacros] = useState<MacroTargets>(macroTargets ?? DEFAULT_MACRO_TARGETS);
 
   useEffect(() => {
     manualFieldsRef.current = { name: mName, qty: mQty, unit: mUnit };
@@ -575,7 +666,7 @@ export function DailyTracker({
         )}
       </div>
 
-      <WeeklyChart today={state} history={history} />
+      <WeeklyChart today={state} history={history} onDayClick={onDayClick} />
 
       {goalTipsContext && (
         <GoalTipsCard input={goalTipsContext} variant="compact" />
@@ -634,7 +725,7 @@ export function DailyTracker({
                       cx="50" cy="50" r={R}
                       strokeWidth="7"
                       strokeDasharray={`${CIRC}`}
-                      strokeDashoffset={`${offset}`}
+                      style={{ strokeDashoffset: offset }}
                     />
                   </svg>
                   <div className="ring-inner">
@@ -662,26 +753,79 @@ export function DailyTracker({
           })()}
 
           {/* Macros bento */}
-          <div className="macro-bento">
-            <div className="macro-tile protein">
-              <span className="material-symbols-outlined macro-icon">egg</span>
-              <span className="macro-label">חלבון</span>
-              <div className="progress-bar"><div className="progress-fill green" style={{ width: `${Math.min(100, (totals.protein / 120) * 100)}%` }} /></div>
-              <span className="macro-value">{totals.protein.toFixed(0)} גרם</span>
+          {(() => {
+            const mt = macroTargets ?? DEFAULT_MACRO_TARGETS;
+            return (
+              <div className="macro-bento">
+                <div className="macro-tile protein">
+                  <span className="material-symbols-outlined macro-icon">egg</span>
+                  <span className="macro-label">חלבון</span>
+                  <div className="progress-bar"><div className="progress-fill green" style={{ width: `${Math.min(100, (totals.protein / mt.protein) * 100)}%` }} /></div>
+                  <span className="macro-value">{totals.protein.toFixed(0)} / {mt.protein} גרם</span>
+                </div>
+                <div className="macro-tile carbs">
+                  <span className="material-symbols-outlined macro-icon">bakery_dining</span>
+                  <span className="macro-label">פחמימות</span>
+                  <div className="progress-bar"><div className="progress-fill orange" style={{ width: `${Math.min(100, (totals.carbohydrates / mt.carbs) * 100)}%` }} /></div>
+                  <span className="macro-value">{totals.carbohydrates.toFixed(0)} / {mt.carbs} גרם</span>
+                </div>
+                <div className="macro-tile fat">
+                  <span className="material-symbols-outlined macro-icon">opacity</span>
+                  <span className="macro-label">שומן</span>
+                  <div className="progress-bar"><div className="progress-fill teal" style={{ width: `${Math.min(100, (totals.fat / mt.fat) * 100)}%` }} /></div>
+                  <span className="macro-value">{totals.fat.toFixed(0)} / {mt.fat} גרם</span>
+                </div>
+                {onMacroTargetsChange && (
+                  <button
+                    type="button"
+                    className="macro-bento-edit-btn ghost"
+                    onClick={() => { setDraftMacros(mt); setEditingMacros(true); }}
+                    title="ערוך יעדי מאקרו"
+                    aria-label="ערוך יעדי מאקרו"
+                  >
+                    <span className="material-symbols-outlined">edit</span>
+                    יעדים
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+
+          {editingMacros && onMacroTargetsChange && (
+            <div className="macro-targets-editor">
+              <strong className="macro-targets-editor-title">יעדי מאקרו יומיים</strong>
+              {(["protein", "carbs", "fat"] as const).map((key) => {
+                const labels = { protein: "חלבון (גרם)", carbs: "פחמימות (גרם)", fat: "שומן (גרם)" };
+                return (
+                  <label key={key} className="macro-targets-field">
+                    <span>{labels[key]}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={draftMacros[key]}
+                      onChange={(e) =>
+                        setDraftMacros((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value)) }))
+                      }
+                    />
+                  </label>
+                );
+              })}
+              <div className="macro-targets-actions">
+                <button type="button" className="ghost" onClick={() => setEditingMacros(false)}>ביטול</button>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => {
+                    onMacroTargetsChange(draftMacros);
+                    setEditingMacros(false);
+                  }}
+                >
+                  שמור
+                </button>
+              </div>
             </div>
-            <div className="macro-tile carbs">
-              <span className="material-symbols-outlined macro-icon">bakery_dining</span>
-              <span className="macro-label">פחמימות</span>
-              <div className="progress-bar"><div className="progress-fill orange" style={{ width: `${Math.min(100, (totals.carbohydrates / 250) * 100)}%` }} /></div>
-              <span className="macro-value">{totals.carbohydrates.toFixed(0)} גרם</span>
-            </div>
-            <div className="macro-tile fat">
-              <span className="material-symbols-outlined macro-icon">opacity</span>
-              <span className="macro-label">שומן</span>
-              <div className="progress-bar"><div className="progress-fill teal" style={{ width: `${Math.min(100, (totals.fat / 70) * 100)}%` }} /></div>
-              <span className="macro-value">{totals.fat.toFixed(0)} גרם</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Manual add */}
@@ -966,6 +1110,7 @@ export function DailyTracker({
 
               return (
                 <li key={entry.id}>
+                  <SwipeDeleteRow onDelete={() => { if (expandedEntryId === entry.id) setExpandedEntryId(null); removeEntry(entry.id); }} deleteLabel={`מחק ${entry.name}`}>
                   <div
                     className={`tracker-entry-shell${expanded ? " tracker-entry-shell--open" : ""}`}
                   >
@@ -1036,6 +1181,7 @@ export function DailyTracker({
                       </ul>
                     )}
                   </div>
+                  </SwipeDeleteRow>
                 </li>
               );
             })}

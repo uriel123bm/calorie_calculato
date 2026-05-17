@@ -3,6 +3,7 @@ Web Push notification endpoints.
 
 POST   /push/subscribe              — save / update subscription for the authenticated user
 DELETE /push/unsubscribe            — remove subscription by endpoint
+POST   /push/send-test              — authenticated: send one test push to user's first subscription
 GET    /push/vapid-public-key       — return the VAPID public key for the client
 GET    /push/cron/vitamin-reminder  — 08:00 IL — remind users to take vitamins
 GET    /push/cron/meal-reminder     — 12:00 IL — remind users to log meals if empty
@@ -53,7 +54,7 @@ def _require_cron(x_cron_secret: Annotated[str | None, Header()] = None) -> None
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid cron secret")
 
 
-def _has_entries_today(db: Session, user_id: int) -> bool:
+def _has_entries_today(db: Session, user_id: str) -> bool:
     """Return True if the user has at least one food entry logged for today."""
     import datetime
     today = datetime.date.today().isoformat()
@@ -74,7 +75,7 @@ def _has_entries_today(db: Session, user_id: int) -> bool:
     return False
 
 
-def _reached_water_goal_today(db: Session, user_id: int) -> bool:
+def _reached_water_goal_today(db: Session, user_id: str) -> bool:
     """Return True if the user has reached their daily water goal today."""
     import datetime
     today = datetime.date.today().isoformat()
@@ -123,9 +124,40 @@ def _send_push(sub: PushSubscription, title: str, body: str, tag: str = "calorie
 
 @router.get("/vapid-public-key")
 def vapid_public_key() -> dict[str, str]:
-    if not settings.vapid_public_key:
-        raise HTTPException(status_code=503, detail="Push not configured")
+    # ללקוח נדרשת המפתח הציבורי; לשרת נדרש המפתח הפרטי לשילוח — אחרת ההרשמה תיראה תקינה אבל אין מה לשגר
+    if not settings.vapid_public_key or not settings.vapid_private_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Push not configured — set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in backend .env",
+        )
     return {"public_key": settings.vapid_public_key}
+
+
+@router.post("/send-test")
+def push_send_test(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db),
+) -> dict[str, bool | str]:
+    """שגר התראת Web Push למנוי הראשון של המשתמש (לאבחון הגדרות VAPID + SW)."""
+    if not settings.vapid_private_key or not settings.vapid_public_key:
+        raise HTTPException(
+            status_code=503,
+            detail="VAPID keys missing on server — check backend .env",
+        )
+    sub = (
+        db.query(PushSubscription)
+        .filter(PushSubscription.user_id == current_user.id)
+        .first()
+    )
+    if sub is None:
+        return {"ok": False, "detail": "no_subscription"}
+    ok = _send_push(
+        sub,
+        title="בדיקת התראות",
+        body="אם הגעת לכאן — Web Push וההגדרות אצל השרת עובדות.",
+        tag="push-self-test",
+    )
+    return {"ok": ok, "detail": "sent" if ok else "send_failed"}
 
 
 @router.post("/subscribe", status_code=status.HTTP_204_NO_CONTENT)

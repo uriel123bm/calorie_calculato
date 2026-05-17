@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isAxiosError } from "axios";
 import { AuthPage } from "./components/AuthPage";
 import { DailyTracker } from "./components/DailyTracker";
 import { InsightsCard } from "./components/InsightsCard";
@@ -30,6 +31,7 @@ import { useUserProducts } from "./hooks/useUserProducts";
 import type { IngredientRowState, NutritionPer100g } from "./types";
 import { divideTotalsByServings } from "./utils/nutritionMath";
 import { exportRecipeCsv } from "./utils/exportCsv";
+import { apiPushSendTest } from "./services/api";
 import { getRecentIngredients } from "./services/recentIngredients";
 
 type TabId = "home" | "recipe" | "meals" | "products" | "progress" | "journal";
@@ -83,6 +85,7 @@ function AppShell({
     index: number;
   };
   const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [journalInitialDate, setJournalInitialDate] = useState<string | null>(null);
   const [recipeName, setRecipeName] = useState("");
   const [servings, setServings] = useState(1);
   const [recipeSaved, setRecipeSaved] = useState(false);
@@ -99,6 +102,27 @@ function AppShell({
   const water         = useWaterTracker(userId);
   const vitamins      = useVitamins(userId);
   const push          = usePushNotifications();
+  const handlePushSelfTest = useCallback(async () => {
+    pushToast("שולח בדיקה מהשרת…", "info");
+    try {
+      const result = await apiPushSendTest();
+      if (!result.ok) {
+        const byDetail: Record<string, string> = {
+          no_subscription: "לא נמצאה הרשמת דחיפה. הפעילו את «הפעל התראות» שוב.",
+          send_failed: "השרת לא הצליח לדחוף למכשיר (מנוי פגום, מפתח VAPID, או חסימה אצל הדפדפן).",
+        };
+        pushToast(byDetail[result.detail ?? ""] ?? `הבדיקה נכשלה (${result.detail ?? "לא ידוע"}).`, "error");
+      } else {
+        pushToast("שליחה מהשרת הצליחה — בדקו בהתראות המערכת.", "success");
+      }
+    } catch (e) {
+      if (isAxiosError(e) && e.response?.status === 503) {
+        pushToast("יש להגדיר VAPID ב‑backend (.env) — ראו .env.example.", "error");
+      } else {
+        pushToast("לא ניתן לשגר בדיקה — חיבור לשרת או הרשמה.", "error");
+      }
+    }
+  }, [pushToast]);
   const savedRecipes  = useSavedRecipes(userId);
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
@@ -500,6 +524,22 @@ function AppShell({
                         : "הפעל התראות"}
                 </button>
               )}
+              {push.permission !== "unsupported" && push.subscribed && (
+                <button
+                  type="button"
+                  className="settings-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    void handlePushSelfTest();
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: "middle", marginLeft: 4 }}>
+                    outbound
+                  </span>
+                  שגר התראת בדיקה
+                </button>
+              )}
               <button
                 type="button"
                 className="settings-menu-item settings-menu-item-danger"
@@ -548,6 +588,12 @@ function AppShell({
               }
               water={water}
               afterWater={<VitaminsSection hook={vitamins} />}
+              onDayClick={(date) => {
+                setJournalInitialDate(date);
+                setActiveTab("journal");
+              }}
+              macroTargets={settings.macroTargets}
+              onMacroTargetsChange={(targets) => patchSettings({ macroTargets: targets })}
             />
             <div className="page-container" style={{ paddingTop: 0 }}>
               <InsightsCard today={daily.state} history={daily.history} />
@@ -733,6 +779,8 @@ function AppShell({
               daily.removeHistoryEntry(date, id);
               pushToast("הרשומה נמחקה", "info");
             }}
+            initialDate={journalInitialDate ?? undefined}
+            onInitialDateConsumed={() => setJournalInitialDate(null)}
           />
         )}
       </main>

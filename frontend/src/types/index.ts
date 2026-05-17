@@ -179,6 +179,10 @@ export interface UserProduct {
   carbohydrates: number;      // per serving
   fat: number;                // per serving
   addedAt: number;            // Date.now()
+  /** ערכים תזונתיים לכל 100 גרם — אם ידוע, מאפשר הוספה לפי גרמים ביומן */
+  per100g?: { calories: number; protein: number; carbohydrates: number; fat: number };
+  /** משקל האריזה הכוללת בגרמים */
+  packageGrams?: number;
 }
 
 // ── Vitamins / Supplements ────────────────────────────────────────────────────

@@ -210,3 +210,14 @@ export async function apiRefresh(): Promise<TokenResponse> {
 export async function apiLogout(): Promise<void> {
   await client.post("/auth/logout");
 }
+
+export interface PushSelfTestResponse {
+  ok: boolean;
+  detail?: string;
+}
+
+/** מאבחון Web Push: שולח התראת בדיקה למנוי הראשון של המשתמש המחובר (דורש VAPID והרשמת push). */
+export async function apiPushSendTest(): Promise<PushSelfTestResponse> {
+  const { data } = await client.post<PushSelfTestResponse>("/push/send-test");
+  return data;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DailyEntry, DailyEntryInput, DailyTrackerState, DayLog } from "../types";
 import { subscribeSyncRefreshed } from "../services/sync";
+import { SwipeDeleteRow } from "./SwipeDeleteRow";
 
 interface WorkoutEntry {
   id: string;
@@ -18,6 +19,10 @@ interface Props {
   onResetDay: () => void;
   onAddHistoryEntry?: (date: string, input: DailyEntryInput) => void;
   onRemoveHistoryEntry?: (date: string, entryId: string) => void;
+  /** תאריך ראשוני לפתיחת מודל — מועבר מלחיצה על גרף בדף הראשי */
+  initialDate?: string;
+  /** קריאה לאחר שה-initialDate נצרך, כדי לאפס אותו ב-App */
+  onInitialDateConsumed?: () => void;
 }
 
 function PastDayAddForm({
@@ -320,11 +325,13 @@ function DayBlock({
       ) : (
         <div className="journal-timeline">
           {[...entries].reverse().map((e) => (
-            <EntryCard
-              key={e.id}
-              entry={e}
-              onRemove={onRemoveEntry ? () => onRemoveEntry(e.id) : undefined}
-            />
+            onRemoveEntry ? (
+              <SwipeDeleteRow key={e.id} onDelete={() => onRemoveEntry(e.id)} deleteLabel={`מחק ${e.name}`}>
+                <EntryCard entry={e} onRemove={() => onRemoveEntry(e.id)} />
+              </SwipeDeleteRow>
+            ) : (
+              <EntryCard key={e.id} entry={e} />
+            )
           ))}
         </div>
       )}
@@ -353,12 +360,21 @@ function isoDateInMonth(year: number, month0: number, day: number): string {
   return `${year}-${m}-${d}`;
 }
 
-export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay, onAddHistoryEntry, onRemoveHistoryEntry }: Props) {
+export function JournalPage({ userId, today, history, onRemoveEntry, onResetDay, onAddHistoryEntry, onRemoveHistoryEntry, initialDate, onInitialDateConsumed }: Props) {
   const [viewMonth, setViewMonth] = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialDate) return;
+    const [y, m] = initialDate.split("-").map(Number);
+    setViewMonth(new Date(y, m - 1, 1));
+    setSelectedDate(initialDate);
+    onInitialDateConsumed?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDate]);
   const [workouts, setWorkouts] = useState<WorkoutEntry[]>(() => {
     try {
       const raw = localStorage.getItem(`user_${userId}:workouts_sync:v1`);

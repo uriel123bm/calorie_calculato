@@ -993,11 +993,17 @@ button.pill {
   margin-bottom: 16px;
 }
 
+.tracker-quick-product-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .tracker-quick-product-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .tracker-quick-select {
@@ -1010,7 +1016,7 @@ button.pill {
 }
 
 .tracker-quick-qty {
-  width: 96px;
+  width: 86px;
   padding: 8px 10px;
   border-radius: var(--radius-xs);
   border: 1px solid var(--hairline);
@@ -1019,13 +1025,49 @@ button.pill {
 .tracker-quick-unit-label {
   font-size: 14px;
   color: var(--on-surface-var);
-  min-width: 2.5rem;
+  min-width: 2rem;
+}
+
+.tracker-quick-mode-toggle {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.tracker-quick-mode-btn {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tracker-quick-mode-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.tracker-quick-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 2px;
 }
 
 .tracker-quick-preview {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.tracker-quick-preview-macro {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* צ'יפים מהספרייה האישית — דף הבית וארוחות */
@@ -1107,9 +1149,9 @@ button.pill {
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
-  transition: stroke-dashoffset 0.4s cubic-bezier(.4,0,.2,1);
+  transition: stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1), stroke 0.3s ease;
 }
-.progress-ring-fill.over { stroke: var(--danger); }
+.progress-ring-fill.over { stroke: var(--danger, #e74c3c); }
 
 .ring-inner {
   display: flex;
@@ -1226,7 +1268,72 @@ button.pill {
   display: grid;
   grid-template-columns: repeat(3,1fr);
   gap: 10px;
+  margin-bottom: 8px;
+}
+
+.macro-bento-edit-btn {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 4px 10px;
+  height: auto;
+  opacity: 0.7;
+}
+
+.macro-bento-edit-btn:hover { opacity: 1; }
+
+.macro-bento-edit-btn .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.macro-targets-editor {
+  background: var(--surface-low);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 14px;
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.macro-targets-editor-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.macro-targets-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.macro-targets-field span {
+  flex: 1;
+  font-weight: 500;
+}
+
+.macro-targets-field input {
+  width: 80px;
+  padding: 5px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.macro-targets-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .macro-tile {
@@ -1519,6 +1626,43 @@ button.pill {
   border-radius: var(--radius-xs);
   color: var(--on-surface-var);
   font-size: 13px;
+}
+
+/* ── Swipe-to-delete ── */
+.swipe-delete-outer {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+
+.swipe-delete-content {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  will-change: transform;
+}
+
+.swipe-delete-btn {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--error, #e74c3c);
+  color: #fff;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 0;
+}
+
+.swipe-delete-btn .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .tracker-list {
@@ -4039,11 +4183,27 @@ html, body {
   flex-shrink: 0;
 }
 
-.library-filter-input {
+.library-filter-input-wrap {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+
+.library-filter-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.library-filter-input {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
-  padding: 10px 14px;
+  padding: 10px 36px 10px 14px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xs);
   background: rgba(255, 255, 255, 0.92);
@@ -4403,6 +4563,107 @@ html[data-theme="light"] body {
   line-height: 1.4;
 }
 
+/* ── Barcode preview step ── */
+.barcode-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.barcode-preview-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.barcode-preview-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.barcode-preview-amount-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.barcode-preview-grams-input {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.barcode-preview-grams-unit {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.barcode-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.barcode-preview-table th,
+.barcode-preview-table td {
+  padding: 7px 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.barcode-preview-table th {
+  background: var(--surface-low);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.barcode-preview-table td:first-child {
+  text-align: right;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.barcode-preview-table tr:last-child td {
+  border-bottom: none;
+}
+
+.barcode-preview-scaled {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.barcode-preview-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+  opacity: 0.85;
+}
+
+.barcode-preview-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
 .product-scan-trigger-row {
   margin-bottom: 14px;
 }
@@ -4685,6 +4946,13 @@ html[data-theme="light"] body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+}
+
+.weekly-chart-hint {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+  opacity: 0.75;
 }
 
 /* ??????????????????????????????????????????????????????????

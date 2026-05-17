@@ -1,7 +1,7 @@
 {
   "name": "calorie-calculator-frontend",
   "private": true,
-  "version": "3.3.0",
+  "version": "3.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,7 @@
     "@zxing/browser": "^0.2.0",
     "axios": "^1.7.7",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
+    "jspdf": "^4.2.1",
     "posthog-js": "^1.372.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -30,10 +30,10 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-basic-ssl": "^1.2.0",
-    "@vitejs/plugin-react": "^4.3.2",
+    "@vitejs/plugin-react": "^4.7.0",
     "jsdom": "^27.0.1",
     "typescript": "^5.6.2",
-    "vite": "^5.4.8",
+    "vite": "^6.4.2",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^3.2.4"
   }

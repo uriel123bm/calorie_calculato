@@ -2,8 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 import { schedulePush, subscribeSyncRefreshed } from "../services/sync";
 import type { ThemeMode } from "./useDarkMode";
 
+export interface MacroTargets {
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export const DEFAULT_MACRO_TARGETS: MacroTargets = {
+  protein: 120,
+  carbs: 250,
+  fat: 70,
+};
+
 export interface UserSettings {
   theme?: ThemeMode;
+  macroTargets?: MacroTargets;
 }
 
 const SETTINGS_KEY = "app:settings:v1";
@@ -14,8 +27,14 @@ function loadSettings(): UserSettings {
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const theme = parsed.theme;
+    const mt = parsed.macroTargets as Record<string, unknown> | undefined;
+    const macroTargets: MacroTargets | undefined =
+      mt && typeof mt.protein === "number" && typeof mt.carbs === "number" && typeof mt.fat === "number"
+        ? { protein: mt.protein, carbs: mt.carbs, fat: mt.fat }
+        : undefined;
     return {
       theme: (theme === "dark" || theme === "light" || theme === "system") ? theme : undefined,
+      macroTargets,
     };
   } catch {
     return {};

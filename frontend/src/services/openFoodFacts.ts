@@ -103,6 +103,15 @@ export function mapOpenFoodFactsToDraft(product: OffProductDoc, barcode: string)
   const k100 = kcalPer100g(n);
   const m100 = macrosPer100g(n);
 
+  const per100g = k100 > 0
+    ? {
+        calories: Math.round(k100 * 10) / 10,
+        protein: Math.round(m100.protein * 10) / 10,
+        carbohydrates: Math.round(m100.carbohydrates * 10) / 10,
+        fat: Math.round(m100.fat * 10) / 10,
+      }
+    : undefined;
+
   if (k100 > 0 && packG && packG > 0) {
     const f = packG / 100;
     return {
@@ -115,6 +124,8 @@ export function mapOpenFoodFactsToDraft(product: OffProductDoc, barcode: string)
       protein: Math.round(m100.protein * f * 10) / 10,
       carbohydrates: Math.round(m100.carbohydrates * f * 10) / 10,
       fat: Math.round(m100.fat * f * 10) / 10,
+      per100g,
+      packageGrams: Math.round(packG),
     };
   }
 
@@ -128,6 +139,7 @@ export function mapOpenFoodFactsToDraft(product: OffProductDoc, barcode: string)
       protein: Math.round(m100.protein * 10) / 10,
       carbohydrates: Math.round(m100.carbohydrates * 10) / 10,
       fat: Math.round(m100.fat * 10) / 10,
+      per100g,
     };
   }
 
