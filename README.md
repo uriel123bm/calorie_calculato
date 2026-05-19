@@ -131,9 +131,20 @@ it is **almost always** from a **Chrome extension** (password manager, ad blocke
 
 ## Production deploy flow
 
-1. Merge to `main` (or push directly for hotfixes).
-2. Wait for Vercel production deploy to reach `READY`.
-3. Run:
+**Production on Vercel deploys only when you push a version tag** (see `.github/workflows/deploy-vercel.yml`).  
+A plain `git push` to `main` runs CI tests but does **not** update what users see.
+
+1. Merge to `main` and bump `frontend/package.json` version if needed.
+2. Tag and push (example for 3.5.0):
+
+```bash
+git tag v3.5.0
+git push origin main
+git push origin v3.5.0
+```
+
+3. Wait for the **Vercel Production Deploy** GitHub Action to finish (`READY` in Vercel).
+4. Run:
 
 ```bash
 npm run verify:prod
