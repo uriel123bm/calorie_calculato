@@ -14,10 +14,12 @@ import { VitaminsSection } from "./components/VitaminsSection";
 import { RecipeNameInput } from "./components/RecipeNameInput";
 import { RecipeSummary } from "./components/RecipeSummary";
 import { HomeHeroIcon } from "./components/HomeHeroIcon";
+import { PersonalPlanQuestionnaire } from "./components/PersonalPlanQuestionnaire";
 import { RecentIngredientChips } from "./components/RecentIngredientChips";
 import { useAuth } from "./context/AuthContext";
 import { useToast } from "./context/ToastContext";
 import { useBodyMetrics } from "./hooks/useBodyMetrics";
+import { usePersonalPlan } from "./hooks/usePersonalPlan";
 import { useDailyTracker } from "./hooks/useDailyTracker";
 import { useVitamins } from "./hooks/useVitamins";
 import { usePushNotifications } from "./hooks/usePushNotifications";
@@ -29,6 +31,8 @@ import { useIngredientRows } from "./hooks/useIngredientRows";
 import { useSavedRecipes } from "./hooks/useSavedRecipes";
 import { useUserProducts } from "./hooks/useUserProducts";
 import type { IngredientRowState, NutritionPer100g } from "./types";
+import type { PersonalPlanAnswers, PersonalPlanResult } from "./types/personalPlan";
+import { applyPersonalPlanToApp } from "./utils/applyPersonalPlan";
 import { divideTotalsByServings } from "./utils/nutritionMath";
 import { exportRecipeCsv } from "./utils/exportCsv";
 import { apiPushSendTest } from "./services/api";
@@ -95,6 +99,7 @@ function AppShell({
   const [dontShowOnboardingAgain, setDontShowOnboardingAgain] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [planWizardOpen, setPlanWizardOpen] = useState(false);
   const { pushToast } = useToast();
 
   const recipe        = useIngredientRows(DEFAULT_ROW_COUNT);
@@ -126,6 +131,7 @@ function AppShell({
   const savedRecipes  = useSavedRecipes(userId);
   const userProducts  = useUserProducts(userId);
   const body          = useBodyMetrics(userId);
+  const personalPlan  = usePersonalPlan(userId);
   const online        = useOnlineStatus();
   const { mode: themeMode, setMode: setThemeMode } = useDarkMode();
   const { settings, patchSettings } = useUserSettings(userId);
@@ -158,20 +164,35 @@ function AppShell({
     };
   }, []);
 
-  /** הדרכה מוצגת רק אחרי הרשמה מוצלחת (לא אחרי התחברות). */
+  /** שאלון התאמה אישית — נפתח אחרי הרשמה (פעם ראשונה בלי תוכנית שמורה). */
   useEffect(() => {
     try {
-      if (sessionStorage.getItem("auth:showOnboarding") === "1") {
-        sessionStorage.removeItem("auth:showOnboarding");
-        setShowOnboarding(true);
-        setOnboardingStep(0);
-        setDontShowOnboardingAgain(false);
-        setActiveTab("recipe");
+      if (sessionStorage.getItem("auth:showPersonalPlan") === "1") {
+        sessionStorage.removeItem("auth:showPersonalPlan");
+        if (!personalPlan.hasCompletedPlan) {
+          setPlanWizardOpen(true);
+          setActiveTab("home");
+        }
       }
     } catch {
       // ignore storage errors
     }
-  }, [userId]);
+  }, [userId, personalPlan.hasCompletedPlan]);
+
+  /** הדרכת מתכון — אחרי הרשמה, רק אחרי שסוגרים את שאלון ההתאמה (אם היה פתוח). */
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("auth:showOnboarding") !== "1") return;
+      if (planWizardOpen) return;
+      sessionStorage.removeItem("auth:showOnboarding");
+      setShowOnboarding(true);
+      setOnboardingStep(0);
+      setDontShowOnboardingAgain(false);
+      setActiveTab("recipe");
+    } catch {
+      // ignore storage errors
+    }
+  }, [userId, planWizardOpen]);
 
   useEffect(() => {
     if (!showOnboarding) return;
@@ -221,6 +242,28 @@ function AppShell({
     setShowOnboarding(true);
     setActiveTab("recipe");
   }, []);
+
+  const openPlanWizard = useCallback(() => {
+    setSettingsOpen(false);
+    setPlanWizardOpen(true);
+    setActiveTab("home");
+  }, []);
+
+  const handlePlanComplete = useCallback(
+    (answers: PersonalPlanAnswers, result: PersonalPlanResult) => {
+      personalPlan.savePlan(answers, result);
+      applyPersonalPlanToApp({
+        answers,
+        result,
+        setTarget: daily.setTarget,
+        body,
+        patchMacroTargets: (targets) => patchSettings({ macroTargets: targets }),
+        existingMacroTargets: settings.macroTargets,
+      });
+      pushToast("היעד היומי עודכן לפי התוכנית האישית", "success");
+    },
+    [personalPlan, daily, body, patchSettings, settings.macroTargets, pushToast]
+  );
 
   useEffect(() => {
     const raw = localStorage.getItem(recipeDraftKey(userId));
@@ -499,6 +542,14 @@ function AppShell({
               >
                 הדרכה
               </button>
+              <button
+                type="button"
+                className="settings-menu-item"
+                role="menuitem"
+                onClick={openPlanWizard}
+              >
+                חשב יעד קלורי מחדש
+              </button>
               {push.permission !== "unsupported" && (
                 <button
                   type="button"
@@ -575,6 +626,8 @@ function AppShell({
               addEntry={addEntryWithToast}
               removeEntry={removeEntryWithToast}
               resetDay={resetDayWithToast}
+              personalPlan={personalPlan.plan}
+              onOpenPlanWizard={openPlanWizard}
               personalProducts={userProducts.products}
               goalTipsContext={
                 body.metrics
@@ -769,6 +822,7 @@ function AppShell({
             userId={userId}
             today={daily.state}
             history={daily.history}
+            personalProducts={userProducts.products}
             onRemoveEntry={removeEntryWithToast}
             onResetDay={resetDayWithToast}
             onAddHistoryEntry={(date, input) => {
@@ -784,6 +838,18 @@ function AppShell({
           />
         )}
       </main>
+
+      <PersonalPlanQuestionnaire
+        open={planWizardOpen}
+        onClose={() => setPlanWizardOpen(false)}
+        existingPlan={personalPlan.plan?.answers ?? null}
+        bodyMetrics={body.metrics}
+        onComplete={handlePlanComplete}
+        onGoToRecipes={() => {
+          setPlanWizardOpen(false);
+          setActiveTab("recipe");
+        }}
+      />
 
       {showOnboarding && (
         <div className="onboarding-overlay" role="dialog" aria-live="polite" aria-label="הדרכה קצרה">

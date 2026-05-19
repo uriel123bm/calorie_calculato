@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +33,11 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app_instance: FastAPI):
+        if os.getenv("VERCEL") and not os.getenv("DATABASE_URL", "").strip():
+            logging.warning(
+                "DATABASE_URL is not set — refresh sessions and accounts may not persist "
+                "across serverless instances. Use PostgreSQL (Neon/Supabase) in production."
+            )
         init_db()
         logging.info("Database initialised.")
         yield

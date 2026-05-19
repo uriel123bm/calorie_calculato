@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 
@@ -87,8 +87,15 @@ class UserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RefreshIn(BaseModel):
+    """Optional body refresh for PWA clients when httpOnly cookies are cleared (e.g. iOS)."""
+
+    refresh_token: str | None = None
+
+
 class TokenOut(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
     user: UserOut
 
@@ -185,6 +192,72 @@ def _csrf_cookie_header_match(request: Request, csrf_cookie: str | None) -> bool
         return True
     header = request.headers.get("x-csrf-token")
     return bool(csrf_cookie and header and csrf_cookie == header)
+
+
+def _refresh_request_allowed(
+    request: Request,
+    csrf_cookie: str | None,
+    *,
+    body_refresh: str | None,
+) -> bool:
+    if not _origin_allowed(request):
+        return False
+    # Body/cookie refresh token is a secret — no separate CSRF needed when cookies are gone.
+    if body_refresh:
+        return True
+    return _csrf_cookie_header_match(request, csrf_cookie)
+
+
+def _jwt_refresh_not_expired(payload: dict) -> bool:
+    exp = payload.get("exp")
+    if exp is None:
+        return False
+    try:
+        exp_dt = datetime.fromtimestamp(float(exp), tz=timezone.utc)
+    except (TypeError, ValueError, OSError):
+        return False
+    return exp_dt > _utcnow()
+
+
+def _assert_refresh_session_valid(
+    session_row: RefreshToken | None,
+    payload: dict,
+) -> None:
+    if session_row is not None:
+        if session_row.revoked_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="טוקן רענון לא תקין",
+            )
+        if _is_expired(session_row.expires_at):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="טוקן רענון לא תקין",
+            )
+        return
+    # DB row missing (ephemeral SQLite / new serverless instance) — trust signed JWT if not expired.
+    if not _jwt_refresh_not_expired(payload):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="טוקן רענון לא תקין",
+        )
+
+
+def _issue_tokens(
+    response: Response,
+    db: Session,
+    user: User,
+) -> TokenOut:
+    access = create_access_token(user.id)
+    refresh, _ = _create_refresh_session(db, user.id)
+    db.commit()
+    _set_refresh_cookie(response, refresh)
+    _set_csrf_cookie(response, secrets.token_urlsafe(32))
+    return TokenOut(
+        access_token=access,
+        refresh_token=refresh,
+        user=UserOut.model_validate(user),
+    )
 
 
 def _set_csrf_cookie(response: Response, token: str) -> None:
@@ -290,14 +363,8 @@ def register(body: RegisterIn, response: Response, db: Session = Depends(get_db)
 
     capture_user_signed_up(user.id, user.username)
 
-    access = create_access_token(user.id)
-    refresh, _ = _create_refresh_session(db, user.id)
-    db.commit()
-    _set_refresh_cookie(response, refresh)
-    _set_csrf_cookie(response, secrets.token_urlsafe(32))
     _rate_limit_clear(f"register:{body.email.lower()}")
-
-    return TokenOut(access_token=access, user=UserOut.model_validate(user))
+    return _issue_tokens(response, db, user)
 
 
 @router.post("/login", response_model=TokenOut)
@@ -313,14 +380,8 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="החשבון מושבת")
 
-    access = create_access_token(user.id)
-    refresh, _ = _create_refresh_session(db, user.id)
-    db.commit()
-    _set_refresh_cookie(response, refresh)
-    _set_csrf_cookie(response, secrets.token_urlsafe(32))
     _rate_limit_clear(rate_key)
-
-    return TokenOut(access_token=access, user=UserOut.model_validate(user))
+    return _issue_tokens(response, db, user)
 
 
 @router.get("/me", response_model=UserOut)
@@ -334,14 +395,18 @@ def refresh_tokens(
     response: Response,
     refresh_token: Annotated[str | None, Cookie()] = None,
     csrf_token: Annotated[str | None, Cookie()] = None,
+    body: RefreshIn = Body(default_factory=RefreshIn),
     db: Session = Depends(get_db),
 ):
-    if not _origin_allowed(request) or not _csrf_cookie_header_match(request, csrf_token):
+    body_refresh = (body.refresh_token or "").strip() or None
+    if not _refresh_request_allowed(request, csrf_token, body_refresh=body_refresh):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="בקשה לא מאומתת")
-    if refresh_token is None:
+
+    token = refresh_token or body_refresh
+    if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="אין טוקן רענון")
     try:
-        payload = decode_token_payload(refresh_token, "refresh")
+        payload = decode_token_payload(token, "refresh")
         user_id = str(payload.get("sub") or "")
         jti = str(payload.get("jti") or "")
     except jwt.InvalidTokenError:
@@ -358,18 +423,22 @@ def refresh_tokens(
         .filter(RefreshToken.user_id == user.id, RefreshToken.jti == jti)
         .first()
     )
-    if session_row is None or session_row.revoked_at is not None or _is_expired(session_row.expires_at):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="טוקן רענון לא תקין")
+    _assert_refresh_session_valid(session_row, payload)
 
     new_refresh, new_jti = _create_refresh_session(db, user.id)
-    _revoke_refresh_session(db, jti, reason="rotated", replaced_by_jti=new_jti)
+    if session_row is not None:
+        _revoke_refresh_session(db, jti, reason="rotated", replaced_by_jti=new_jti)
 
     new_access = create_access_token(user.id)
     db.commit()
     _set_refresh_cookie(response, new_refresh)
     _set_csrf_cookie(response, secrets.token_urlsafe(32))
 
-    return TokenOut(access_token=new_access, user=UserOut.model_validate(user))
+    return TokenOut(
+        access_token=new_access,
+        refresh_token=new_refresh,
+        user=UserOut.model_validate(user),
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

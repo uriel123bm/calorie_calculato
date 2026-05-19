@@ -65,6 +65,9 @@ def get_settings() -> Settings:
     if (bool(os.getenv("VERCEL")) or environment == "production") and not jwt_secret_raw:
         raise RuntimeError("JWT_SECRET is required in production environments.")
     default_cookie_secure = bool(os.getenv("VERCEL")) or environment == "production"
+    is_production = bool(os.getenv("VERCEL")) or environment == "production"
+    # Long-lived access tokens in production so PWA users stay signed in when cookies/DB refresh fails.
+    default_access_minutes = "43200" if is_production else "120"
     return Settings(
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini",
@@ -77,7 +80,9 @@ def get_settings() -> Settings:
         data_dir=_BACKEND_ROOT / "app" / "data",
         jwt_secret=jwt_secret_raw or default_secret,
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256").strip(),
-        access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120")),
+        access_token_expire_minutes=int(
+            os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", default_access_minutes)
+        ),
         refresh_token_expire_days=int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30")),
         cookie_secure=_parse_bool(os.getenv("COOKIE_SECURE", ""), default=default_cookie_secure),
         cookie_samesite=_parse_samesite(os.getenv("COOKIE_SAMESITE", "lax")),

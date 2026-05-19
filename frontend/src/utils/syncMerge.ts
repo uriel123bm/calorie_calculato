@@ -11,6 +11,7 @@ import type {
   UserProduct,
   WeightLogEntry,
 } from "../types";
+import type { PersonalPlanRecord } from "../types/personalPlan";
 import { todayStr } from "./date";
 import { generateId } from "./id";
 
@@ -271,4 +272,32 @@ export function mergeBodyBlobs(localRaw: unknown, remoteRaw: unknown): BodyMetri
     log: mergedLog,
     currentWeightKg: last ? last.weightKg : winner.currentWeightKg,
   };
+}
+
+function isPersonalPlanRecord(x: unknown): x is PersonalPlanRecord {
+  if (!x || typeof x !== "object") return false;
+  const r = x as Partial<PersonalPlanRecord>;
+  return (
+    typeof r.completedAt === "number" &&
+    r.answers != null &&
+    typeof r.answers === "object" &&
+    r.result != null &&
+    typeof r.result === "object"
+  );
+}
+
+/** Keep the plan with the latest `completedAt`. */
+export function mergePersonalPlanBlobs(
+  localRaw: unknown,
+  remoteRaw: unknown
+): PersonalPlanRecord | null {
+  const L = isPersonalPlanRecord(localRaw) ? localRaw : null;
+  const R = isPersonalPlanRecord(remoteRaw) ? remoteRaw : null;
+  if (!L && !R) return null;
+  if (L && !R) return L;
+  if (!L && R) return R;
+  if (L && R) {
+    return L.completedAt >= R.completedAt ? L : R;
+  }
+  return null;
 }

@@ -17,6 +17,7 @@ import {
   mergeProductBlobs,
   mergeRecipeBlobs,
   mergeWorkoutBlobs,
+  mergePersonalPlanBlobs,
 } from "../utils/syncMerge";
 import { client } from "./api";
 
@@ -32,7 +33,8 @@ export type SyncKey =
   | "workouts"
   | "water"
   | "vitamins_config"
-  | "vitamins_log";
+  | "vitamins_log"
+  | "personal_plan";
 
 const TRACKER_KEY  = (uid: string) => `user_${uid}:dailyTracker:v1`;
 const HISTORY_KEY  = (uid: string) => `user_${uid}:dailyHistory:v1`;
@@ -45,6 +47,7 @@ const WORKOUTS_KEY = (uid: string) => `user_${uid}:workouts_sync:v1`;
 const WATER_KEY          = (uid: string) => `user_${uid}:water:v1`;
 const VITAMINS_CONFIG_KEY = (uid: string) => `user_${uid}:vitamins_config:v1`;
 const VITAMINS_LOG_KEY    = (uid: string) => `user_${uid}:vitamins_log:v1`;
+const PERSONAL_PLAN_KEY   = (uid: string) => `user_${uid}:personal_plan:v1`;
 
 function localKey(uid: string, key: SyncKey): string {
   switch (key) {
@@ -59,6 +62,7 @@ function localKey(uid: string, key: SyncKey): string {
     case "water":           return WATER_KEY(uid);
     case "vitamins_config": return VITAMINS_CONFIG_KEY(uid);
     case "vitamins_log":    return VITAMINS_LOG_KEY(uid);
+    case "personal_plan":   return PERSONAL_PLAN_KEY(uid);
   }
 }
 
@@ -105,6 +109,7 @@ interface SyncResponse {
   water:           unknown | null;
   vitamins_config: unknown | null;
   vitamins_log:    unknown | null;
+  personal_plan:   unknown | null;
   updated_at:      string | null;
 }
 
@@ -161,6 +166,12 @@ export function pullSync(uid: string): Promise<void> {
       if (data.vitamins_config) writeLocal(uid, "vitamins_config", data.vitamins_config);
       if (data.vitamins_log)    writeLocal(uid, "vitamins_log",    data.vitamins_log);
 
+      const mergedPlan = mergePersonalPlanBlobs(
+        readLocal(uid, "personal_plan"),
+        data.personal_plan
+      );
+      if (mergedPlan) writeLocal(uid, "personal_plan", mergedPlan);
+
       notifyRefreshed(uid);
       schedulePush(uid);
     } catch {
@@ -187,6 +198,7 @@ function readAllBuckets(uid: string): Record<SyncKey, unknown | null> {
     water:           readLocal(uid, "water"),
     vitamins_config: readLocal(uid, "vitamins_config"),
     vitamins_log:    readLocal(uid, "vitamins_log"),
+    personal_plan:   readLocal(uid, "personal_plan"),
   };
 }
 
@@ -200,7 +212,8 @@ export async function pushSyncNow(uid: string): Promise<void> {
     !buckets.settings &&
     !buckets.products &&
     !buckets.body &&
-    !buckets.workouts;
+    !buckets.workouts &&
+    !buckets.personal_plan;
   if (empty) return;
   try {
     await client.put("/sync", buckets);

@@ -5598,3 +5598,340 @@ html[data-theme="light"] body {
   color: #27ae60;
   font-weight: 700;
 }
+
+/* --- Personal plan / TDEE questionnaire --- */
+.plan-wizard-overlay {
+  z-index: 85;
+  align-items: center;
+  padding-bottom: calc(var(--nav-h) + 18px);
+}
+
+.plan-wizard-card {
+  max-height: min(92vh, 720px);
+  overflow-y: auto;
+}
+
+.plan-step-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-deep);
+}
+
+.plan-intro-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: var(--primary-deep);
+}
+
+.plan-step-title {
+  margin: 0 0 12px;
+  font-size: 17px;
+  color: var(--primary-deep);
+}
+
+.plan-fieldset {
+  border: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.plan-fieldset legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--on-surface);
+}
+
+.plan-choice-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-choice {
+  text-align: right;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.plan-choice.active {
+  border-color: var(--primary);
+  background: rgba(46, 125, 87, 0.12);
+  font-weight: 600;
+}
+
+.plan-wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.plan-wizard-actions--result {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.plan-error {
+  margin: 10px 0 0;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.plan-inline-warning {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #9a6700;
+}
+
+.personal-plan-card {
+  border: 1px solid rgba(46, 125, 87, 0.25);
+  background: linear-gradient(135deg, rgba(232, 245, 236, 0.9), rgba(255, 255, 255, 0.95));
+}
+
+.personal-plan-card--empty {
+  text-align: center;
+}
+
+.personal-plan-card-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--on-surface);
+}
+
+.personal-plan-card-highlight {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.personal-plan-card-sub,
+.personal-plan-card-note {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--on-surface-variant, #555);
+}
+
+.personal-plan-card-btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.plan-result-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: var(--primary-deep);
+}
+
+.plan-warning-list {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(180, 35, 24, 0.08);
+  border: 1px solid rgba(180, 35, 24, 0.25);
+}
+
+.plan-warning-list p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #9a3412;
+}
+
+.plan-warning-list p:last-child {
+  margin-bottom: 0;
+}
+
+.plan-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 400px) {
+  .plan-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plan-result-stat {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-result-stat--primary {
+  border-color: var(--primary);
+  background: rgba(46, 125, 87, 0.1);
+  grid-column: 1 / -1;
+}
+
+.plan-result-label {
+  font-size: 11px;
+  color: var(--on-surface-variant, #666);
+}
+
+.plan-result-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.plan-result-unit {
+  font-size: 11px;
+  color: var(--on-surface-variant, #666);
+}
+
+.plan-result-explanation {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.plan-result-plan-box {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(46, 125, 87, 0.08);
+  border: 1px solid rgba(46, 125, 87, 0.2);
+}
+
+.plan-result-plan-box h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.plan-result-plan-box p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plan-result-disclaimer {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--on-surface-variant, #666);
+  font-style: italic;
+}
+
+.tracker-target-recalc-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.plan-result--celebrate .plan-result-hero {
+  text-align: center;
+  margin-bottom: 14px;
+  padding: 12px 8px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(46, 125, 87, 0.12), rgba(232, 245, 236, 0.9));
+}
+
+.plan-result-hero-icon {
+  font-size: 40px;
+  color: var(--primary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.plan-result-subtitle {
+  margin: 6px 0 0;
+  font-size: 15px;
+}
+
+.plan-result-section {
+  margin-bottom: 14px;
+}
+
+.plan-result-section-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.plan-recap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.plan-recap-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--border);
+}
+
+.plan-recap-label {
+  color: var(--on-surface-variant, #666);
+}
+
+.plan-recap-value {
+  font-weight: 600;
+  text-align: left;
+}
+
+.plan-why-steps {
+  margin: 0;
+  padding-right: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--on-surface);
+}
+
+.plan-why-steps li {
+  margin-bottom: 8px;
+}
+
+.plan-why-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.plan-step-badge--done {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.plan-enter-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.journal-day-modal .tracker-manual-add-section {
+  margin-top: 12px;
+  padding-top: 0;
+  border: none;
+  background: transparent;
+}
+
+.journal-day-modal .tracker-manual-add-section h2 {
+  font-size: 15px;
+}

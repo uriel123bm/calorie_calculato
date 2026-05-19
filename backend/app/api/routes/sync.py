@@ -39,6 +39,7 @@ ALLOWED_KEYS: set[str] = {
     "water",            # daily water intake tracker
     "vitamins_config",  # list of VitaminConfig objects
     "vitamins_log",     # list of VitaminLog objects (per-day taken status)
+    "personal_plan",    # TDEE questionnaire answers + calculated result
 }
 
 # Hard cap per blob to keep DB rows small (50 KB is plenty for years of usage).
@@ -250,6 +251,16 @@ def _coerce_workouts(value: Any) -> dict[str, Any] | None:
     }
 
 
+def _coerce_personal_plan(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    if not isinstance(value.get("completedAt"), (int, float)):
+        return None
+    if not isinstance(value.get("answers"), dict) or not isinstance(value.get("result"), dict):
+        return None
+    return value
+
+
 class SyncBuckets(BaseModel):
     tracker:        Any | None = None
     history:        Any | None = None
@@ -262,6 +273,7 @@ class SyncBuckets(BaseModel):
     water:          Any | None = None
     vitamins_config: Any | None = None
     vitamins_log:   Any | None = None
+    personal_plan:  Any | None = None
 
     @field_validator("tracker", mode="before")
     @classmethod
@@ -303,6 +315,11 @@ class SyncBuckets(BaseModel):
     def _validate_workouts(cls, value: Any) -> Any:
         return _coerce_workouts(value)
 
+    @field_validator("personal_plan", mode="before")
+    @classmethod
+    def _validate_personal_plan(cls, value: Any) -> Any:
+        return _coerce_personal_plan(value)
+
 
 class SyncResponse(BaseModel):
     tracker:        Any | None = None
@@ -316,6 +333,7 @@ class SyncResponse(BaseModel):
     water:          Any | None = None
     vitamins_config: Any | None = None
     vitamins_log:   Any | None = None
+    personal_plan:  Any | None = None
     updated_at:     datetime | None = None
 
 
@@ -356,6 +374,7 @@ def get_sync(
         water=_get("water"),
         vitamins_config=_get("vitamins_config"),
         vitamins_log=_get("vitamins_log"),
+        personal_plan=_get("personal_plan"),
         updated_at=latest,
     )
 

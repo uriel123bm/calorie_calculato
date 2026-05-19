@@ -153,7 +153,8 @@ Set these in **Project → Settings → Environment Variables** for **Production
 | `COOKIE_SECURE` | Yes | `true` (HTTPS). |
 | `COOKIE_SAMESITE` | Yes | `lax` (same site as the app). |
 | `CORS_ORIGINS` | Recommended | Your site origin, e.g. `https://calorie-calculato.vercel.app` (comma-separate multiple). |
-| `DATABASE_URL` | Strongly recommended | PostgreSQL URL from Neon, Supabase, Railway, etc. Without it, serverless SQLite is ephemeral. |
+| `DATABASE_URL` | **Required** | PostgreSQL URL from Neon, Supabase, Railway, etc. Without it, refresh sessions do not persist on serverless. |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Optional | Defaults to **43200** (~30 days) in production, **120** in dev. |
 | `OPENAI_API_KEY` | Optional | Enables AI nutrition fallback when local + Open Food Facts miss. |
 | `AUTH_COOKIE_PATH` | Optional | Default `/` in code; only override if your API path layout differs. |
 

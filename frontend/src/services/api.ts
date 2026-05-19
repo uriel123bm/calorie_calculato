@@ -19,13 +19,33 @@ export const client = axios.create({
   withCredentials: true, // send httpOnly cookies (refresh_token)
 });
 
-// ── Access-token injection ──────────────────────────────
-// Stored in localStorage so it survives app close/reopen.
+// ── Token storage (localStorage survives app close; backup when cookies are cleared) ──
 const TOKEN_KEY = "auth:accessToken";
+const REFRESH_KEY = "auth:refreshToken";
 
 let _accessToken: string | null = (() => {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 })();
+
+function getStoredRefreshToken(): string | null {
+  try { return localStorage.getItem(REFRESH_KEY); } catch { return null; }
+}
+
+export function setRefreshToken(token: string | null): void {
+  try {
+    if (token) localStorage.setItem(REFRESH_KEY, token);
+    else localStorage.removeItem(REFRESH_KEY);
+  } catch { /* ignore */ }
+}
+
+/** Persist access + refresh from login / register / refresh responses. */
+export function persistAuthTokens(data: {
+  access_token: string;
+  refresh_token?: string | null;
+}): void {
+  setAccessToken(data.access_token);
+  if (data.refresh_token) setRefreshToken(data.refresh_token);
+}
 
 function readCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -110,11 +130,11 @@ client.interceptors.response.use(
       original._retry = true;
       _isRefreshing = true;
       try {
-        const { data } = await client.post<{ access_token: string }>("/auth/refresh");
+        const { data } = await postAuthRefresh();
         if (!data?.access_token) {
           throw new Error("no access_token in refresh response");
         }
-        setAccessToken(data.access_token);
+        persistAuthTokens(data);
         flushRefreshSuccess(data.access_token);
         original.headers = original.headers ?? {};
         original.headers.Authorization = `Bearer ${data.access_token}`;
@@ -125,6 +145,7 @@ client.interceptors.response.use(
         const status = (e as AxiosError)?.response?.status;
         if (status === 401 || status === 403) {
           setAccessToken(null);
+          setRefreshToken(null);
           dispatchSessionExpired();
         }
         flushRefreshFailure(e);
@@ -183,8 +204,15 @@ export interface AuthUser {
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token?: string | null;
   token_type: string;
   user: AuthUser;
+}
+
+async function postAuthRefresh(): Promise<{ data: TokenResponse }> {
+  const stored = getStoredRefreshToken();
+  const body = stored ? { refresh_token: stored } : {};
+  return client.post<TokenResponse>("/auth/refresh", body);
 }
 
 export async function apiRegister(email: string, username: string, password: string): Promise<TokenResponse> {
@@ -203,7 +231,8 @@ export async function apiMe(): Promise<AuthUser> {
 }
 
 export async function apiRefresh(): Promise<TokenResponse> {
-  const { data } = await client.post<TokenResponse>("/auth/refresh");
+  const { data } = await postAuthRefresh();
+  persistAuthTokens(data);
   return data;
 }
 

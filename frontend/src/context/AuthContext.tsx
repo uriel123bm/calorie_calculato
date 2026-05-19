@@ -24,7 +24,9 @@ import {
   apiRefresh,
   apiRegister,
   AuthUser,
+  persistAuthTokens,
   setAccessToken,
+  setRefreshToken,
 } from "../services/api";
 import { identifyUser, resetAnalytics } from "../services/analytics";
 import { pullSync, setSyncUserId } from "../services/sync";
@@ -88,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onSessionExpired = () => {
       resetAnalytics();
       setAccessToken(null);
+      setRefreshToken(null);
       saveCachedUser(null);
       setState({ user: null, loading: false });
     };
@@ -100,7 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     //  1. If an access token exists, call /auth/me (works without cookies on iOS PWA).
     //  2. On 401 from /auth/me, fall back to /auth/refresh (httpOnly cookie).
     //  3. With no stored token, try /auth/refresh only (first visit after old builds).
-    const restore = async (): Promise<{ user: AuthUser; access_token: string | null }> => {
+    const restore = async (): Promise<{
+      user: AuthUser;
+      access_token: string | null;
+      refresh_token?: string | null;
+    }> => {
       const token = _getStoredToken();
       if (token) {
         try {
@@ -111,13 +118,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (st !== 401) throw err;
         }
       }
-      const { user, access_token } = await apiRefresh();
-      return { user, access_token };
+      const refreshed = await apiRefresh();
+      return {
+        user: refreshed.user,
+        access_token: refreshed.access_token,
+        refresh_token: refreshed.refresh_token,
+      };
     };
 
     restore()
-      .then(({ user, access_token }) => {
-        if (access_token) setAccessToken(access_token);
+      .then(({ user, access_token, refresh_token }) => {
+        if (access_token) {
+          persistAuthTokens({
+            access_token,
+            refresh_token: refresh_token ?? undefined,
+          });
+        }
         identifyUser(user.id, { username: user.username });
         saveCachedUser(user);
         setState({ user, loading: false });
@@ -129,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Both /auth/me and /auth/refresh rejected — must log in again.
           resetAnalytics();
           setAccessToken(null);
+          setRefreshToken(null);
           saveCachedUser(null);
           setState({ user: null, loading: false });
         } else {
@@ -139,9 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const { access_token, user } = await apiLogin(email, password);
+    const tokens = await apiLogin(email, password);
+    const { user } = tokens;
     identifyUser(user.id, { username: user.username });
-    setAccessToken(access_token);
+    persistAuthTokens(tokens);
     saveCachedUser(user);
     setState({ user, loading: false });
     void pullSync(user.id);
@@ -149,13 +167,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(
     async (email: string, username: string, password: string) => {
-      const { access_token, user } = await apiRegister(email, username, password);
+      const tokens = await apiRegister(email, username, password);
+      const { user } = tokens;
       identifyUser(user.id, { username: user.username });
-      setAccessToken(access_token);
+      persistAuthTokens(tokens);
       saveCachedUser(user);
       setState({ user, loading: false });
       try {
         sessionStorage.setItem("auth:showOnboarding", "1");
+        sessionStorage.setItem("auth:showPersonalPlan", "1");
       } catch {
         /* ignore */
       }
@@ -168,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { await apiLogout(); } catch { /* ignore */ }
     resetAnalytics();
     setAccessToken(null);
+    setRefreshToken(null);
     saveCachedUser(null);
     setState({ user: null, loading: false });
   }, []);
